@@ -49,7 +49,6 @@ Build
 
 TODO:
 -----
--Add ability to deselect current sort by clicking header twice
 -Make cut/copy/paste/delete work at the cell level, not just rows
 -Add batching feature to UndoManager
 -Add IPv6 support (for parsing IP addresses to determine if valid)
