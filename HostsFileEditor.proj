@@ -1,0 +1,101 @@
+<!--
+Copyright 2011 Scott M. Lerch
+
+This file is part of HostsFileEditor.
+
+HostsFileEditor is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 2 of the License, or (at your option)
+any later version.
+
+HostsFileEditor is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+more details.
+
+You should have received a copy of the GNU General Public   License along
+with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
+-->
+
+<!-- This is the main MSBuild configuration file -->
+<Project DefaultTargets = "Build"
+    xmlns="http://schemas.microsoft.com/developer/msbuild/2003" >
+
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">Any CPU</Platform>
+  </PropertyGroup>
+
+  <Target Name="CollectBuiltFiles">
+    <CreateItem
+     Condition=" '$(Configuration)' == 'Release'"
+     Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\$(Configuration)\*.*"
+     Exclude=".\src\\**\bin\$(Configuration)\\**\*.pdb;.\\**\bin\$(Configuration)\\**\*.vshost.exe">
+    <Output
+      TaskParameter="Include"
+      ItemName="BuildFiles"/>
+    </CreateItem>
+    <CreateItem
+      Condition=" '$(Configuration)' == 'Debug'"
+      Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\$(Configuration)\*.*"
+      Exclude=".\\**\bin\$(Configuration)\\**\*.vshost.exe">
+      <Output
+        TaskParameter="Include"
+        ItemName="BuildFiles"/>
+    </CreateItem>
+  </Target>
+
+  <!-- ==================== Clean Targets ====================== -->
+
+  <Target Name = "CleanBin">
+    <CreateItem
+      Include=".\bin\*.*">
+      <Output
+        TaskParameter="Include"
+        ItemName="BinFiles"/>
+    </CreateItem>
+    <Delete Files="@(BinFiles)" />
+  </Target>
+
+  <Target Name = "Clean">
+    <CreateItem
+     Include=".\src\\**\bin\\**\*.*;.\setup\$(Configuration)\*.*">
+      <Output
+        TaskParameter="Include"
+        ItemName="CleanFiles"/>
+    </CreateItem>
+    <Delete Files="@(CleanFiles)" />
+  </Target>
+
+  <!-- ==================== Build Targets ====================== -->
+
+  <Target Name = "Build" DependsOnTargets="InternalBuild;SetupBuild;CollectBuiltFiles">
+    <Message Text="Copying @(BuildFiles) to bin" />
+    <Copy SourceFiles="@(BuildFiles)" DestinationFolder="bin" />
+    <Message Text="Build Complete!"/>
+  </Target>
+
+  <Target Name="InternalBuild" DependsOnTargets = "CleanBin;CreateDirectories">
+    <CreateItem
+      Include=".\*.sln">
+      <Output
+        TaskParameter="Include"
+        ItemName="SolutionFiles"/>
+    </CreateItem>
+    <MSBuild Projects="@(SolutionFiles)" Targets="Build"
+         Properties="Configuration=$(Configuration);Platform=$(Platform)" />
+  </Target>
+
+  <Target Name = "CreateDirectories">
+    <MakeDir Directories="bin" Condition="!Exists('bin')" />
+    <MakeDir Directories="docs" Condition="!Exists('docs')" />
+    <MakeDir Directories="logs" Condition="!Exists('logs')" />
+  </Target>
+  
+  <!-- ========================= Setup Targets ================== -->
+
+  <Target Name="SetupBuild">
+    <Exec Command='devenv.exe /build $(Configuration) setup\HostsFileEditorSetup.vdproj'/>
+  </Target>
+
+</Project>
