@@ -1,0 +1,14 @@
+# use glob syntax.
+syntax: glob
+
+*.user
+*.suo
+*.Cache
+bin/*
+logs/*
+setup/Debug
+setup/Release
+setup/*/bin
+setup/*/obj
+src/bin
+src/obj
