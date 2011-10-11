@@ -27,6 +27,7 @@ namespace HostsFileEditor
     using HostsFileEditor.Extensions;
     using HostsFileEditor.Properties;
     using HostsFileEditor.Utilities;
+    using System.Text;
 
     /// <summary>
     /// The main (and only form) for the application.
@@ -56,12 +57,14 @@ namespace HostsFileEditor
         private IEnumerable<HostsEntry> clipboardEntries;
 
         /// <summary>
-        /// Determines if user is currently adding a new row.
+        /// Determines if user is currently adding a new row.  Used for ugly
+        /// hacks setup in load event.
         /// </summary>
         private bool addingNew;
 
         /// <summary>
-        /// Ignore adding new in progress.
+        /// Ignore adding new in progress. Used for ugly hacks setup in load 
+        /// event.
         /// </summary>
         private bool ignoreAddingNew;
 
@@ -131,6 +134,22 @@ namespace HostsFileEditor
                     .SelectedHostEntries
                     .Select(entry => new HostsEntry(entry)).ToList();
             }
+            else
+            {
+                StringBuilder builder = new StringBuilder();
+
+                foreach (
+                    DataGridViewCell cell in 
+                    this.dataGridViewHostsEntries.SelectedCells)
+                {
+                    if (cell.ValueType == typeof(string))
+                    {
+                        builder.Append(cell.Value.ToString());
+                    }
+                }
+                
+                Clipboard.SetText(builder.ToString());
+            }
         }
 
         /// <summary>
@@ -154,6 +173,23 @@ namespace HostsFileEditor
 
                 HostsFile.Instance.Entries.Remove(this.clipboardEntries);
             }
+            else
+            {
+                StringBuilder builder = new StringBuilder();
+
+                foreach (
+                    DataGridViewCell cell in 
+                    this.dataGridViewHostsEntries.SelectedCells)
+                {
+                    if (cell.ValueType == typeof(string))
+                    {
+                        builder.Append(cell.Value.ToString());
+                        cell.Value = string.Empty;
+                    }
+                }
+
+                Clipboard.SetText(builder.ToString());
+            }
         }
 
         /// <summary>
@@ -171,6 +207,18 @@ namespace HostsFileEditor
             {
                 HostsFile.Instance.Entries.Remove(
                     this.dataGridViewHostsEntries.SelectedHostEntries);
+            }
+            else
+            {
+                foreach (
+                    DataGridViewCell cell in 
+                    this.dataGridViewHostsEntries.SelectedCells)
+                {
+                    if (cell.ValueType == typeof(string))
+                    {
+                        cell.Value = string.Empty;
+                    }
+                }
             }
         }
 
@@ -589,6 +637,18 @@ namespace HostsFileEditor
                     this.clipboardEntries);
 
                 this.clipboardEntries = null;
+            }
+            else
+            {
+                foreach (
+                    DataGridViewCell cell in 
+                    this.dataGridViewHostsEntries.SelectedCells)
+                {
+                    if (cell.ValueType == typeof(string))
+                    {
+                        cell.Value = Clipboard.GetText();
+                    }
+                }
             }
         }
 
