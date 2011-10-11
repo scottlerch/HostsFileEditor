@@ -45,17 +45,3 @@ Build
 -Run build-release.bat or build-debug.bat script from Windows SDK 7.1 or 
  Visual Studio 2010 Command Line
 -The binaries and setup file will be copied to the bin directory
-
-
-TODO:
------
--Make cut/copy/paste/delete work at the cell level, not just rows
--Add batching feature to UndoManager
--Add IPv6 support (for parsing IP addresses to determine if valid)
--Enable/disable buttons/menu dynamically depending on current state
--Show error indicator in top left of grid if any errors exists for case when
- rows with errors may be currently filtered and therefore not visible
--Show progress bar in status bar if ping's in progress
--Use TaskDialog instead of MessageBox for Windows 7/Vista look and feel
--Implement Windows 7 JumpList support to access archive from task bar
--Use WiX for generating installer instead of VS deployment project
