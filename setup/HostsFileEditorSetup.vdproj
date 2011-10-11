@@ -46,13 +46,13 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_69830AA40F2240F0BADC14801AADB2E7"
+        "OwnerKey" = "8:_A977BD81273F9B7AD333D70D66CB88CC"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_A977BD81273F9B7AD333D70D66CB88CC"
+        "OwnerKey" = "8:_69830AA40F2240F0BADC14801AADB2E7"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -287,15 +287,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Hosts File Editor"
-        "ProductCode" = "8:{E0D5C1D6-4D30-4A9D-8B1F-C49701E06E35}"
-        "PackageCode" = "8:{03F2BD2C-5BD4-42F3-9BE1-A5DD8EF5248C}"
+        "ProductCode" = "8:{0D2208A0-437A-4C97-B6EC-73ECCF6304E6}"
+        "PackageCode" = "8:{2BAB4E99-7643-41C7-8713-65B9DA054CF4}"
         "UpgradeCode" = "8:{3A4F4E01-1C91-4562-8C04-5F4273501698}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:FALSE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:0.9.0"
+        "ProductVersion" = "8:0.9.1"
         "Manufacturer" = "8:Scott Lerch"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
