@@ -78,7 +78,7 @@ namespace HostsFileEditor
         /// <summary>
         /// The pattern to match comment.
         /// </summary>
-        private const string MatchGroupComment = @"(\s*#+(?<" + LineComment + @">.*))";
+        private const string MatchGroupComment = @"(\s*#+\s?(?<" + LineComment + @">.*))";
 
         /// <summary>
         /// The pattern to match valid.
@@ -208,6 +208,14 @@ namespace HostsFileEditor
                     this.hostnames = Regex.Replace(this.HostNames, @"[ ]{2,}", " ");
 
                     this.ValidateIpAddress();
+                }
+
+                // Since comments usually have a space after # strip
+                // that first blank since it will be added back when file 
+                // written
+                if (this.comment.Length > 0 && this.comment[0] == ' ')
+                {
+                    this.comment = this.comment.Substring(1);
                 }
             }
         }

@@ -60,6 +60,11 @@ namespace HostsFileEditor
         /// </summary>
         private bool addingNew;
 
+        /// <summary>
+        /// Ignore adding new in progress.
+        /// </summary>
+        private bool ignoreAddingNew;
+
         #endregion
 
         #region Constructors and Destructors
@@ -92,6 +97,9 @@ namespace HostsFileEditor
         /// containing the event data.</param>
         private void OnArchiveClick(object sender, EventArgs e)
         {
+            this.dataGridViewHostsEntries.CommitEdit(
+                DataGridViewDataErrorContexts.Commit);
+
             using (var inputDialog = new InputForm())
             {
                 inputDialog.Text = this.Text;
@@ -294,7 +302,6 @@ namespace HostsFileEditor
             this.dataGridViewHostsEntries.ClearSort = () =>
             {
                 this.hostEntriesView.RemoveSort();
-                this.hostEntriesView.Refresh();
             };
 
             this.bindingSourceView.DataSource = this.hostEntriesView;
@@ -323,11 +330,23 @@ namespace HostsFileEditor
             this.dataGridViewHostsEntries.CellValidated +=
                 (sender1, e1) =>
                 {
-                    if (this.addingNew)
+                    if (!this.ignoreAddingNew && this.addingNew)
                     {
                         this.hostEntriesView.EndNew(this.hostEntriesView.Count - 1);
                         this.addingNew = false;
                     }
+                };
+
+            this.dataGridViewHostsEntries.CurrentCellChanged +=
+                (sender1, e1) =>
+                {
+                    this.ignoreAddingNew = true;
+                };
+
+            this.dataGridViewHostsEntries.CurrentCellDirtyStateChanged +=
+                (sender1, e1) =>
+                {
+                    this.ignoreAddingNew = false;
                 };
         }
 
@@ -376,13 +395,19 @@ namespace HostsFileEditor
                 this.columnHostnames.Index,
                 DataGridViewAutoSizeColumnMode.AllCells);
 
+            // HACK: calling focus causes cell validate to occur
+            // which causes row to be committed
+            this.ignoreAddingNew = true;
+
+            this.textFilter.Focus();
+
             // Deselect top left cell for aesthetics
             foreach (DataGridViewCell cell in this.dataGridViewHostsEntries.SelectedCells)
             {
                 cell.Selected = false;
             }
 
-            this.textFilter.Focus();
+            this.ignoreAddingNew = false;
         }
 
         /// <summary>
@@ -445,6 +470,9 @@ namespace HostsFileEditor
         /// </param>
         private void OnSaveAsClick(object sender, EventArgs e)
         {
+            this.dataGridViewHostsEntries.CommitEdit(
+                DataGridViewDataErrorContexts.Commit);
+
             DialogResult result = this.saveFileDialog.ShowDialog(this);
 
             if (result == DialogResult.OK)
@@ -464,6 +492,9 @@ namespace HostsFileEditor
         /// </param>
         private void OnSaveClick(object sender, EventArgs e)
         {
+            this.dataGridViewHostsEntries.CommitEdit(
+                DataGridViewDataErrorContexts.Commit);
+
             HostsFile.Instance.Save();
         }
 
@@ -829,7 +860,6 @@ namespace HostsFileEditor
         private void OnRemoveSortClick(object sender, EventArgs e)
         {
             this.hostEntriesView.RemoveSort();
-            this.hostEntriesView.Refresh();
         }
 
         #endregion
