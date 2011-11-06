@@ -71,8 +71,10 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controls\HostsArchiveDataGridView.cs">
@@ -156,6 +158,15 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="HostsFileEditor.ico" />
+    <None Include="Resources\CheckBoxHS.png" />
+    <None Include="Resources\112_UpArrowShort_Green_16x16_72.png" />
+    <None Include="Resources\112_DownArrowShort_Green_16x16_72.png" />
+    <None Include="Resources\saveHS.png" />
+    <None Include="Resources\Filter2HS.png" />
+    <None Include="Resources\Edit_UndoHS.png" />
+    <None Include="Resources\Edit_RedoHS.png" />
+    <None Include="Resources\112_RefreshArrow_Blue_16x16_72.png" />
+    <None Include="Resources\077_AddFile_16x16_72.png" />
     <None Include="Resources\HostsFileEditorDisabled.ico" />
     <None Include="Resources\HostsFileEditor.ico" />
     <None Include="Resources\view-refresh-3.png" />
