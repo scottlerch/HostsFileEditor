@@ -158,6 +158,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="HostsFileEditor.ico" />
+    <None Include="Resources\Checkbox.bmp" />
+    <None Include="Resources\Control_Box.bmp" />
     <None Include="Resources\CheckBoxHS.png" />
     <None Include="Resources\112_UpArrowShort_Green_16x16_72.png" />
     <None Include="Resources\112_DownArrowShort_Green_16x16_72.png" />

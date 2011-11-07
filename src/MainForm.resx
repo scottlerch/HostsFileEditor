@@ -330,8 +330,29 @@
   <data name="menuContextInsertBelow.Text" xml:space="preserve">
     <value>Insert Below</value>
   </data>
+  <data name="toolStripSeparator31.Size" type="System.Drawing.Size, System.Drawing">
+    <value>223, 6</value>
+  </data>
+  <data name="contextMenuCheck.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
+    <value>Fuchsia</value>
+  </data>
+  <data name="contextMenuCheck.Size" type="System.Drawing.Size, System.Drawing">
+    <value>226, 22</value>
+  </data>
+  <data name="contextMenuCheck.Text" xml:space="preserve">
+    <value>Check</value>
+  </data>
+  <data name="contextMenuUncheck.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
+    <value>Fuchsia</value>
+  </data>
+  <data name="contextMenuUncheck.Size" type="System.Drawing.Size, System.Drawing">
+    <value>226, 22</value>
+  </data>
+  <data name="contextMenuUncheck.Text" xml:space="preserve">
+    <value>Uncheck</value>
+  </data>
   <data name="contextMenuGrid.Size" type="System.Drawing.Size, System.Drawing">
-    <value>227, 198</value>
+    <value>227, 270</value>
   </data>
   <data name="&gt;&gt;contextMenuGrid.Name" xml:space="preserve">
     <value>contextMenuGrid</value>
@@ -361,7 +382,7 @@
     <value>dataGridViewHostsEntries</value>
   </data>
   <data name="&gt;&gt;dataGridViewHostsEntries.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.HostsEntryDataGridView, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.HostsEntryDataGridView, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;dataGridViewHostsEntries.Parent" xml:space="preserve">
     <value>splitContainer.Panel1</value>
@@ -403,7 +424,7 @@
     <value>dataGridViewArchive</value>
   </data>
   <data name="&gt;&gt;dataGridViewArchive.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.HostsArchiveDataGridView, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.HostsArchiveDataGridView, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;dataGridViewArchive.Parent" xml:space="preserve">
     <value>splitContainer.Panel2</value>
@@ -463,7 +484,7 @@
     <value>toolStripArchive</value>
   </data>
   <data name="&gt;&gt;toolStripArchive.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripEx, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.ToolStripEx, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;toolStripArchive.Parent" xml:space="preserve">
     <value>splitContainer.Panel2</value>
@@ -774,6 +795,27 @@
   <data name="insertRowBelowToolStripMenuItem.Text" xml:space="preserve">
     <value>Insert &amp;Below</value>
   </data>
+  <data name="toolStripSeparator30.Size" type="System.Drawing.Size, System.Drawing">
+    <value>223, 6</value>
+  </data>
+  <data name="menuCheck.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
+    <value>Fuchsia</value>
+  </data>
+  <data name="menuCheck.Size" type="System.Drawing.Size, System.Drawing">
+    <value>226, 22</value>
+  </data>
+  <data name="menuCheck.Text" xml:space="preserve">
+    <value>Check</value>
+  </data>
+  <data name="menuUncheck.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
+    <value>Fuchsia</value>
+  </data>
+  <data name="menuUncheck.Size" type="System.Drawing.Size, System.Drawing">
+    <value>226, 22</value>
+  </data>
+  <data name="menuUncheck.Text" xml:space="preserve">
+    <value>Uncheck</value>
+  </data>
   <data name="editToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
     <value>39, 20</value>
   </data>
@@ -862,7 +904,7 @@
     <value>menuStrip</value>
   </data>
   <data name="&gt;&gt;menuStrip.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.MenuStripEx, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.MenuStripEx, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;menuStrip.Parent" xml:space="preserve">
     <value>toolStripContainer.TopToolStripPanel</value>
@@ -991,7 +1033,7 @@
     <value>toolStrip</value>
   </data>
   <data name="&gt;&gt;toolStrip.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripEx, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.ToolStripEx, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;toolStrip.Parent" xml:space="preserve">
     <value>toolStripContainer.TopToolStripPanel</value>
@@ -4071,7 +4113,7 @@
     <value>labelLineCountNumber</value>
   </data>
   <data name="&gt;&gt;labelLineCountNumber.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;bindingSourceHostFile.Name" xml:space="preserve">
     <value>bindingSourceHostFile</value>
@@ -4089,7 +4131,7 @@
     <value>labelHostEntriesCount</value>
   </data>
   <data name="&gt;&gt;labelHostEntriesCount.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;columnValid.Name" xml:space="preserve">
     <value>columnValid</value>
@@ -4415,6 +4457,24 @@
   <data name="&gt;&gt;insertRowBelowToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="&gt;&gt;toolStripSeparator30.Name" xml:space="preserve">
+    <value>toolStripSeparator30</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator30.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;menuCheck.Name" xml:space="preserve">
+    <value>menuCheck</value>
+  </data>
+  <data name="&gt;&gt;menuCheck.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;menuUncheck.Name" xml:space="preserve">
+    <value>menuUncheck</value>
+  </data>
+  <data name="&gt;&gt;menuUncheck.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="&gt;&gt;viewToolStripMenuItem.Name" xml:space="preserve">
     <value>viewToolStripMenuItem</value>
   </data>
@@ -4557,7 +4617,7 @@
     <value>textFilter</value>
   </data>
   <data name="&gt;&gt;textFilter.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripSpringTextBox, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.ToolStripSpringTextBox, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;toolStripSeparator19.Name" xml:space="preserve">
     <value>toolStripSeparator19</value>
@@ -4684,6 +4744,24 @@
   </data>
   <data name="&gt;&gt;bindingSourceHostEntries.Type" xml:space="preserve">
     <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;contextMenuUncheck.Name" xml:space="preserve">
+    <value>contextMenuUncheck</value>
+  </data>
+  <data name="&gt;&gt;contextMenuUncheck.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;contextMenuCheck.Name" xml:space="preserve">
+    <value>contextMenuCheck</value>
+  </data>
+  <data name="&gt;&gt;contextMenuCheck.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator31.Name" xml:space="preserve">
+    <value>toolStripSeparator31</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator31.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>MainForm</value>

@@ -259,6 +259,40 @@ namespace HostsFileEditor
             this.Add(new HostsEntry());
         }
 
+        /// <summary>
+        /// Unchecks the specified hosts entries.
+        /// </summary>
+        /// <param name="hostsEntries">The hosts entries.</param>
+        public void Uncheck(IEnumerable<HostsEntry> entries)
+        {
+            entries.ThrowIfNull("entries");
+
+            this.BatchUpdate(() =>
+            {
+                foreach (HostsEntry entry in entries)
+                {
+                    entry.Enabled = false;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Checks the specified hosts entries.
+        /// </summary>
+        /// <param name="hostsEntries">The hosts entries.</param>
+        public void Check(IEnumerable<HostsEntry> entries)
+        {
+            entries.ThrowIfNull("entries");
+
+            this.BatchUpdate(() =>
+            {
+                foreach (HostsEntry entry in entries)
+                {
+                    entry.Enabled = true;
+                }
+            });
+        }
+
         #endregion
 
         #region Methods

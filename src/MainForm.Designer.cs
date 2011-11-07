@@ -130,6 +130,9 @@ namespace HostsFileEditor
             this.menuMoveDown = new System.Windows.Forms.ToolStripMenuItem();
             this.insertRowAboveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.insertRowBelowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator30 = new System.Windows.Forms.ToolStripSeparator();
+            this.menuCheck = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuUncheck = new System.Windows.Forms.ToolStripMenuItem();
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuViewArchive = new System.Windows.Forms.ToolStripMenuItem();
             this.menuFilterComments = new System.Windows.Forms.ToolStripMenuItem();
@@ -167,6 +170,9 @@ namespace HostsFileEditor
             this.contextMenuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.bindingSourceHostEntries = new System.Windows.Forms.BindingSource(this.components);
+            this.contextMenuUncheck = new System.Windows.Forms.ToolStripMenuItem();
+            this.contextMenuCheck = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator31 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator22 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator23 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
@@ -289,6 +295,7 @@ namespace HostsFileEditor
             this.dataGridViewHostsEntries.AllowUserToOrderColumns = true;
             this.dataGridViewHostsEntries.AllowUserToResizeRows = false;
             this.dataGridViewHostsEntries.AutoGenerateColumns = false;
+            this.dataGridViewHostsEntries.ClearSort = null;
             this.dataGridViewHostsEntries.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewHostsEntries.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.columnValid,
@@ -364,7 +371,10 @@ namespace HostsFileEditor
             this.menuContextMoveDown,
             toolStripSeparator25,
             this.menuContextInsertAbove,
-            this.menuContextInsertBelow});
+            this.menuContextInsertBelow,
+            this.toolStripSeparator31,
+            this.contextMenuCheck,
+            this.contextMenuUncheck});
             this.contextMenuGrid.Name = "contextMenuGrid";
             resources.ApplyResources(this.contextMenuGrid, "contextMenuGrid");
             // 
@@ -629,7 +639,10 @@ namespace HostsFileEditor
             this.menuMoveDown,
             toolStripSeparator24,
             this.insertRowAboveToolStripMenuItem,
-            this.insertRowBelowToolStripMenuItem});
+            this.insertRowBelowToolStripMenuItem,
+            this.toolStripSeparator30,
+            this.menuCheck,
+            this.menuUncheck});
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             resources.ApplyResources(this.editToolStripMenuItem, "editToolStripMenuItem");
             // 
@@ -734,6 +747,25 @@ namespace HostsFileEditor
             this.insertRowBelowToolStripMenuItem.Name = "insertRowBelowToolStripMenuItem";
             resources.ApplyResources(this.insertRowBelowToolStripMenuItem, "insertRowBelowToolStripMenuItem");
             this.insertRowBelowToolStripMenuItem.Click += new System.EventHandler(this.OnInsertBelowClick);
+            // 
+            // toolStripSeparator30
+            // 
+            this.toolStripSeparator30.Name = "toolStripSeparator30";
+            resources.ApplyResources(this.toolStripSeparator30, "toolStripSeparator30");
+            // 
+            // menuCheck
+            // 
+            this.menuCheck.Image = global::HostsFileEditor.Properties.Resources.Check;
+            resources.ApplyResources(this.menuCheck, "menuCheck");
+            this.menuCheck.Name = "menuCheck";
+            this.menuCheck.Click += new System.EventHandler(this.OnCheckClick);
+            // 
+            // menuUncheck
+            // 
+            this.menuUncheck.Image = global::HostsFileEditor.Properties.Resources.Uncheck;
+            resources.ApplyResources(this.menuUncheck, "menuUncheck");
+            this.menuUncheck.Name = "menuUncheck";
+            this.menuUncheck.Click += new System.EventHandler(this.OnUncheckClick);
             // 
             // viewToolStripMenuItem
             // 
@@ -1044,6 +1076,25 @@ namespace HostsFileEditor
             // 
             this.bindingSourceHostEntries.DataSource = typeof(HostsFileEditor.HostsEntryList);
             // 
+            // contextMenuUncheck
+            // 
+            this.contextMenuUncheck.Image = global::HostsFileEditor.Properties.Resources.Uncheck;
+            resources.ApplyResources(this.contextMenuUncheck, "contextMenuUncheck");
+            this.contextMenuUncheck.Name = "contextMenuUncheck";
+            this.contextMenuUncheck.Click += new System.EventHandler(this.OnUncheckClick);
+            // 
+            // contextMenuCheck
+            // 
+            this.contextMenuCheck.Image = global::HostsFileEditor.Properties.Resources.Check;
+            resources.ApplyResources(this.contextMenuCheck, "contextMenuCheck");
+            this.contextMenuCheck.Name = "contextMenuCheck";
+            this.contextMenuCheck.Click += new System.EventHandler(this.OnCheckClick);
+            // 
+            // toolStripSeparator31
+            // 
+            this.toolStripSeparator31.Name = "toolStripSeparator31";
+            resources.ApplyResources(this.toolStripSeparator31, "toolStripSeparator31");
+            // 
             // MainForm
             // 
             resources.ApplyResources(this, "$this");
@@ -1181,6 +1232,12 @@ namespace HostsFileEditor
         #endregion
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator29;
         private System.Windows.Forms.ToolStripMenuItem menuRemoveSort;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator30;
+        private System.Windows.Forms.ToolStripMenuItem menuCheck;
+        private System.Windows.Forms.ToolStripMenuItem menuUncheck;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator31;
+        private System.Windows.Forms.ToolStripMenuItem contextMenuCheck;
+        private System.Windows.Forms.ToolStripMenuItem contextMenuUncheck;
     }
 }
 

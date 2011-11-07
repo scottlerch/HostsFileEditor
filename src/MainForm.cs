@@ -128,6 +128,19 @@ namespace HostsFileEditor
         /// </param>
         private void OnCopyClick(object sender, EventArgs e)
         {
+            // HACK: If editing cell forward cut/copy/paste command
+            // to editing control
+            if (this.dataGridViewHostsEntries.IsCurrentCellInEditMode)
+            {
+                var keys = this.menuCopy.ShortcutKeys;
+                this.menuCopy.ShortcutKeys = Keys.None;
+                this.menuContextCopy.ShortcutKeys = Keys.None;
+                SendKeys.SendWait("^(C)");
+                this.menuCopy.ShortcutKeys = keys;
+                this.menuContextCopy.ShortcutKeys = keys;
+                return;
+            }
+
             if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
             {
                 this.clipboardEntries = this.dataGridViewHostsEntries
@@ -163,6 +176,19 @@ namespace HostsFileEditor
         /// </param>
         private void OnCutClick(object sender, EventArgs e)
         {
+            // HACK: If editing cell forward cut/copy/paste command
+            // to editing control
+            if (this.dataGridViewHostsEntries.IsCurrentCellInEditMode)
+            {
+                var keys = this.menuCut.ShortcutKeys;
+                this.menuCut.ShortcutKeys = Keys.None;
+                this.menuContextCut.ShortcutKeys = Keys.None;
+                SendKeys.SendWait("^(X)");
+                this.menuCut.ShortcutKeys = keys;
+                this.menuContextCut.ShortcutKeys = keys;
+                return;
+            }
+
             this.dataGridViewHostsEntries.CancelEdit();
 
             if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
@@ -627,6 +653,19 @@ namespace HostsFileEditor
         /// </param>
         private void OnPasteClick(object sender, EventArgs e)
         {
+            // HACK: If editing cell forward cut/copy/paste command
+            // to editing control
+            if (this.dataGridViewHostsEntries.IsCurrentCellInEditMode)
+            {
+                var keys = this.menuPaste.ShortcutKeys;
+                this.menuPaste.ShortcutKeys = Keys.None;
+                this.menuContextPaste.ShortcutKeys = Keys.None;
+                SendKeys.SendWait("^(V)");
+                this.menuPaste.ShortcutKeys = keys;
+                this.menuContextPaste.ShortcutKeys = keys;
+                return;
+            }
+
             this.dataGridViewHostsEntries.CancelEdit();
 
             if (this.dataGridViewHostsEntries.SelectedRows.Count > 0 && 
@@ -920,6 +959,48 @@ namespace HostsFileEditor
         private void OnRemoveSortClick(object sender, EventArgs e)
         {
             this.hostEntriesView.RemoveSort();
+        }
+
+        /// <summary>
+        /// Called when check clicked.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private void OnCheckClick(object sender, EventArgs e)
+        {
+            this.dataGridViewHostsEntries.CancelEdit();
+
+            if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
+            {
+                HostsFile.Instance.Entries.Check(
+                     this.dataGridViewHostsEntries.SelectedHostEntries);
+            }
+            else if (this.dataGridViewHostsEntries.CurrentHostEntry != null)
+            {
+                HostsFile.Instance.Entries.Check(
+                    new [] { this.dataGridViewHostsEntries.CurrentHostEntry });
+            }
+        }
+
+        /// <summary>
+        /// Called when uncheck clicked.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private void OnUncheckClick(object sender, EventArgs e)
+        {
+            this.dataGridViewHostsEntries.CancelEdit();
+
+            if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
+            {
+                HostsFile.Instance.Entries.Uncheck(
+                     this.dataGridViewHostsEntries.SelectedHostEntries);
+            }
+            else if (this.dataGridViewHostsEntries.CurrentHostEntry != null)
+            {
+                HostsFile.Instance.Entries.Uncheck(
+                    new [] { this.dataGridViewHostsEntries.CurrentHostEntry });
+            }
         }
 
         #endregion

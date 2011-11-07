@@ -60,13 +60,6 @@ namespace HostsFileEditor.Properties {
             }
         }
         
-        internal static System.Drawing.Bitmap _077_AddFile_16x16_72 {
-            get {
-                object obj = ResourceManager.GetObject("_077_AddFile_16x16_72", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
         internal static System.Drawing.Bitmap Archive {
             get {
                 object obj = ResourceManager.GetObject("Archive", resourceCulture);
@@ -80,6 +73,13 @@ namespace HostsFileEditor.Properties {
         internal static string ArchiveExists {
             get {
                 return ResourceManager.GetString("ArchiveExists", resourceCulture);
+            }
+        }
+        
+        internal static System.Drawing.Bitmap Check {
+            get {
+                object obj = ResourceManager.GetObject("Check", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
         
@@ -269,13 +269,6 @@ namespace HostsFileEditor.Properties {
             }
         }
         
-        internal static System.Drawing.Bitmap newToolStripMenuItem {
-            get {
-                object obj = ResourceManager.GetObject("newToolStripMenuItem", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
         internal static System.Drawing.Bitmap Paste {
             get {
                 object obj = ResourceManager.GetObject("Paste", resourceCulture);
@@ -295,13 +288,6 @@ namespace HostsFileEditor.Properties {
         internal static System.Drawing.Bitmap Print {
             get {
                 object obj = ResourceManager.GetObject("Print", resourceCulture);
-                return ((System.Drawing.Bitmap)(obj));
-            }
-        }
-        
-        internal static System.Drawing.Bitmap printPreviewToolStripMenuItem {
-            get {
-                object obj = ResourceManager.GetObject("printPreviewToolStripMenuItem", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -330,6 +316,13 @@ namespace HostsFileEditor.Properties {
         internal static System.Drawing.Bitmap saveHS {
             get {
                 object obj = ResourceManager.GetObject("saveHS", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        internal static System.Drawing.Bitmap Uncheck {
+            get {
+                object obj = ResourceManager.GetObject("Uncheck", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
