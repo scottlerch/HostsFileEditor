@@ -240,6 +240,384 @@
   <metadata name="contextMenuGrid.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>325, 56</value>
   </metadata>
+  <metadata name="toolStripSeparator22.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator23.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator25.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="contextMenuGrid.Size" type="System.Drawing.Size, System.Drawing">
+    <value>227, 270</value>
+  </data>
+  <data name="&gt;&gt;contextMenuGrid.Name" xml:space="preserve">
+    <value>contextMenuGrid</value>
+  </data>
+  <data name="&gt;&gt;contextMenuGrid.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ContextMenuStrip, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <metadata name="bindingSourceView.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>152, 17</value>
+  </metadata>
+  <data name="dataGridViewHostsEntries.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="dataGridViewHostsEntries.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="dataGridViewHostsEntries.RowHeadersWidth" type="System.Int32, mscorlib">
+    <value>25</value>
+  </data>
+  <data name="dataGridViewHostsEntries.Size" type="System.Drawing.Size, System.Drawing">
+    <value>512, 434</value>
+  </data>
+  <data name="dataGridViewHostsEntries.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewHostsEntries.Name" xml:space="preserve">
+    <value>dataGridViewHostsEntries</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewHostsEntries.Type" xml:space="preserve">
+    <value>HostsFileEditor.Controls.HostsEntryDataGridView, HostsFileEditor, Version=0.9.3.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewHostsEntries.Parent" xml:space="preserve">
+    <value>splitContainer.Panel1</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewHostsEntries.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Panel1.Name" xml:space="preserve">
+    <value>splitContainer.Panel1</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Panel1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Panel1.Parent" xml:space="preserve">
+    <value>splitContainer</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Panel1.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <metadata name="bindingSourceArchive.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>690, 56</value>
+  </metadata>
+  <data name="dataGridViewArchive.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="dataGridViewArchive.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 25</value>
+  </data>
+  <data name="dataGridViewArchive.Size" type="System.Drawing.Size, System.Drawing">
+    <value>160, 409</value>
+  </data>
+  <data name="dataGridViewArchive.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewArchive.Name" xml:space="preserve">
+    <value>dataGridViewArchive</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewArchive.Type" xml:space="preserve">
+    <value>HostsFileEditor.Controls.HostsArchiveDataGridView, HostsFileEditor, Version=0.9.3.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewArchive.Parent" xml:space="preserve">
+    <value>splitContainer.Panel2</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewArchive.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <metadata name="toolStripArchive.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>472, 56</value>
+  </metadata>
+  <metadata name="toolStripLabel1.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator27.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="toolStripArchive.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="toolStripArchive.Size" type="System.Drawing.Size, System.Drawing">
+    <value>160, 25</value>
+  </data>
+  <data name="toolStripArchive.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="toolStripArchive.Text" xml:space="preserve">
+    <value>Archive Tool Strip</value>
+  </data>
+  <data name="&gt;&gt;toolStripArchive.Name" xml:space="preserve">
+    <value>toolStripArchive</value>
+  </data>
+  <data name="&gt;&gt;toolStripArchive.Type" xml:space="preserve">
+    <value>HostsFileEditor.Controls.ToolStripEx, HostsFileEditor, Version=0.9.3.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;toolStripArchive.Parent" xml:space="preserve">
+    <value>splitContainer.Panel2</value>
+  </data>
+  <data name="&gt;&gt;toolStripArchive.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Panel2.Name" xml:space="preserve">
+    <value>splitContainer.Panel2</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Panel2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Panel2.Parent" xml:space="preserve">
+    <value>splitContainer</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Panel2.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="splitContainer.Size" type="System.Drawing.Size, System.Drawing">
+    <value>676, 434</value>
+  </data>
+  <data name="splitContainer.SplitterDistance" type="System.Int32, mscorlib">
+    <value>512</value>
+  </data>
+  <data name="splitContainer.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Name" xml:space="preserve">
+    <value>splitContainer</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Type" xml:space="preserve">
+    <value>System.Windows.Forms.SplitContainer, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.Parent" xml:space="preserve">
+    <value>toolStripContainer.ContentPanel</value>
+  </data>
+  <data name="&gt;&gt;splitContainer.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="toolStripContainer.ContentPanel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>676, 434</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.ContentPanel.Name" xml:space="preserve">
+    <value>toolStripContainer.ContentPanel</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.ContentPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripContentPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.ContentPanel.Parent" xml:space="preserve">
+    <value>toolStripContainer</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.ContentPanel.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="toolStripContainer.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.LeftToolStripPanel.Name" xml:space="preserve">
+    <value>toolStripContainer.LeftToolStripPanel</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.LeftToolStripPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.LeftToolStripPanel.Parent" xml:space="preserve">
+    <value>toolStripContainer</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.LeftToolStripPanel.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="toolStripContainer.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.RightToolStripPanel.Name" xml:space="preserve">
+    <value>toolStripContainer.RightToolStripPanel</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.RightToolStripPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.RightToolStripPanel.Parent" xml:space="preserve">
+    <value>toolStripContainer</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.RightToolStripPanel.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="toolStripContainer.Size" type="System.Drawing.Size, System.Drawing">
+    <value>676, 505</value>
+  </data>
+  <data name="toolStripContainer.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="toolStripContainer.Text" xml:space="preserve">
+    <value>toolStripContainer1</value>
+  </data>
+  <metadata name="menuStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <data name="menuStrip.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>None</value>
+  </data>
+  <metadata name="toolStripSeparator18.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator14.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator13.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator12.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="menuFile.Size" type="System.Drawing.Size, System.Drawing">
+    <value>37, 20</value>
+  </data>
+  <data name="menuFile.Text" xml:space="preserve">
+    <value>&amp;File</value>
+  </data>
+  <metadata name="toolStripSeparator28.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator4.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator5.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator6.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator24.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="editToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>39, 20</value>
+  </data>
+  <data name="editToolStripMenuItem.Text" xml:space="preserve">
+    <value>&amp;Edit</value>
+  </data>
+  <metadata name="toolStripSeparator9.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="menuFilter.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="viewToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>44, 20</value>
+  </data>
+  <data name="viewToolStripMenuItem.Text" xml:space="preserve">
+    <value>&amp;View</value>
+  </data>
+  <data name="menuTools.Size" type="System.Drawing.Size, System.Drawing">
+    <value>48, 20</value>
+  </data>
+  <data name="menuTools.Text" xml:space="preserve">
+    <value>&amp;Tools</value>
+  </data>
+  <data name="aboutToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>152, 22</value>
+  </data>
+  <data name="aboutToolStripMenuItem.Text" xml:space="preserve">
+    <value>&amp;About</value>
+  </data>
+  <data name="helpToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>44, 20</value>
+  </data>
+  <data name="helpToolStripMenuItem.Text" xml:space="preserve">
+    <value>&amp;Help</value>
+  </data>
+  <data name="menuStrip.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="menuStrip.Size" type="System.Drawing.Size, System.Drawing">
+    <value>676, 24</value>
+  </data>
+  <data name="menuStrip.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="menuStrip.Text" xml:space="preserve">
+    <value>Menu Strip</value>
+  </data>
+  <data name="&gt;&gt;menuStrip.Name" xml:space="preserve">
+    <value>menuStrip</value>
+  </data>
+  <data name="&gt;&gt;menuStrip.Type" xml:space="preserve">
+    <value>HostsFileEditor.Controls.MenuStripEx, HostsFileEditor, Version=0.9.3.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;menuStrip.Parent" xml:space="preserve">
+    <value>toolStripContainer.TopToolStripPanel</value>
+  </data>
+  <data name="&gt;&gt;menuStrip.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <metadata name="toolStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>283, 17</value>
+  </metadata>
+  <metadata name="toolStripSeparator15.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator26.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator16.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator17.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <metadata name="toolStripSeparator19.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>False</value>
+  </metadata>
+  <data name="toolStrip.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>None</value>
+  </data>
+  <data name="toolStrip.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 24</value>
+  </data>
+  <data name="toolStrip.Size" type="System.Drawing.Size, System.Drawing">
+    <value>676, 25</value>
+  </data>
+  <data name="toolStrip.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="toolStrip.Text" xml:space="preserve">
+    <value>Tool Strip</value>
+  </data>
+  <data name="&gt;&gt;toolStrip.Name" xml:space="preserve">
+    <value>toolStrip</value>
+  </data>
+  <data name="&gt;&gt;toolStrip.Type" xml:space="preserve">
+    <value>HostsFileEditor.Controls.ToolStripEx, HostsFileEditor, Version=0.9.3.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;toolStrip.Parent" xml:space="preserve">
+    <value>toolStripContainer.TopToolStripPanel</value>
+  </data>
+  <data name="&gt;&gt;toolStrip.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.TopToolStripPanel.Name" xml:space="preserve">
+    <value>toolStripContainer.TopToolStripPanel</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.TopToolStripPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.TopToolStripPanel.Parent" xml:space="preserve">
+    <value>toolStripContainer</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.TopToolStripPanel.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.Name" xml:space="preserve">
+    <value>toolStripContainer</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripContainer, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;toolStripContainer.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <metadata name="bindingSourceHostFile.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 56</value>
+  </metadata>
   <data name="menuContextCut.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
     <value>Ctrl+X</value>
   </data>
@@ -351,89 +729,11 @@
   <data name="contextMenuUncheck.Text" xml:space="preserve">
     <value>Uncheck</value>
   </data>
-  <data name="contextMenuGrid.Size" type="System.Drawing.Size, System.Drawing">
-    <value>227, 270</value>
-  </data>
-  <data name="&gt;&gt;contextMenuGrid.Name" xml:space="preserve">
-    <value>contextMenuGrid</value>
-  </data>
-  <data name="&gt;&gt;contextMenuGrid.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ContextMenuStrip, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <metadata name="bindingSourceView.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>152, 17</value>
-  </metadata>
-  <data name="dataGridViewHostsEntries.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>Fill</value>
-  </data>
-  <data name="dataGridViewHostsEntries.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 0</value>
-  </data>
-  <data name="dataGridViewHostsEntries.RowHeadersWidth" type="System.Int32, mscorlib">
-    <value>25</value>
-  </data>
-  <data name="dataGridViewHostsEntries.Size" type="System.Drawing.Size, System.Drawing">
-    <value>512, 434</value>
-  </data>
-  <data name="dataGridViewHostsEntries.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewHostsEntries.Name" xml:space="preserve">
-    <value>dataGridViewHostsEntries</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewHostsEntries.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.HostsEntryDataGridView, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewHostsEntries.Parent" xml:space="preserve">
-    <value>splitContainer.Panel1</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewHostsEntries.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Panel1.Name" xml:space="preserve">
-    <value>splitContainer.Panel1</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Panel1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Panel1.Parent" xml:space="preserve">
-    <value>splitContainer</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Panel1.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
   <data name="fileNameDataGridViewTextBoxColumn.HeaderText" xml:space="preserve">
     <value>Name</value>
   </data>
   <metadata name="bindingSourceArchive.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>690, 56</value>
-  </metadata>
-  <data name="dataGridViewArchive.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>Fill</value>
-  </data>
-  <data name="dataGridViewArchive.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 25</value>
-  </data>
-  <data name="dataGridViewArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>160, 409</value>
-  </data>
-  <data name="dataGridViewArchive.TabIndex" type="System.Int32, mscorlib">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewArchive.Name" xml:space="preserve">
-    <value>dataGridViewArchive</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewArchive.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.HostsArchiveDataGridView, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewArchive.Parent" xml:space="preserve">
-    <value>splitContainer.Panel2</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewArchive.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <metadata name="toolStripArchive.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>472, 56</value>
   </metadata>
   <metadata name="toolStripLabel1.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
@@ -467,123 +767,6 @@
   </data>
   <data name="buttonLoadArchive.Text" xml:space="preserve">
     <value>Load Selected Archive</value>
-  </data>
-  <data name="toolStripArchive.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 0</value>
-  </data>
-  <data name="toolStripArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>160, 25</value>
-  </data>
-  <data name="toolStripArchive.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="toolStripArchive.Text" xml:space="preserve">
-    <value>Archive Tool Strip</value>
-  </data>
-  <data name="&gt;&gt;toolStripArchive.Name" xml:space="preserve">
-    <value>toolStripArchive</value>
-  </data>
-  <data name="&gt;&gt;toolStripArchive.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripEx, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;toolStripArchive.Parent" xml:space="preserve">
-    <value>splitContainer.Panel2</value>
-  </data>
-  <data name="&gt;&gt;toolStripArchive.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Panel2.Name" xml:space="preserve">
-    <value>splitContainer.Panel2</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Panel2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitterPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Panel2.Parent" xml:space="preserve">
-    <value>splitContainer</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Panel2.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="splitContainer.Size" type="System.Drawing.Size, System.Drawing">
-    <value>676, 434</value>
-  </data>
-  <data name="splitContainer.SplitterDistance" type="System.Int32, mscorlib">
-    <value>512</value>
-  </data>
-  <data name="splitContainer.TabIndex" type="System.Int32, mscorlib">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Name" xml:space="preserve">
-    <value>splitContainer</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Type" xml:space="preserve">
-    <value>System.Windows.Forms.SplitContainer, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.Parent" xml:space="preserve">
-    <value>toolStripContainer.ContentPanel</value>
-  </data>
-  <data name="&gt;&gt;splitContainer.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="toolStripContainer.ContentPanel.Size" type="System.Drawing.Size, System.Drawing">
-    <value>676, 434</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.ContentPanel.Name" xml:space="preserve">
-    <value>toolStripContainer.ContentPanel</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.ContentPanel.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripContentPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.ContentPanel.Parent" xml:space="preserve">
-    <value>toolStripContainer</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.ContentPanel.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="toolStripContainer.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>Fill</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.LeftToolStripPanel.Name" xml:space="preserve">
-    <value>toolStripContainer.LeftToolStripPanel</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.LeftToolStripPanel.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.LeftToolStripPanel.Parent" xml:space="preserve">
-    <value>toolStripContainer</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.LeftToolStripPanel.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="toolStripContainer.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 0</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.RightToolStripPanel.Name" xml:space="preserve">
-    <value>toolStripContainer.RightToolStripPanel</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.RightToolStripPanel.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.RightToolStripPanel.Parent" xml:space="preserve">
-    <value>toolStripContainer</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.RightToolStripPanel.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
-  <data name="toolStripContainer.Size" type="System.Drawing.Size, System.Drawing">
-    <value>676, 505</value>
-  </data>
-  <data name="toolStripContainer.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="toolStripContainer.Text" xml:space="preserve">
-    <value>toolStripContainer1</value>
-  </data>
-  <metadata name="menuStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
-  <data name="menuStrip.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>None</value>
   </data>
   <data name="menuSave.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
     <value>Ctrl+S</value>
@@ -656,12 +839,6 @@
   </data>
   <data name="menuExit.Text" xml:space="preserve">
     <value>E&amp;xit</value>
-  </data>
-  <data name="menuFile.Size" type="System.Drawing.Size, System.Drawing">
-    <value>37, 20</value>
-  </data>
-  <data name="menuFile.Text" xml:space="preserve">
-    <value>&amp;File</value>
   </data>
   <data name="menuRefresh.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
     <value>Magenta</value>
@@ -816,12 +993,6 @@
   <data name="menuUncheck.Text" xml:space="preserve">
     <value>Uncheck</value>
   </data>
-  <data name="editToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>39, 20</value>
-  </data>
-  <data name="editToolStripMenuItem.Text" xml:space="preserve">
-    <value>&amp;Edit</value>
-  </data>
   <data name="menuViewArchive.Size" type="System.Drawing.Size, System.Drawing">
     <value>141, 22</value>
   </data>
@@ -837,6 +1008,12 @@
   <metadata name="menuFilter.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
   </metadata>
+  <data name="menuFilter.Size" type="System.Drawing.Size, System.Drawing">
+    <value>141, 22</value>
+  </data>
+  <data name="menuFilter.Text" xml:space="preserve">
+    <value>&amp;Filter</value>
+  </data>
   <data name="menuFilterComments.Size" type="System.Drawing.Size, System.Drawing">
     <value>186, 22</value>
   </data>
@@ -849,12 +1026,6 @@
   <data name="menuFilterDisabled.Text" xml:space="preserve">
     <value>&amp;Disabled</value>
   </data>
-  <data name="menuFilter.Size" type="System.Drawing.Size, System.Drawing">
-    <value>141, 22</value>
-  </data>
-  <data name="menuFilter.Text" xml:space="preserve">
-    <value>&amp;Filter</value>
-  </data>
   <data name="toolStripSeparator29.Size" type="System.Drawing.Size, System.Drawing">
     <value>138, 6</value>
   </data>
@@ -863,12 +1034,6 @@
   </data>
   <data name="menuRemoveSort.Text" xml:space="preserve">
     <value>Remove Sort</value>
-  </data>
-  <data name="viewToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
-    <value>44, 20</value>
-  </data>
-  <data name="viewToolStripMenuItem.Text" xml:space="preserve">
-    <value>&amp;View</value>
   </data>
   <data name="menuPingIPs.Size" type="System.Drawing.Size, System.Drawing">
     <value>183, 22</value>
@@ -881,42 +1046,6 @@
   </data>
   <data name="menuRemoveDefaultText.Text" xml:space="preserve">
     <value>&amp;Remove Default Text</value>
-  </data>
-  <data name="menuTools.Size" type="System.Drawing.Size, System.Drawing">
-    <value>48, 20</value>
-  </data>
-  <data name="menuTools.Text" xml:space="preserve">
-    <value>&amp;Tools</value>
-  </data>
-  <data name="menuStrip.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 0</value>
-  </data>
-  <data name="menuStrip.Size" type="System.Drawing.Size, System.Drawing">
-    <value>676, 24</value>
-  </data>
-  <data name="menuStrip.TabIndex" type="System.Int32, mscorlib">
-    <value>0</value>
-  </data>
-  <data name="menuStrip.Text" xml:space="preserve">
-    <value>Menu Strip</value>
-  </data>
-  <data name="&gt;&gt;menuStrip.Name" xml:space="preserve">
-    <value>menuStrip</value>
-  </data>
-  <data name="&gt;&gt;menuStrip.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.MenuStripEx, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;menuStrip.Parent" xml:space="preserve">
-    <value>toolStripContainer.TopToolStripPanel</value>
-  </data>
-  <data name="&gt;&gt;menuStrip.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <metadata name="toolStrip.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>283, 17</value>
-  </metadata>
-  <data name="toolStrip.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>None</value>
   </data>
   <data name="buttonSave.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
     <value>Magenta</value>
@@ -1017,54 +1146,6 @@
   <data name="toolStripSeparator19.Size" type="System.Drawing.Size, System.Drawing">
     <value>6, 25</value>
   </data>
-  <data name="toolStrip.Location" type="System.Drawing.Point, System.Drawing">
-    <value>0, 24</value>
-  </data>
-  <data name="toolStrip.Size" type="System.Drawing.Size, System.Drawing">
-    <value>676, 25</value>
-  </data>
-  <data name="toolStrip.TabIndex" type="System.Int32, mscorlib">
-    <value>1</value>
-  </data>
-  <data name="toolStrip.Text" xml:space="preserve">
-    <value>Tool Strip</value>
-  </data>
-  <data name="&gt;&gt;toolStrip.Name" xml:space="preserve">
-    <value>toolStrip</value>
-  </data>
-  <data name="&gt;&gt;toolStrip.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripEx, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;toolStrip.Parent" xml:space="preserve">
-    <value>toolStripContainer.TopToolStripPanel</value>
-  </data>
-  <data name="&gt;&gt;toolStrip.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.TopToolStripPanel.Name" xml:space="preserve">
-    <value>toolStripContainer.TopToolStripPanel</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.TopToolStripPanel.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.TopToolStripPanel.Parent" xml:space="preserve">
-    <value>toolStripContainer</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.TopToolStripPanel.ZOrder" xml:space="preserve">
-    <value>3</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.Name" xml:space="preserve">
-    <value>toolStripContainer</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripContainer, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.Parent" xml:space="preserve">
-    <value>$this</value>
-  </data>
-  <data name="&gt;&gt;toolStripContainer.ZOrder" xml:space="preserve">
-    <value>2</value>
-  </data>
   <metadata name="toolStripSeparator21.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
   </metadata>
@@ -1155,24 +1236,6 @@
   <metadata name="contextMenuTray.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>856, 17</value>
   </metadata>
-  <data name="menuContextEdit.Size" type="System.Drawing.Size, System.Drawing">
-    <value>166, 22</value>
-  </data>
-  <data name="menuContextEdit.Text" xml:space="preserve">
-    <value>Edit...</value>
-  </data>
-  <data name="menuContextDisable.Size" type="System.Drawing.Size, System.Drawing">
-    <value>166, 22</value>
-  </data>
-  <data name="menuContextDisable.Text" xml:space="preserve">
-    <value>Disable Hosts File</value>
-  </data>
-  <data name="contextMenuExit.Size" type="System.Drawing.Size, System.Drawing">
-    <value>166, 22</value>
-  </data>
-  <data name="contextMenuExit.Text" xml:space="preserve">
-    <value>Exit</value>
-  </data>
   <data name="contextMenuTray.Size" type="System.Drawing.Size, System.Drawing">
     <value>167, 82</value>
   </data>
@@ -2631,6 +2694,24 @@
   </data>
   <data name="notifyIcon.Visible" type="System.Boolean, mscorlib">
     <value>True</value>
+  </data>
+  <data name="menuContextEdit.Size" type="System.Drawing.Size, System.Drawing">
+    <value>166, 22</value>
+  </data>
+  <data name="menuContextEdit.Text" xml:space="preserve">
+    <value>Edit...</value>
+  </data>
+  <data name="menuContextDisable.Size" type="System.Drawing.Size, System.Drawing">
+    <value>166, 22</value>
+  </data>
+  <data name="menuContextDisable.Text" xml:space="preserve">
+    <value>Disable Hosts File</value>
+  </data>
+  <data name="contextMenuExit.Size" type="System.Drawing.Size, System.Drawing">
+    <value>166, 22</value>
+  </data>
+  <data name="contextMenuExit.Text" xml:space="preserve">
+    <value>Exit</value>
   </data>
   <metadata name="openFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>192, 56</value>
@@ -4113,7 +4194,7 @@
     <value>labelLineCountNumber</value>
   </data>
   <data name="&gt;&gt;labelLineCountNumber.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=0.9.3.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;bindingSourceHostFile.Name" xml:space="preserve">
     <value>bindingSourceHostFile</value>
@@ -4131,7 +4212,7 @@
     <value>labelHostEntriesCount</value>
   </data>
   <data name="&gt;&gt;labelHostEntriesCount.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=0.9.3.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;columnValid.Name" xml:space="preserve">
     <value>columnValid</value>
@@ -4239,6 +4320,24 @@
     <value>menuContextInsertBelow</value>
   </data>
   <data name="&gt;&gt;menuContextInsertBelow.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator31.Name" xml:space="preserve">
+    <value>toolStripSeparator31</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator31.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;contextMenuCheck.Name" xml:space="preserve">
+    <value>contextMenuCheck</value>
+  </data>
+  <data name="&gt;&gt;contextMenuCheck.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;contextMenuUncheck.Name" xml:space="preserve">
+    <value>contextMenuUncheck</value>
+  </data>
+  <data name="&gt;&gt;contextMenuUncheck.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;bindingSourceView.Name" xml:space="preserve">
@@ -4617,7 +4716,7 @@
     <value>textFilter</value>
   </data>
   <data name="&gt;&gt;textFilter.Type" xml:space="preserve">
-    <value>HostsFileEditor.Controls.ToolStripSpringTextBox, HostsFileEditor, Version=0.9.1.0, Culture=neutral, PublicKeyToken=null</value>
+    <value>HostsFileEditor.Controls.ToolStripSpringTextBox, HostsFileEditor, Version=0.9.3.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
   <data name="&gt;&gt;toolStripSeparator19.Name" xml:space="preserve">
     <value>toolStripSeparator19</value>
@@ -4745,23 +4844,17 @@
   <data name="&gt;&gt;bindingSourceHostEntries.Type" xml:space="preserve">
     <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;contextMenuUncheck.Name" xml:space="preserve">
-    <value>contextMenuUncheck</value>
+  <data name="&gt;&gt;helpToolStripMenuItem.Name" xml:space="preserve">
+    <value>helpToolStripMenuItem</value>
   </data>
-  <data name="&gt;&gt;contextMenuUncheck.Type" xml:space="preserve">
+  <data name="&gt;&gt;helpToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
-  <data name="&gt;&gt;contextMenuCheck.Name" xml:space="preserve">
-    <value>contextMenuCheck</value>
+  <data name="&gt;&gt;aboutToolStripMenuItem.Name" xml:space="preserve">
+    <value>aboutToolStripMenuItem</value>
   </data>
-  <data name="&gt;&gt;contextMenuCheck.Type" xml:space="preserve">
+  <data name="&gt;&gt;aboutToolStripMenuItem.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripSeparator31.Name" xml:space="preserve">
-    <value>toolStripSeparator31</value>
-  </data>
-  <data name="&gt;&gt;toolStripSeparator31.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>MainForm</value>

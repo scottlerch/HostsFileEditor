@@ -1003,6 +1003,16 @@ namespace HostsFileEditor
             }
         }
 
+        /// <summary>
+        /// Called when about clicked.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private void OnAboutClick(object sender, EventArgs e)
+        {
+            (new AboutForm()).ShowDialog(this);
+        }
+
         #endregion
     }
 }
