@@ -90,7 +90,7 @@ namespace HostsFileEditor
         /// <summary>
         /// The pattern to match hostnames.
         /// </summary>
-        private const string MatchHostnames = @"(\w+\.)*(\w+)((\s)+(\w+\.)*(\w+))*";
+        private const string MatchHostnames = @"([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*";
 
         /// <summary>
         /// The pattern to match IP addresses.
