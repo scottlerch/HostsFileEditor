@@ -89,7 +89,7 @@ namespace HostsFileEditor
         private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e)
         {
             MessageBox.Show(
-                mainForm, 
+                null, 
                 e.Exception.Message, 
                 Resources.ErrorCaption, 
                 MessageBoxButtons.OK, 

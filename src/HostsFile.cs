@@ -105,7 +105,11 @@ namespace HostsFileEditor
             }
             else
             {
-                File.Copy(filePath, DefaultBackupHostFilePath, true);
+                using (FileEx.DisableAttributes(DefaultBackupHostFilePath, FileAttributes.ReadOnly))
+                {
+                    File.Copy(filePath, DefaultBackupHostFilePath, true);
+                }
+
                 this.Entries = new HostsEntryList(File.ReadAllLines(filePath), RemoveDefaultText);
             }
 
@@ -186,15 +190,21 @@ namespace HostsFileEditor
         /// </summary>
         public static void DisableHostsFile()
         {
-            File.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
+            using (FileEx.DisableAttributes(DefaultHostFilePath, FileAttributes.ReadOnly))
+            {
+                File.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
+            }
         }
 
         /// <summary>
-        /// The event arguments.able hosts file.
+        /// Enable hosts file.
         /// </summary>
         public static void EnableHostsFile()
         {
-            File.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
+            using (FileEx.DisableAttributes(DefaultDisabledHostFilePath, FileAttributes.ReadOnly))
+            {
+                File.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
+            }
         }
 
         /// <summary>
@@ -265,7 +275,12 @@ namespace HostsFileEditor
                 Directory.CreateDirectory(info.DirectoryName);
             }
 
-            File.WriteAllLines(saveFilePath, this.Entries.Select(entry => entry.UnparsedText).ToArray());
+            using (FileEx.DisableAttributes(saveFilePath, FileAttributes.ReadOnly))
+            {
+                File.WriteAllLines(
+                    saveFilePath,
+                    this.Entries.Select(entry => entry.UnparsedText));
+            }
         }
 
         /// <summary>

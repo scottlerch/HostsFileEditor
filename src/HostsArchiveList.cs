@@ -23,6 +23,7 @@ namespace HostsFileEditor
     using System.ComponentModel;
     using System.IO;
     using HostsFileEditor.Extensions;
+    using HostsFileEditor.Utilities;
 
     /// <summary>
     /// Hosts archive list.
@@ -63,7 +64,11 @@ namespace HostsFileEditor
         /// <param name="archive">The archive.</param>
         public void Delete(HostsArchive archive)
         {
-            File.Delete(archive.FilePath);
+            using (FileEx.DisableAttributes(archive.FilePath, FileAttributes.ReadOnly))
+            {
+                File.Delete(archive.FilePath);
+            }
+
             this.Remove(archive);
         }
 

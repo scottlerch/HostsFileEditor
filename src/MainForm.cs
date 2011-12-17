@@ -22,15 +22,15 @@ namespace HostsFileEditor
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text;
     using System.Windows.Forms;
     using Equin.ApplicationFramework;
     using HostsFileEditor.Extensions;
     using HostsFileEditor.Properties;
     using HostsFileEditor.Utilities;
-    using System.Text;
 
     /// <summary>
-    /// The main (and only form) for the application.
+    /// The main form for the application.
     /// </summary>
     internal partial class MainForm : Form
     {
