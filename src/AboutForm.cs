@@ -1,24 +1,50 @@
-﻿using System;
-using System.Reflection;
-using System.Windows.Forms;
+﻿// <copyright file="AboutForm.cs" company="N/A">
+// Copyright 2011 Scott M. Lerch
+// 
+// This file is part of HostsFileEditor.
+// 
+// HostsFileEditor is free software: you can redistribute it and/or modify it 
+// under the terms of the GNU General Public License as published by the Free 
+// Software Foundation, either version 2 of the License, or (at your option)
+// any later version.
+// 
+// HostsFileEditor is distributed in the hope that it will be useful, but 
+// WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+// or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+// more details.
+// 
+// You should have received a copy of the GNU General Public   License along
+// with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
+// </copyright>
 
 namespace HostsFileEditor
 {
+    using System;
+    using System.Reflection;
+    using System.Windows.Forms;
+
+    /// <summary>
+    /// The about dialog.
+    /// </summary>
     partial class AboutForm : Form
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AboutForm"/> class.
+        /// </summary>
         public AboutForm()
         {
-            InitializeComponent();
-            this.Text = String.Format("About {0}", AssemblyTitle);
+            this.InitializeComponent();
+
+            this.Text = string.Format("About {0}", AssemblyTitle);
             this.labelProductName.Text = AssemblyProduct;
-            this.labelVersion.Text = String.Format("Version {0}", AssemblyVersion);
+            this.labelVersion.Text = string.Format("Version {0}", AssemblyVersion);
             this.labelCopyright.Text = AssemblyCopyright;
-            this.labelCompanyName.Text = AssemblyCompany;
             this.textBoxDescription.Text = AssemblyDescription;
         }
 
-        #region Assembly Attribute Accessors
-
+        /// <summary>
+        /// Gets the assembly title.
+        /// </summary>
         public string AssemblyTitle
         {
             get
@@ -36,6 +62,9 @@ namespace HostsFileEditor
             }
         }
 
+        /// <summary>
+        /// Gets the assembly version.
+        /// </summary>
         public string AssemblyVersion
         {
             get
@@ -44,6 +73,9 @@ namespace HostsFileEditor
             }
         }
 
+        /// <summary>
+        /// Gets the assembly description.
+        /// </summary>
         public string AssemblyDescription
         {
             get
@@ -57,6 +89,9 @@ namespace HostsFileEditor
             }
         }
 
+        /// <summary>
+        /// Gets the assembly product.
+        /// </summary>
         public string AssemblyProduct
         {
             get
@@ -70,6 +105,9 @@ namespace HostsFileEditor
             }
         }
 
+        /// <summary>
+        /// Gets the assembly copyright.
+        /// </summary>
         public string AssemblyCopyright
         {
             get
@@ -83,6 +121,9 @@ namespace HostsFileEditor
             }
         }
 
+        /// <summary>
+        /// Gets the assembly company.
+        /// </summary>
         public string AssemblyCompany
         {
             get
@@ -95,6 +136,5 @@ namespace HostsFileEditor
                 return ((AssemblyCompanyAttribute)attributes[0]).Company;
             }
         }
-        #endregion
     }
 }

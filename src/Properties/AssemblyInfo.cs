@@ -25,11 +25,15 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Hosts File Editor")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription(
+    "Hosts File Editor makes it easy to change your hosts file as well as " +
+    "archive multiple versions for easy retrieval. It also includes " +
+    "features to ping IP addresses and enable/disable your hosts file " + 
+    "altogether. It's development in C# using the .NET 4.0 framework.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Scott M. Lerch")]
+[assembly: AssemblyCompany("N/A")]
 [assembly: AssemblyProduct("Hosts File Editor")]
-[assembly: AssemblyCopyright("Copyright © Scott M. Lerch 2011")]
+[assembly: AssemblyCopyright("Copyright © Scott Lerch 2011")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
