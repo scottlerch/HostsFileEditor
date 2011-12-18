@@ -93,6 +93,25 @@ namespace HostsFileEditor
         #region Methods
 
         /// <summary>
+        /// The window procedure.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        protected override void WndProc(ref Message message)
+        {
+            if (message.Msg == ProgramSingleInstance.WM_SHOWFIRSTINSTANCE)
+            {
+                if (this.WindowState == FormWindowState.Minimized)
+                {
+                    this.WindowState = FormWindowState.Normal;
+                }
+
+                this.ShowOrActivate();
+            }
+
+            base.WndProc(ref message);
+        } 
+
+        /// <summary>
         /// Called when archive clicked.
         /// </summary>
         /// <param name="sender">The sender.</param>

@@ -20,8 +20,6 @@
 namespace HostsFileEditor
 {
     using System;
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Windows.Forms;
 
@@ -50,11 +48,10 @@ namespace HostsFileEditor
         private static void Main()
         {
             // Ensure only one copy of the application is running at a time
-            bool createdNew;
-            using (new Mutex(true, "HostsFileEditor", out createdNew))
+            using (var program = ProgramSingleInstance.Start())
             {
-                if (createdNew)
-                {
+                if (program.IsOnlyInstance)
+                { 
                     Application.EnableVisualStyles();
                     Application.SetCompatibleTextRenderingDefault(false);
                     Application.ThreadException += OnApplicationThreadException;
@@ -64,15 +61,7 @@ namespace HostsFileEditor
                 }
                 else
                 {
-                    Process current = Process.GetCurrentProcess();
-                    foreach (Process process in Process.GetProcessesByName(current.ProcessName))
-                    {
-                        if (process.Id != current.Id)
-                        {
-                            NativeMethods.SetForegroundWindow(process.MainWindowHandle);
-                            break;
-                        }
-                    }
+                    program.ShowFirstInstance();
                 }
             }
         }
@@ -99,24 +88,5 @@ namespace HostsFileEditor
         }
 
         #endregion
-
-        /// <summary>
-        /// The native methods.
-        /// </summary>
-        private static class NativeMethods
-        {
-            /// <summary>
-            /// The set foreground window.
-            /// </summary>
-            /// <param name="hWnd">
-            /// The hardware instance.
-            /// </param>
-            /// <returns>
-            /// True is successful, false otherwise.
-            /// </returns>
-            [DllImport("user32.dll")]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool SetForegroundWindow(IntPtr hWnd);
-        }
     }
 }

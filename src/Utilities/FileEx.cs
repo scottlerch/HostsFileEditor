@@ -1,4 +1,4 @@
-﻿// <copyright file="Reflect.cs" company="N/A">
+﻿// <copyright file="FileEx.cs" company="N/A">
 // Copyright 2011 Scott M. Lerch
 // 
 // This file is part of HostsFileEditor.
