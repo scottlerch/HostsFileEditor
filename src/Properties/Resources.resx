@@ -303,4 +303,7 @@
   <data name="Uncheck" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Control_Box.bmp;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="InvalidHostnames" xml:space="preserve">
+    <value>Invalid host names</value>
+  </data>
 </root>

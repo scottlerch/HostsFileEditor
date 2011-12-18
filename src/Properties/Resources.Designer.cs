@@ -8,10 +8,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace HostsFileEditor.Properties
-{
-
-
+namespace HostsFileEditor.Properties {
+    using System;
+    
+    
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -218,6 +218,15 @@ namespace HostsFileEditor.Properties
         internal static string InvalidHostEntries {
             get {
                 return ResourceManager.GetString("InvalidHostEntries", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid host names.
+        /// </summary>
+        internal static string InvalidHostnames {
+            get {
+                return ResourceManager.GetString("InvalidHostnames", resourceCulture);
             }
         }
         

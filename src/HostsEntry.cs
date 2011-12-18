@@ -94,8 +94,9 @@ namespace HostsFileEditor
 
         /// <summary>
         /// The pattern to match IP addresses.
+        /// Just match all non-whitespace and let IPAddress class do the rest.
         /// </summary>
-        private const string MatchIpAddress = @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"; // doesn't handle ipv6
+        private const string MatchIpAddress = @"[^\s]+";
 
         /// <summary>
         /// The pattern to match valid host entry.
@@ -146,6 +147,16 @@ namespace HostsFileEditor
         private bool valid;
 
         /// <summary>
+        /// Determines if IP address is valid.
+        /// </summary>
+        private bool ipAddressValid;
+
+        /// <summary>
+        /// Determine if hostnames is valid.
+        /// </summary>
+        private bool hostnamesValid;
+
+        /// <summary>
         /// Object used to ping IP address for validation.
         /// </summary>
         private Ping ping;
@@ -189,6 +200,8 @@ namespace HostsFileEditor
                 if (match.Groups[Blank].Success)
                 {
                     this.valid = false;
+                    this.hostnamesValid = false;
+                    this.ipAddressValid = false;
                     this.enabled = false;
                 }
                 else if (match.Groups[LineComment].Success)
@@ -196,6 +209,8 @@ namespace HostsFileEditor
                     this.comment = match.Groups[LineComment].Value;
                     this.enabled = false;
                     this.valid = false;
+                    this.hostnamesValid = false;
+                    this.ipAddressValid = false;
                 }
                 else
                 {
@@ -208,6 +223,7 @@ namespace HostsFileEditor
                     this.hostnames = Regex.Replace(this.HostNames, @"[ ]{2,}", " ");
 
                     this.ValidateIpAddress();
+                    this.ValidateHostnames();
                 }
 
                 // Since comments usually have a space after # strip
@@ -233,6 +249,8 @@ namespace HostsFileEditor
             this.unparsedText = entry.unparsedText;
             this.unparsedTextInvalid = entry.unparsedTextInvalid;
             this.valid = entry.valid;
+            this.hostnamesValid = entry.hostnamesValid;
+            this.ipAddressValid = entry.ipAddressValid;
             this.errors = new Dictionary<string, string>(entry.errors);
         }
 
@@ -337,9 +355,9 @@ namespace HostsFileEditor
                 var local = this.hostnames;
                 UndoManager.Instance.AddActions(
                     undoAction: delegate { this.HostNames = local; },
-                    redoAction: delegate { this.HostNames = value; });
+                    redoAction: delegate { this.HostNames = value.Trim(); });
 
-                this.Update(ref this.hostnames, value, () => this.HostNames);
+                this.Update(ref this.hostnames, value.Trim(), () => this.HostNames, this.ValidateHostnames);
             }
         }
 
@@ -360,9 +378,9 @@ namespace HostsFileEditor
                 var local = this.ipAddress;
                 UndoManager.Instance.AddActions(
                     undoAction: delegate { this.IpAddress = local; },
-                    redoAction: delegate { this.IpAddress = value; });
+                    redoAction: delegate { this.IpAddress = value.Trim(); });
 
-                this.Update(ref this.ipAddress, value, () => this.IpAddress, this.ValidateIpAddress);
+                this.Update(ref this.ipAddress, value.Trim(), () => this.IpAddress, this.ValidateIpAddress);
             }
         }
 
@@ -387,6 +405,12 @@ namespace HostsFileEditor
                             this.IpAddress,
                             this.HostNames,
                             this.Comment.Trim() != string.Empty ? " # " + this.Comment : string.Empty);
+                    }
+
+                    // Comment out invalid lines so the hosts file still works
+                    if (!this.valid)
+                    {
+                        this.unparsedText = "#" + this.unparsedText;
                     }
 
                     this.unparsedTextInvalid = false;
@@ -567,28 +591,63 @@ namespace HostsFileEditor
         }
 
         /// <summary>
+        /// Validates the hostnames.
+        /// </summary>
+        private void ValidateHostnames()
+        {
+            if (string.IsNullOrWhiteSpace(this.hostnames) && !this.enabled)
+            {
+                this.errors[Reflect.GetPropertyName(() => this.HostNames)] = string.Empty;
+                this.hostnamesValid = true;
+            }
+            else
+            {
+                this.hostnamesValid = Regex.IsMatch(this.hostnames, "^" + MatchHostnames + "$");
+
+                if (!this.hostnamesValid)
+                {
+                    this.errors[Reflect.GetPropertyName(() => this.HostNames)] = Resources.InvalidHostnames;
+                }
+                else
+                {
+                    this.errors[Reflect.GetPropertyName(() => this.HostNames)] = string.Empty;
+                }
+            }
+
+            this.valid = this.ipAddressValid && this.hostnamesValid;
+        }
+
+        /// <summary>
         /// Validates the IP address.
         /// </summary>
         private void ValidateIpAddress()
         {
-            IPAddress dummy;
-            bool ipValid = IPAddress.TryParse(this.IpAddress, out dummy);
-
-            if (!ipValid)
+            if (string.IsNullOrWhiteSpace(this.ipAddress) && !this.enabled)
             {
-                this.errors[Reflect.GetPropertyName(() => this.IpAddress)] = Resources.InvalidIPAddress;
+                this.errors[Reflect.GetPropertyName(() => this.IpAddress)] = string.Empty;
+                this.valid = false;
             }
             else
             {
-                this.errors[Reflect.GetPropertyName(() => this.IpAddress)] = string.Empty;
+                IPAddress dummy;
+                this.ipAddressValid = IPAddress.TryParse(this.IpAddress, out dummy);
 
-                if (AutoPingIPAddress)
+                if (!this.ipAddressValid)
                 {
-                    this.Ping();
+                    this.errors[Reflect.GetPropertyName(() => this.IpAddress)] = Resources.InvalidIPAddress;
+                }
+                else
+                {
+                    this.errors[Reflect.GetPropertyName(() => this.IpAddress)] = string.Empty;
+
+                    if (AutoPingIPAddress)
+                    {
+                        this.Ping();
+                    }
                 }
             }
 
-            this.valid = ipValid;
+            this.valid = this.ipAddressValid && this.hostnamesValid;
         }
 
         /// <summary>
