@@ -224,6 +224,18 @@ namespace HostsFileEditor
 
                     this.ValidateIpAddress();
                     this.ValidateHostnames();
+
+                    // IP address or hostnames are not valid so
+                    // disable hosts entry and reset comment to entire line
+                    if (!this.valid)
+                    {
+                        this.enabled = false;
+                        this.hostnames = string.Empty;
+                        this.ipAddress = string.Empty;
+                        this.errors.Clear();
+                        this.comment = this.unparsedText.TrimStart(' ', '\t', '#');
+                        this.unparsedTextInvalid = false;
+                    }
                 }
 
                 // Since comments usually have a space after # strip
