@@ -33,7 +33,7 @@
         }
         "Entry"
         {
-        "MsmKey" = "8:_A977BD81273F9B7AD333D70D66CB88CC"
+        "MsmKey" = "8:_C49ADFC3A93CC41C749F78D61517A0B0"
         "OwnerKey" = "8:_C5FB5228BF414BCCA3EFD8B342F25A4C"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -52,13 +52,13 @@
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_69830AA40F2240F0BADC14801AADB2E7"
+        "OwnerKey" = "8:_C49ADFC3A93CC41C749F78D61517A0B0"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
         "MsmKey" = "8:_UNDEFINED"
-        "OwnerKey" = "8:_A977BD81273F9B7AD333D70D66CB88CC"
+        "OwnerKey" = "8:_69830AA40F2240F0BADC14801AADB2E7"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -220,13 +220,18 @@
             "IsDependency" = "11:FALSE"
             "IsolateTo" = "8:"
             }
-            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_A977BD81273F9B7AD333D70D66CB88CC"
+            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_C49ADFC3A93CC41C749F78D61517A0B0"
             {
             "AssemblyRegister" = "3:1"
             "AssemblyIsInGAC" = "11:FALSE"
-            "AssemblyAsmDisplayName" = "8:Equin.ApplicationFramework.BindingListView, Version=1.2.4291.29335, Culture=neutral, processorArchitecture=MSIL"
+            "AssemblyAsmDisplayName" = "8:Equin.ApplicationFramework.BindingListView, Version=1.2.4300.36600, Culture=neutral, processorArchitecture=MSIL"
                 "ScatterAssemblies"
                 {
+                    "_C49ADFC3A93CC41C749F78D61517A0B0"
+                    {
+                    "Name" = "8:Equin.ApplicationFramework.BindingListView.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:Equin.ApplicationFramework.BindingListView.dll"
             "TargetName" = "8:"
@@ -313,15 +318,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Hosts File Editor"
-        "ProductCode" = "8:{74AAFE21-0D76-434C-A002-2104AADCBD8D}"
-        "PackageCode" = "8:{A71237F5-3D2B-40A8-80E9-327DB9D21A93}"
+        "ProductCode" = "8:{EC9CF3E9-3C14-43D6-B9D0-5B4232926FAC}"
+        "PackageCode" = "8:{19A11A77-37BE-47A7-BCCB-61B39E1995F7}"
         "UpgradeCode" = "8:{3A4F4E01-1C91-4562-8C04-5F4273501698}"
         "AspNetVersion" = "8:4.0.30319.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:0.9.3"
+        "ProductVersion" = "8:1.0.0"
         "Manufacturer" = "8:Scott Lerch"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -924,7 +929,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_69830AA40F2240F0BADC14801AADB2E7"
             {
-            "SourcePath" = "8:NGenInstallCustomAction\\obj\\Release\\NGenInstallCustomAction.dll"
+            "SourcePath" = "8:NGenInstallCustomAction\\obj\\Debug\\NGenInstallCustomAction.dll"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_2603C1F17F2842338226205731674EE2"
@@ -980,7 +985,7 @@
             }
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_C5FB5228BF414BCCA3EFD8B342F25A4C"
             {
-            "SourcePath" = "8:..\\src\\obj\\Release\\HostsFileEditor.exe"
+            "SourcePath" = "8:..\\src\\obj\\Debug\\HostsFileEditor.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_2603C1F17F2842338226205731674EE2"
