@@ -22,6 +22,8 @@ namespace HostsFileEditor
     using System;
     using System.Threading;
     using HostsFileEditor.Win32;
+    using System.Threading.Tasks;
+    using System.Diagnostics;
 
     /// <summary>
     /// Helper class to enforce single instance of a program.
@@ -78,6 +80,17 @@ namespace HostsFileEditor
         /// </summary>
         public void ShowFirstInstance()
         {
+            // HACK: the second process won't return from SendMessage
+            // so kill process after a few seconds
+            Task.Factory.StartNew(() => 
+            {
+                Thread.Sleep(5000);
+                Process.GetCurrentProcess().Kill();
+            });
+
+            // Must use SendMessage instead of PostMessage so the
+            // first instance can still receive the message even
+            // if it's minimized to tray bar
             NativeMethods.SendMessage(
                 (IntPtr)NativeMethods.HWND_BROADCAST,
                 WM_SHOWFIRSTINSTANCE,
