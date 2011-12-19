@@ -139,12 +139,24 @@ namespace HostsFileEditor
 
                 if (insertIndex >= 0)
                 {
-                    this.Remove(copy);
-
-                    foreach (HostsEntry entry in copy)
+                    UndoManager.Instance.BatchActions(() =>
                     {
-                        this.Insert(insertIndex++, entry);
-                    }
+                        this.Remove(copy);
+
+                        if (insertIndex > this.Count)
+                        {
+                            insertIndex = this.Count;
+                        }
+                        else if (insertIndex < 0)
+                        {
+                            insertIndex = 0;
+                        }
+
+                        foreach (HostsEntry entry in copy)
+                        {
+                            this.Insert(insertIndex++, entry);
+                        }
+                    });
                 }
             });
         }
@@ -169,12 +181,24 @@ namespace HostsFileEditor
 
                 if (insertIndex < this.Count)
                 {
-                    this.Remove(copy);
-
-                    foreach (HostsEntry entry in copy)
+                    UndoManager.Instance.BatchActions(() =>
                     {
-                        this.Insert(insertIndex++, entry);
-                    }
+                        this.Remove(copy);
+
+                        if (insertIndex > this.Count)
+                        {
+                            insertIndex = this.Count;
+                        }
+                        else if (insertIndex < 0)
+                        {
+                            insertIndex = 0;
+                        }
+
+                        foreach (HostsEntry entry in copy)
+                        {
+                            this.Insert(insertIndex++, entry);
+                        }
+                    });
                 }
             });
         }
@@ -223,10 +247,14 @@ namespace HostsFileEditor
             entry.ThrowIfNull("entries");
 
             int insertIndex = this.IndexOf(entry);
-            foreach (var newEntry in entries.ToList())
+
+            UndoManager.Instance.BatchActions(() =>
             {
-                this.Insert(insertIndex++, newEntry);
-            }
+                foreach (var newEntry in entries.ToList())
+                {
+                    this.Insert(insertIndex++, newEntry);
+                }
+            });
         }
 
         /// <summary>
@@ -244,10 +272,13 @@ namespace HostsFileEditor
 
             this.BatchUpdate(() =>
             {
-                foreach (HostsEntry entry in entries.ToList())
+                UndoManager.Instance.BatchActions(() =>
                 {
-                    this.Remove(entry);
-                }
+                    foreach (HostsEntry entry in entries.ToList())
+                    {
+                        this.Remove(entry);
+                    }
+                });
             });
         }
 
@@ -260,36 +291,23 @@ namespace HostsFileEditor
         }
 
         /// <summary>
-        /// Unchecks the specified hosts entries.
-        /// </summary>
-        /// <param name="hostsEntries">The hosts entries.</param>
-        public void Uncheck(IEnumerable<HostsEntry> entries)
-        {
-            entries.ThrowIfNull("entries");
-
-            this.BatchUpdate(() =>
-            {
-                foreach (HostsEntry entry in entries)
-                {
-                    entry.Enabled = false;
-                }
-            });
-        }
-
-        /// <summary>
         /// Checks the specified hosts entries.
         /// </summary>
-        /// <param name="hostsEntries">The hosts entries.</param>
-        public void Check(IEnumerable<HostsEntry> entries)
+        /// <param name="entries">The entries.</param>
+        /// <param name="?">if set to <c>true</c> check items.</param>
+        public void SetEnabled(IEnumerable<HostsEntry> entries, bool isEnabled)
         {
             entries.ThrowIfNull("entries");
 
             this.BatchUpdate(() =>
             {
-                foreach (HostsEntry entry in entries)
+                UndoManager.Instance.BatchActions(() =>
                 {
-                    entry.Enabled = true;
-                }
+                    foreach (HostsEntry entry in entries)
+                    {
+                        entry.Enabled = isEnabled;
+                    }
+                });
             });
         }
 

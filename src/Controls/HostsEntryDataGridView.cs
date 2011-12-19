@@ -74,13 +74,34 @@ namespace HostsFileEditor.Controls
         /// </summary>
         public IEnumerable<HostsEntry> SelectedHostEntries
         {
-            get 
-            { 
+            get
+            {
                 return this.SelectedRows
                     .Cast<DataGridViewRow>()
                     .Select(row => row.DataBoundItem as ObjectView<HostsEntry>)
                     .Where(view => view != null && view.Object != null)
-                    .Select(view => view.Object); 
+                    .Select(view => view.Object);
+            }
+
+            set
+            {
+                foreach (var row in this.Rows.Cast<DataGridViewRow>())
+                {
+                    if (row.DataBoundItem != null && row.Index < this.RowCount)
+                    {
+                        var hostEntryView = row.DataBoundItem as ObjectView<HostsEntry>;
+
+                        if (hostEntryView != null &&
+                            value.Contains(hostEntryView.Object))
+                        {
+                            row.Selected = true;
+                        }
+                        else
+                        {
+                            row.Selected = false;
+                        }
+                    }
+                }
             }
         }
 
@@ -207,15 +228,15 @@ namespace HostsFileEditor.Controls
                 if (this.currentSortState > 2)
                 {
                     this.BeginInvoke(
-                        (MethodInvoker)delegate() 
-                        { 
+                        (MethodInvoker)delegate()
+                        {
                             Application.DoEvents();
                             if (this.ClearSort != null)
                             {
                                 this.ClearSort();
                             }
                         });
-                    
+
                     this.currentSortState = 0;
                     this.lastSortedColumn = null;
                 }

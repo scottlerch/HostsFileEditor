@@ -600,22 +600,28 @@ namespace HostsFileEditor
         /// <param name="e">
         /// The event arguments.
         /// </param>
-        /// <exception cref="NotImplementedException">
-        /// Feature not implemented.
-        /// </exception>
         private void OnMoveDownClick(object sender, EventArgs e)
         {
             if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
             {
+                var selectedEntries = this.dataGridViewHostsEntries.SelectedHostEntries.ToList();
+
                 HostsFile.Instance.Entries.MoveAfter(
                     this.dataGridViewHostsEntries.SelectedHostEntries,
                     this.dataGridViewHostsEntries.FirstSelectedHostEntry);
+
+                this.dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
             else if (this.dataGridViewHostsEntries.CurrentHostEntry != null)
             {
+                var selectedEntries = new List<HostsEntry>(
+                    new[] { this.dataGridViewHostsEntries.CurrentHostEntry });
+
                 HostsFile.Instance.Entries.MoveAfter(
                     new[] { this.dataGridViewHostsEntries.CurrentHostEntry },
                     this.dataGridViewHostsEntries.CurrentHostEntry);
+
+                this.dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
 
@@ -628,22 +634,28 @@ namespace HostsFileEditor
         /// <param name="e">
         /// The event arguments.
         /// </param>
-        /// <exception cref="NotImplementedException">
-        /// Feature not implemented.
-        /// </exception>
         private void OnMoveUpClick(object sender, EventArgs e)
         {
             if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
             {
+                var selectedEntries = this.dataGridViewHostsEntries.SelectedHostEntries.ToList();
+
                 HostsFile.Instance.Entries.MoveBefore(
                      this.dataGridViewHostsEntries.SelectedHostEntries,
                      this.dataGridViewHostsEntries.LastSelectedHostEntry);
+
+                this.dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
             else if (this.dataGridViewHostsEntries.CurrentHostEntry != null)
             {
+                var selectedEntries = new List<HostsEntry>(
+                    new[] { this.dataGridViewHostsEntries.CurrentHostEntry });
+
                 HostsFile.Instance.Entries.MoveBefore(
                     new[] { this.dataGridViewHostsEntries.CurrentHostEntry },
                     this.dataGridViewHostsEntries.CurrentHostEntry);
+
+                this.dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
 
@@ -991,13 +1003,15 @@ namespace HostsFileEditor
 
             if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
             {
-                HostsFile.Instance.Entries.Check(
-                     this.dataGridViewHostsEntries.SelectedHostEntries);
+                HostsFile.Instance.Entries.SetEnabled(
+                     this.dataGridViewHostsEntries.SelectedHostEntries,
+                     isEnabled: true);
             }
             else if (this.dataGridViewHostsEntries.CurrentHostEntry != null)
             {
-                HostsFile.Instance.Entries.Check(
-                    new [] { this.dataGridViewHostsEntries.CurrentHostEntry });
+                HostsFile.Instance.Entries.SetEnabled(
+                    new [] { this.dataGridViewHostsEntries.CurrentHostEntry },
+                    isEnabled: true);
             }
         }
 
@@ -1012,13 +1026,15 @@ namespace HostsFileEditor
 
             if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
             {
-                HostsFile.Instance.Entries.Uncheck(
-                     this.dataGridViewHostsEntries.SelectedHostEntries);
+                HostsFile.Instance.Entries.SetEnabled(
+                     this.dataGridViewHostsEntries.SelectedHostEntries,
+                     isEnabled: false);
             }
             else if (this.dataGridViewHostsEntries.CurrentHostEntry != null)
             {
-                HostsFile.Instance.Entries.Uncheck(
-                    new [] { this.dataGridViewHostsEntries.CurrentHostEntry });
+                HostsFile.Instance.Entries.SetEnabled(
+                    new [] { this.dataGridViewHostsEntries.CurrentHostEntry },
+                    isEnabled: false);
             }
         }
 
