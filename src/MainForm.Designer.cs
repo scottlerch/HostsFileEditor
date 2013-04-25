@@ -145,6 +145,8 @@ namespace HostsFileEditor
             this.menuTools = new System.Windows.Forms.ToolStripMenuItem();
             this.menuPingIPs = new System.Windows.Forms.ToolStripMenuItem();
             this.menuRemoveDefaultText = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip = new HostsFileEditor.Controls.ToolStripEx();
             this.buttonSave = new System.Windows.Forms.ToolStripButton();
             this.buttonRefresh = new System.Windows.Forms.ToolStripButton();
@@ -173,8 +175,8 @@ namespace HostsFileEditor
             this.contextMenuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.bindingSourceHostEntries = new System.Windows.Forms.BindingSource(this.components);
-            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.modsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.importModsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator22 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator23 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
@@ -237,8 +239,8 @@ namespace HostsFileEditor
             // 
             // toolStripContainer.TopToolStripPanel
             // 
-            this.toolStripContainer.TopToolStripPanel.Controls.Add(this.menuStrip);
             this.toolStripContainer.TopToolStripPanel.Controls.Add(this.toolStrip);
+            this.toolStripContainer.TopToolStripPanel.Controls.Add(this.menuStrip);
             // 
             // statusStrip
             // 
@@ -557,6 +559,7 @@ namespace HostsFileEditor
             this.editToolStripMenuItem,
             this.viewToolStripMenuItem,
             this.menuTools,
+            this.modsToolStripMenuItem,
             this.helpToolStripMenuItem});
             this.menuStrip.Name = "menuStrip";
             // 
@@ -868,6 +871,19 @@ namespace HostsFileEditor
             resources.ApplyResources(this.menuRemoveDefaultText, "menuRemoveDefaultText");
             this.menuRemoveDefaultText.Click += new System.EventHandler(this.OnRemoveDefaultTextClick);
             // 
+            // helpToolStripMenuItem
+            // 
+            this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.aboutToolStripMenuItem});
+            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            resources.ApplyResources(this.helpToolStripMenuItem, "helpToolStripMenuItem");
+            // 
+            // aboutToolStripMenuItem
+            // 
+            this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
+            resources.ApplyResources(this.aboutToolStripMenuItem, "aboutToolStripMenuItem");
+            this.aboutToolStripMenuItem.Click += new System.EventHandler(this.OnAboutClick);
+            // 
             // toolStrip
             // 
             this.toolStrip.ClickThrough = true;
@@ -1098,18 +1114,18 @@ namespace HostsFileEditor
             // 
             this.bindingSourceHostEntries.DataSource = typeof(HostsFileEditor.HostsEntryList);
             // 
-            // helpToolStripMenuItem
+            // modsToolStripMenuItem
             // 
-            this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.aboutToolStripMenuItem});
-            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
-            resources.ApplyResources(this.helpToolStripMenuItem, "helpToolStripMenuItem");
+            this.modsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.importModsToolStripMenuItem});
+            this.modsToolStripMenuItem.Name = "modsToolStripMenuItem";
+            resources.ApplyResources(this.modsToolStripMenuItem, "modsToolStripMenuItem");
             // 
-            // aboutToolStripMenuItem
+            // importModsToolStripMenuItem
             // 
-            this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            resources.ApplyResources(this.aboutToolStripMenuItem, "aboutToolStripMenuItem");
-            this.aboutToolStripMenuItem.Click += new System.EventHandler(this.OnAboutClick);
+            this.importModsToolStripMenuItem.Name = "importModsToolStripMenuItem";
+            resources.ApplyResources(this.importModsToolStripMenuItem, "importModsToolStripMenuItem");
+            this.importModsToolStripMenuItem.Click += new System.EventHandler(this.importModsToolStripMenuItem_Click);
             // 
             // MainForm
             // 
@@ -1256,6 +1272,8 @@ namespace HostsFileEditor
         private System.Windows.Forms.ToolStripMenuItem contextMenuUncheck;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem modsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem importModsToolStripMenuItem;
     }
 }
 

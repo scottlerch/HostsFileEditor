@@ -1049,5 +1049,16 @@ namespace HostsFileEditor
         }
 
         #endregion
+
+        private void importModsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            DialogResult result = this.openFileDialog.ShowDialog(this);
+
+            if (result == DialogResult.OK)
+            {
+                HostsFile.Instance.Import(
+                    this.openFileDialog.FileName);
+            }
+        }
     }
 }
