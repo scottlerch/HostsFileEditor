@@ -1097,6 +1097,7 @@ namespace HostsFileEditor
             if (mod != null)
             {
                 HostsFile.Instance.ImportMod(mod.FilePath);
+                MessageBox.Show("Mod " + mod.FileName + " imported.", this.Text);
             }
         }
 
