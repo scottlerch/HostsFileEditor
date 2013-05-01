@@ -233,6 +233,16 @@ namespace HostsFileEditor
         /// </param>
         public void ImportMod(string importModFilePath)
         {
+            if (this.filePath != importModFilePath)
+            {
+                this.Entries.BatchUpdate(() =>
+                    {
+                        foreach (HostsEntry entryLine in this.Entries)
+                        {
+                            this.Entries.UpdateLines(File.ReadAllLines(importModFilePath), RemoveDefaultText);
+                        }
+                    });
+            }
 
         }
 

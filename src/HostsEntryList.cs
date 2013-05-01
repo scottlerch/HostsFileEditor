@@ -120,6 +120,47 @@ namespace HostsFileEditor
         }
 
         /// <summary>
+        /// Update lines
+        /// </summary>
+        /// <param name="lines"></param>
+        /// <param name="removeDefault"></param>
+        public void UpdateLines(IEnumerable<string> lines, bool removeDefault = true)
+        {
+            lines.ThrowIfNull("lines");
+
+            UndoManager.Instance.SuspendUndoRedo(() =>
+            {
+                int index = 0;
+                bool foundLine = false;
+                foreach (string line in lines)
+                {
+                    bool isDefaultLine =
+                        index < DefaultLines.Length &&
+                        line.Trim() == DefaultLines[index++].Trim();
+
+                    if (!removeDefault || !isDefaultLine)
+                    {
+                        HostsEntry ModLine = new HostsEntry(line);
+                        foreach (HostsEntry entryline in this)
+                        {
+                            if (entryline.HostNames == ModLine.HostNames)
+                            {
+                                entryline.Update(ModLine);
+                                foundLine = true;
+                                //no need to keep going through all the entries
+                                break; 
+                            }
+                        }
+                        if (!foundLine)
+                        {
+                            this.Add(new HostsEntry(line));
+                        }
+                    }
+                }
+            });
+        }
+
+        /// <summary>
         /// Move items before specified item.
         /// </summary>
         /// <param name="entries">The entries to move.</param>
