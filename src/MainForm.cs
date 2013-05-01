@@ -1096,8 +1096,7 @@ namespace HostsFileEditor
 
             if (mod != null)
             {
-                //need to add a ImportMod so it doesn't clear the current host's file entries.
-                //HostsFile.Instance.Import(mod.FilePath);
+                HostsFile.Instance.ImportMod(mod.FilePath);
             }
         }
 

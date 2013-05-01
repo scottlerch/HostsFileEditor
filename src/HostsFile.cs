@@ -237,10 +237,8 @@ namespace HostsFileEditor
             {
                 this.Entries.BatchUpdate(() =>
                     {
-                        foreach (HostsEntry entryLine in this.Entries)
-                        {
-                            this.Entries.UpdateLines(File.ReadAllLines(importModFilePath), RemoveDefaultText);
-                        }
+                        this.Entries.UpdateLines(File.ReadAllLines(importModFilePath), RemoveDefaultText);
+                        
                     });
             }
 

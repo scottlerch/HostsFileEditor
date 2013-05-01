@@ -131,9 +131,10 @@ namespace HostsFileEditor
             UndoManager.Instance.SuspendUndoRedo(() =>
             {
                 int index = 0;
-                bool foundLine = false;
+                
                 foreach (string line in lines)
                 {
+                    bool foundLine = false;
                     bool isDefaultLine =
                         index < DefaultLines.Length &&
                         line.Trim() == DefaultLines[index++].Trim();
