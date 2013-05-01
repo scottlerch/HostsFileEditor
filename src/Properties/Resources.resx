@@ -306,4 +306,7 @@
   <data name="InvalidHostnames" xml:space="preserve">
     <value>Invalid host names</value>
   </data>
+  <data name="ModExists" xml:space="preserve">
+    <value>Mod name already exists!</value>
+  </data>
 </root>

@@ -226,6 +226,17 @@ namespace HostsFileEditor
         }
 
         /// <summary>
+        /// Import all new lines, and update exisiting lines
+        /// </summary>
+        /// <param name="importModFilePath">
+        /// The Import Modification's file path
+        /// </param>
+        public void ImportMod(string importModFilePath)
+        {
+
+        }
+
+        /// <summary>
         /// Archives the specified name.
         /// </summary>
         /// <param name="name">The name.</param>

@@ -86,6 +86,9 @@
     <Compile Include="Controls\HostsArchiveDataGridView.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Controls\HostsModDataGridView.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Controls\MenuStripEx.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -95,6 +98,8 @@
     <Compile Include="Controls\ToolStripSpringTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="HostsModList.cs" />
+    <Compile Include="HostsMod.cs" />
     <Compile Include="Extensions\BindingListExtensions.cs" />
     <Compile Include="Extensions\ReferenceExtensions.cs" />
     <Compile Include="Extensions\FormExtensions.cs" />
@@ -156,6 +161,7 @@
     <None Include="Properties\DataSources\HostsEntryList.datasource" />
     <None Include="Properties\DataSources\HostsArchiveList.datasource" />
     <None Include="Properties\DataSources\HostsFile.datasource" />
+    <None Include="Properties\DataSources\HostsModList.datasource" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

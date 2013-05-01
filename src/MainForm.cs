@@ -1060,5 +1060,36 @@ namespace HostsFileEditor
                     this.openFileDialog.FileName);
             }
         }
+
+        /// <summary>
+        /// Called when mod load clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnModLoadClick(object sender, EventArgs e)
+        {
+            HostsMod mod = this.dataGridViewMod.CurrentHostsMod;
+
+            if (mod != null)
+            {
+                //need to add a ImportMod so it doesn't clear the current host's file entries.
+                //HostsFile.Instance.Import(mod.FilePath);
+            }
+        }
+
+        /// <summary>
+        /// Called when mod delete clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnModDeleteClick(object sender, EventArgs e)
+        {
+            HostsMod mod = this.dataGridViewMod.CurrentHostsMod;
+
+            if (mod != null)
+            {
+                HostsModList.Instance.Delete(mod);
+            }
+        }
     }
 }
