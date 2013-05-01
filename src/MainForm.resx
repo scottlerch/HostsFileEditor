@@ -379,7 +379,7 @@
     <value>25</value>
   </data>
   <data name="dataGridViewHostsEntries.Size" type="System.Drawing.Size, System.Drawing">
-    <value>982, 542</value>
+    <value>981, 542</value>
   </data>
   <data name="dataGridViewHostsEntries.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -481,7 +481,7 @@
     <value>0, 173</value>
   </data>
   <data name="toolStripMod.Size" type="System.Drawing.Size, System.Drawing">
-    <value>174, 25</value>
+    <value>175, 25</value>
   </data>
   <data name="toolStripMod.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -517,7 +517,7 @@
     <value>4, 4, 4, 4</value>
   </data>
   <data name="dataGridViewArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>174, 148</value>
+    <value>175, 148</value>
   </data>
   <data name="dataGridViewArchive.TabIndex" type="System.Int32, mscorlib">
     <value>1</value>
@@ -574,7 +574,7 @@
     <value>0, 0</value>
   </data>
   <data name="toolStripArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>174, 25</value>
+    <value>175, 25</value>
   </data>
   <data name="toolStripArchive.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -610,7 +610,7 @@
     <value>1161, 542</value>
   </data>
   <data name="splitContainer.SplitterDistance" type="System.Int32, mscorlib">
-    <value>982</value>
+    <value>981</value>
   </data>
   <data name="splitContainer.SplitterWidth" type="System.Int32, mscorlib">
     <value>5</value>
@@ -763,10 +763,10 @@
     <value>Magenta</value>
   </data>
   <data name="buttonViewArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>114, 24</value>
+    <value>163, 24</value>
   </data>
   <data name="buttonViewArchive.Text" xml:space="preserve">
-    <value>View Archive</value>
+    <value>View Archives/Mods</value>
   </data>
   <metadata name="toolStripSeparator33.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
@@ -796,7 +796,7 @@
     <value>Filter Disabled</value>
   </data>
   <data name="textFilter.Size" type="System.Drawing.Size, System.Drawing">
-    <value>454, 27</value>
+    <value>405, 27</value>
   </data>
   <metadata name="toolStripSeparator19.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
