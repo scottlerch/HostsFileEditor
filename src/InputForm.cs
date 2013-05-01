@@ -35,6 +35,16 @@ namespace HostsFileEditor
             InitializeComponent();
 
             this.buttonOk.Enabled = false;
+            isMod = false; //assume it isn't a mod save request.
+        }
+
+        /// <summary>
+        /// Gets or sets the mod bool
+        /// </summary>
+        public bool isMod
+        {
+            get;
+            set;
         }
 
         /// <summary>
@@ -85,7 +95,14 @@ namespace HostsFileEditor
         private void OnTextChanged(object sender, EventArgs e)
         {
             string error;
-            this.buttonOk.Enabled = HostsArchive.Validate(this.Input, out error);
+            if (isMod)
+            {
+                this.buttonOk.Enabled = HostsMod.Validate(this.Input, out error);
+            }
+            else
+            {
+                this.buttonOk.Enabled = HostsArchive.Validate(this.Input, out error);
+            }
             this.errorProvider.SetError(this.textBox, error);
         }
     }

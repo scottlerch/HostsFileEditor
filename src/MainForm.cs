@@ -150,7 +150,7 @@ namespace HostsFileEditor
             {
                 inputDialog.Text = this.Text;
                 inputDialog.Prompt = Resources.InputModPrompt;
-
+                inputDialog.isMod = true;
                 DialogResult result = inputDialog.ShowDialog(this);
 
                 if (result == DialogResult.OK)
