@@ -1115,5 +1115,16 @@ namespace HostsFileEditor
                 HostsModList.Instance.Delete(mod);
             }
         }
+
+
+        /// <summary>
+        /// An option to download mods from a server address
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void getModsFromServerToolClick(object sender, EventArgs e)
+        {
+            GetHostsFileFromServer.GetListOfHostsFilesFromServer();
+        }
     }
 }

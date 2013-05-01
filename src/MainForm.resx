@@ -379,7 +379,7 @@
     <value>25</value>
   </data>
   <data name="dataGridViewHostsEntries.Size" type="System.Drawing.Size, System.Drawing">
-    <value>981, 542</value>
+    <value>980, 542</value>
   </data>
   <data name="dataGridViewHostsEntries.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -481,7 +481,7 @@
     <value>0, 173</value>
   </data>
   <data name="toolStripMod.Size" type="System.Drawing.Size, System.Drawing">
-    <value>175, 25</value>
+    <value>176, 25</value>
   </data>
   <data name="toolStripMod.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -517,7 +517,7 @@
     <value>4, 4, 4, 4</value>
   </data>
   <data name="dataGridViewArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>175, 148</value>
+    <value>176, 148</value>
   </data>
   <data name="dataGridViewArchive.TabIndex" type="System.Int32, mscorlib">
     <value>1</value>
@@ -574,7 +574,7 @@
     <value>0, 0</value>
   </data>
   <data name="toolStripArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>175, 25</value>
+    <value>176, 25</value>
   </data>
   <data name="toolStripArchive.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -610,7 +610,7 @@
     <value>1161, 542</value>
   </data>
   <data name="splitContainer.SplitterDistance" type="System.Int32, mscorlib">
-    <value>981</value>
+    <value>980</value>
   </data>
   <data name="splitContainer.SplitterWidth" type="System.Int32, mscorlib">
     <value>5</value>
@@ -1120,16 +1120,22 @@
     <value>&amp;View</value>
   </data>
   <data name="menuPingIPs.Size" type="System.Drawing.Size, System.Drawing">
-    <value>217, 24</value>
+    <value>225, 24</value>
   </data>
   <data name="menuPingIPs.Text" xml:space="preserve">
     <value>&amp;Auto Ping IPs</value>
   </data>
   <data name="menuRemoveDefaultText.Size" type="System.Drawing.Size, System.Drawing">
-    <value>217, 24</value>
+    <value>225, 24</value>
   </data>
   <data name="menuRemoveDefaultText.Text" xml:space="preserve">
     <value>&amp;Remove Default Text</value>
+  </data>
+  <data name="getModsFromServerToolStripMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>225, 24</value>
+  </data>
+  <data name="getModsFromServerToolStripMenuItem.Text" xml:space="preserve">
+    <value>Get Mods From Server</value>
   </data>
   <data name="menuTools.Size" type="System.Drawing.Size, System.Drawing">
     <value>57, 24</value>
@@ -4951,6 +4957,12 @@
   </data>
   <data name="&gt;&gt;bindingSourceHostEntries.Type" xml:space="preserve">
     <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;getModsFromServerToolStripMenuItem.Name" xml:space="preserve">
+    <value>getModsFromServerToolStripMenuItem</value>
+  </data>
+  <data name="&gt;&gt;getModsFromServerToolStripMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;$this.Name" xml:space="preserve">
     <value>MainForm</value>

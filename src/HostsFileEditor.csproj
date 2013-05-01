@@ -98,6 +98,7 @@
     <Compile Include="Controls\ToolStripSpringTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="GetHostsFileFromServer.cs" />
     <Compile Include="HostsModList.cs" />
     <Compile Include="HostsMod.cs" />
     <Compile Include="Extensions\BindingListExtensions.cs" />

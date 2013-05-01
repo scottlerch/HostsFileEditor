@@ -184,6 +184,7 @@ namespace HostsFileEditor
             this.contextMenuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.bindingSourceHostEntries = new System.Windows.Forms.BindingSource(this.components);
+            this.getModsFromServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator22 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator23 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
@@ -1060,7 +1061,8 @@ namespace HostsFileEditor
             // 
             this.menuTools.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.menuPingIPs,
-            this.menuRemoveDefaultText});
+            this.menuRemoveDefaultText,
+            this.getModsFromServerToolStripMenuItem});
             this.menuTools.Name = "menuTools";
             resources.ApplyResources(this.menuTools, "menuTools");
             // 
@@ -1207,6 +1209,12 @@ namespace HostsFileEditor
             // bindingSourceHostEntries
             // 
             this.bindingSourceHostEntries.DataSource = typeof(HostsFileEditor.HostsEntryList);
+            // 
+            // getModsFromServerToolStripMenuItem
+            // 
+            this.getModsFromServerToolStripMenuItem.Name = "getModsFromServerToolStripMenuItem";
+            resources.ApplyResources(this.getModsFromServerToolStripMenuItem, "getModsFromServerToolStripMenuItem");
+            this.getModsFromServerToolStripMenuItem.Click += new System.EventHandler(this.getModsFromServerToolClick);
             // 
             // MainForm
             // 
@@ -1364,6 +1372,7 @@ namespace HostsFileEditor
         private System.Windows.Forms.ToolStripButton buttonLoadMod;
         private System.Windows.Forms.BindingSource bindingSourceMod;
         private System.Windows.Forms.ToolStripButton toolStripButton2;
+        private System.Windows.Forms.ToolStripMenuItem getModsFromServerToolStripMenuItem;
     }
 }
 
