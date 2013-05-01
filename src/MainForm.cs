@@ -52,6 +52,11 @@ namespace HostsFileEditor
         private BindingListView<HostsArchive> hostsArchiveView;
 
         /// <summary>
+        /// The hosts mod view.
+        /// </summary>
+        private BindingListView<HostsMod> hostsModView;
+
+        /// <summary>
         /// The clipboard host entries.
         /// </summary>
         private IEnumerable<HostsEntry> clipboardEntries;
@@ -407,6 +412,11 @@ namespace HostsFileEditor
             this.hostsArchiveView.DataSource = HostsArchiveList.Instance;
             this.bindingSourceArchive.DataSource = this.hostsArchiveView;
             this.hostsArchiveView.Sort = Reflect.GetPropertyName(() => (new HostsArchive()).FileName);
+
+            this.hostsModView = new BindingListView<HostsMod>(this.components);
+            this.hostsModView.DataSource = HostsModList.Instance;
+            this.bindingSourceMod.DataSource = this.hostsModView;
+            this.hostsModView.Sort = Reflect.GetPropertyName(() => (new HostsMod()).FileName);
 
             this.bindingSourceHostFile.DataSource = HostsFile.Instance;
 
