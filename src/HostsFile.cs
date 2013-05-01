@@ -258,6 +258,17 @@ namespace HostsFileEditor
         }
 
         /// <summary>
+        /// Save a mod with a specified name.
+        /// </summary>
+        /// <param name="name"></param>
+        public void SaveMod(string name)
+        {
+            var mod = new HostsMod(name);
+            this.SaveAs(mod.FilePath);
+            HostsModList.Instance.Add(mod);
+        }
+
+        /// <summary>
         /// Restore to default OS hosts file.
         /// </summary>
         public void RestoreDefault()

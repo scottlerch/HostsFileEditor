@@ -309,4 +309,7 @@
   <data name="ModExists" xml:space="preserve">
     <value>Mod name already exists!</value>
   </data>
+  <data name="InputModPrompt" xml:space="preserve">
+    <value>Input mod name:</value>
+  </data>
 </root>

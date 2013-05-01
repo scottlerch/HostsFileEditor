@@ -63,7 +63,7 @@ namespace HostsFileEditor
             System.Windows.Forms.ToolStripSeparator toolStripSeparator15;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator26;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator16;
-            System.Windows.Forms.ToolStripSeparator toolStripSeparator17;
+            System.Windows.Forms.ToolStripSeparator toolStripSeparator33;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator19;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator18;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator14;
@@ -124,6 +124,7 @@ namespace HostsFileEditor
             this.buttonSave = new System.Windows.Forms.ToolStripButton();
             this.buttonRefresh = new System.Windows.Forms.ToolStripButton();
             this.buttonDisable = new System.Windows.Forms.ToolStripButton();
+            this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
             this.buttonArchive = new System.Windows.Forms.ToolStripButton();
             this.buttonViewArchive = new System.Windows.Forms.ToolStripButton();
             this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripLabel();
@@ -193,7 +194,7 @@ namespace HostsFileEditor
             toolStripSeparator15 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator26 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator16 = new System.Windows.Forms.ToolStripSeparator();
-            toolStripSeparator17 = new System.Windows.Forms.ToolStripSeparator();
+            toolStripSeparator33 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator19 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator18 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator14 = new System.Windows.Forms.ToolStripSeparator();
@@ -649,9 +650,10 @@ namespace HostsFileEditor
             toolStripSeparator26,
             this.buttonDisable,
             toolStripSeparator16,
+            this.toolStripButton2,
             this.buttonArchive,
             this.buttonViewArchive,
-            toolStripSeparator17,
+            toolStripSeparator33,
             this.toolStripDropDownButton1,
             this.buttonFilterComment,
             this.buttonFilterDisabled,
@@ -698,12 +700,18 @@ namespace HostsFileEditor
             toolStripSeparator16.Name = "toolStripSeparator16";
             resources.ApplyResources(toolStripSeparator16, "toolStripSeparator16");
             // 
+            // toolStripButton2
+            // 
+            this.toolStripButton2.Image = global::HostsFileEditor.Properties.Resources.Archive;
+            resources.ApplyResources(this.toolStripButton2, "toolStripButton2");
+            this.toolStripButton2.Name = "toolStripButton2";
+            // 
             // buttonArchive
             // 
             this.buttonArchive.Image = global::HostsFileEditor.Properties.Resources.Archive;
             resources.ApplyResources(this.buttonArchive, "buttonArchive");
             this.buttonArchive.Name = "buttonArchive";
-            this.buttonArchive.Click += new System.EventHandler(this.OnArchiveClick);
+            this.buttonArchive.Click += new System.EventHandler(this.OnModSaveClick);
             // 
             // buttonViewArchive
             // 
@@ -712,10 +720,10 @@ namespace HostsFileEditor
             this.buttonViewArchive.Name = "buttonViewArchive";
             this.buttonViewArchive.Click += new System.EventHandler(this.OnViewArchiveClick);
             // 
-            // toolStripSeparator17
+            // toolStripSeparator33
             // 
-            toolStripSeparator17.Name = "toolStripSeparator17";
-            resources.ApplyResources(toolStripSeparator17, "toolStripSeparator17");
+            toolStripSeparator33.Name = "toolStripSeparator33";
+            resources.ApplyResources(toolStripSeparator33, "toolStripSeparator33");
             // 
             // toolStripDropDownButton1
             // 
@@ -1355,6 +1363,7 @@ namespace HostsFileEditor
         private System.Windows.Forms.ToolStripButton buttonDeleteMod;
         private System.Windows.Forms.ToolStripButton buttonLoadMod;
         private System.Windows.Forms.BindingSource bindingSourceMod;
+        private System.Windows.Forms.ToolStripButton toolStripButton2;
     }
 }
 

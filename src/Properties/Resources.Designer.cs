@@ -238,6 +238,15 @@ namespace HostsFileEditor.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Input mod name:.
+        /// </summary>
+        internal static string InputModPrompt {
+            get {
+                return ResourceManager.GetString("InputModPrompt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         internal static System.Drawing.Bitmap InsertAbove {

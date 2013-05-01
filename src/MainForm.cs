@@ -137,6 +137,30 @@ namespace HostsFileEditor
         }
 
         /// <summary>
+        /// Called when mod save clicked
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnModSaveClick(object sender, EventArgs e)
+        {
+            this.dataGridViewHostsEntries.CommitEdit(
+                DataGridViewDataErrorContexts.Commit);
+
+            using (var inputDialog = new InputForm())
+            {
+                inputDialog.Text = this.Text;
+                inputDialog.Prompt = Resources.InputModPrompt;
+
+                DialogResult result = inputDialog.ShowDialog(this);
+
+                if (result == DialogResult.OK)
+                {
+                    HostsFile.Instance.SaveMod(inputDialog.Input);
+                }
+            }
+        }
+
+        /// <summary>
         /// Occurs when copy clicked.
         /// </summary>
         /// <param name="sender">
