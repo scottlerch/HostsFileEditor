@@ -18,8 +18,8 @@ namespace HostsFileEditor
 
         private void buttonDownload_Click(object sender, EventArgs e)
         {
-
-            GetHostsFileFromServer.do(textBoxURL.Text, textBoxUserName.Text, textBoxPassword.Text);
+            Dictionary<string, bool> downloadResults = GetHostsFileFromServer.DownloadFiles(textBoxURL.Text, textBoxUserName.Text, textBoxPassword.Text);
+            MessageBox.Show("Completed. " + downloadResults.Count + " mod files downloaded.", this.Text);
         }
     }
 }

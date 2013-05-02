@@ -27,14 +27,16 @@ namespace HostsFileEditor
 
         
 
-        public static void DownloadFiles(string url, string username, string password)
+        public static Dictionary<string, bool> DownloadFiles(string url, string username, string password)
         {
             List<string> filesToDownload = GetListOfFilesFromServer(url, username, password);
-            
+            Dictionary<string, bool> downloadResults = new Dictionary<string, bool>();
             foreach (string fileName in filesToDownload)
             {
-                readNewHostsFile(url, username, password, fileName);
+                downloadResults.Add(fileName, readNewHostsFile(url, username, password, fileName));
             }
+
+            return downloadResults;
         }
 
         private static bool readNewHostsFile(string url, string username, string password, string filename)

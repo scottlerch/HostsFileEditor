@@ -1125,6 +1125,7 @@ namespace HostsFileEditor
         private void getModsFromServerToolClick(object sender, EventArgs e)
         {
             (new DownloadFromServer()).ShowDialog(this);
+            HostsModList.Instance.Refresh();
         }
     }
 }
