@@ -15,5 +15,11 @@ namespace HostsFileEditor
         {
             InitializeComponent();
         }
+
+        private void buttonDownload_Click(object sender, EventArgs e)
+        {
+
+            GetHostsFileFromServer.do(textBoxURL.Text, textBoxUserName.Text, textBoxPassword.Text);
+        }
     }
 }

@@ -98,6 +98,12 @@
     <Compile Include="Controls\ToolStripSpringTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="DownloadFromServer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="DownloadFromServer.Designer.cs">
+      <DependentUpon>DownloadFromServer.cs</DependentUpon>
+    </Compile>
     <Compile Include="GetHostsFileFromServer.cs" />
     <Compile Include="HostsModList.cs" />
     <Compile Include="HostsMod.cs" />
@@ -139,6 +145,9 @@
     <Compile Include="Win32\NativeMethods.cs" />
     <EmbeddedResource Include="AboutForm.resx">
       <DependentUpon>AboutForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DownloadFromServer.resx">
+      <DependentUpon>DownloadFromServer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="InputForm.resx">
       <DependentUpon>InputForm.cs</DependentUpon>

@@ -1124,7 +1124,7 @@ namespace HostsFileEditor
         /// <param name="e"></param>
         private void getModsFromServerToolClick(object sender, EventArgs e)
         {
-            GetHostsFileFromServer.GetListOfHostsFilesFromServer();
+            (new DownloadFromServer()).ShowDialog(this);
         }
     }
 }

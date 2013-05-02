@@ -25,21 +25,22 @@ namespace HostsFileEditor
             }
         }
 
-        private StringBuilder HostsFile;
+        
 
-        public void DownloadFiles(string url, string username, string password)
+        public static void DownloadFiles(string url, string username, string password)
         {
             List<string> filesToDownload = GetListOfFilesFromServer(url, username, password);
-
+            
             foreach (string fileName in filesToDownload)
             {
                 readNewHostsFile(url, username, password, fileName);
             }
         }
 
-        private bool readNewHostsFile(string url, string username, string password, string filename)
+        private static bool readNewHostsFile(string url, string username, string password, string filename)
         {
-            HostsFile.Clear();
+            StringBuilder HostsFile = new StringBuilder();
+
             try
             {
                 HttpWebRequest reqhttp = (HttpWebRequest)HttpWebRequest.Create(new Uri(url + filename));
@@ -79,7 +80,7 @@ namespace HostsFileEditor
         /// </summary>
         /// <param name="URL"></param>
         /// <returns></returns>
-        private List<string> GetListOfFilesFromServer(string URL, string username, string password)
+        private static List<string> GetListOfFilesFromServer(string URL, string username, string password)
         {
             List<string> hostsFileNames = new List<string>();
             string regexPattern = @"<a href=\"".*\"">(?<name>.*)</a>";
