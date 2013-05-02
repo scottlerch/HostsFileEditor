@@ -40,9 +40,9 @@
             // 
             // textBoxURL
             // 
-            this.textBoxURL.Location = new System.Drawing.Point(103, 61);
+            this.textBoxURL.Location = new System.Drawing.Point(12, 61);
             this.textBoxURL.Name = "textBoxURL";
-            this.textBoxURL.Size = new System.Drawing.Size(100, 22);
+            this.textBoxURL.Size = new System.Drawing.Size(260, 22);
             this.textBoxURL.TabIndex = 0;
             // 
             // textBoxUserName
@@ -62,7 +62,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(73, 64);
+            this.label1.Location = new System.Drawing.Point(130, 41);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(24, 17);
             this.label1.TabIndex = 3;
