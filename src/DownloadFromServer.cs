@@ -14,8 +14,8 @@ namespace HostsFileEditor
     {
         public DownloadFromServer()
         {
-            LoadSettings();
             InitializeComponent();
+            LoadSettings();
         }
 
         private void LoadSettings()
