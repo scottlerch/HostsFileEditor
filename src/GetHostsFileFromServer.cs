@@ -95,8 +95,10 @@ namespace HostsFileEditor
                 using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                 {
                     string html = reader.ReadToEnd();
+                    //the regex has problems when all the entries are on one 'line'
+                    string wrappedHtml = html.Replace("<br>", "<br>\n");
                     Regex regex = new Regex(regexPattern,RegexOptions.IgnoreCase);
-                    MatchCollection matches = regex.Matches(html);
+                    MatchCollection matches = regex.Matches(wrappedHtml);
                     if (matches.Count > 0)
                     {
                         foreach (Match match in matches)
@@ -109,6 +111,11 @@ namespace HostsFileEditor
                         }
                     }
                 }
+            }
+            //Not a glamorous way of doing this, but it gets the job done.
+            if(hostsFileNames.Contains("[To Parent Directory]"))
+            {
+                hostsFileNames.Remove("[To Parent Directory]");
             }
             return hostsFileNames;
         }
