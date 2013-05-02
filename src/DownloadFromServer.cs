@@ -16,6 +16,11 @@ namespace HostsFileEditor
         {
             InitializeComponent();
             LoadSettings();
+            if (!string.IsNullOrWhiteSpace(textBoxURL.Text) &&
+                !string.IsNullOrWhiteSpace(textBoxUserName.Text))
+            {
+                this.ActiveControl = textBoxPassword;
+            }
         }
 
         private void LoadSettings()
@@ -43,8 +48,17 @@ namespace HostsFileEditor
         private void buttonDownload_Click(object sender, EventArgs e)
         {
             SaveSettings();
-            Dictionary<string, bool> downloadResults = GetHostsFileFromServer.DownloadFiles(textBoxURL.Text, textBoxUserName.Text, textBoxPassword.Text);
-            MessageBox.Show("Completed. " + downloadResults.Count + " mod files downloaded.", this.Text);
+            if (string.IsNullOrWhiteSpace(textBoxURL.Text) ||
+                string.IsNullOrWhiteSpace(textBoxUserName.Text) ||
+                string.IsNullOrWhiteSpace(textBoxPassword.Text))
+            {
+                MessageBox.Show("All three fields must have information.", this.Text);
+            }
+            else
+            {
+                Dictionary<string, bool> downloadResults = GetHostsFileFromServer.DownloadFiles(textBoxURL.Text, textBoxUserName.Text, textBoxPassword.Text);
+                MessageBox.Show("Completed. " + downloadResults.Count + " mod files downloaded.", this.Text);
+            }
         }
     }
 }
