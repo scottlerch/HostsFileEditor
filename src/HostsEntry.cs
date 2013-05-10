@@ -475,6 +475,24 @@ namespace HostsFileEditor
         #region Public Methods
 
         /// <summary>
+        /// Updates the current entry with an existing one.
+        /// </summary>
+        /// <param name="entry"></param>
+        public void Update(HostsEntry entry)
+        {
+            this.comment = entry.comment;
+            this.enabled = entry.enabled;
+            this.hostnames = entry.hostnames;
+            this.ipAddress = entry.ipAddress;
+            this.unparsedText = entry.unparsedText;
+            this.unparsedTextInvalid = entry.unparsedTextInvalid;
+            this.valid = entry.valid;
+            this.hostnamesValid = entry.hostnamesValid;
+            this.ipAddressValid = entry.ipAddressValid;
+            this.errors = new Dictionary<string, string>(entry.errors);
+        }
+
+        /// <summary>
         /// Returns a <see cref="System.String"/> that represents this instance.
         /// </summary>
         /// <returns>

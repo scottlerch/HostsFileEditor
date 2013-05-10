@@ -23,5 +23,11 @@
     <Setting Name="SplitterWidth" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">520</Value>
     </Setting>
+    <Setting Name="DownloadServerURL" Type="System.String" Scope="User">
+      <Value Profile="(Default)"> </Value>
+    </Setting>
+    <Setting Name="DownloadUsername" Type="System.String" Scope="User">
+      <Value Profile="(Default)"> </Value>
+    </Setting>
   </Settings>
 </SettingsFile>

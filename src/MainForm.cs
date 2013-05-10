@@ -52,6 +52,11 @@ namespace HostsFileEditor
         private BindingListView<HostsArchive> hostsArchiveView;
 
         /// <summary>
+        /// The hosts mod view.
+        /// </summary>
+        private BindingListView<HostsMod> hostsModView;
+
+        /// <summary>
         /// The clipboard host entries.
         /// </summary>
         private IEnumerable<HostsEntry> clipboardEntries;
@@ -132,6 +137,30 @@ namespace HostsFileEditor
                 if (result == DialogResult.OK)
                 {
                     HostsFile.Instance.Archive(inputDialog.Input);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Called when mod save clicked
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnModSaveClick(object sender, EventArgs e)
+        {
+            this.dataGridViewHostsEntries.CommitEdit(
+                DataGridViewDataErrorContexts.Commit);
+
+            using (var inputDialog = new InputForm())
+            {
+                inputDialog.Text = this.Text;
+                inputDialog.Prompt = Resources.InputModPrompt;
+                inputDialog.isMod = true;
+                DialogResult result = inputDialog.ShowDialog(this);
+
+                if (result == DialogResult.OK)
+                {
+                    HostsFile.Instance.SaveMod(inputDialog.Input);
                 }
             }
         }
@@ -383,6 +412,11 @@ namespace HostsFileEditor
             this.hostsArchiveView.DataSource = HostsArchiveList.Instance;
             this.bindingSourceArchive.DataSource = this.hostsArchiveView;
             this.hostsArchiveView.Sort = Reflect.GetPropertyName(() => (new HostsArchive()).FileName);
+
+            this.hostsModView = new BindingListView<HostsMod>(this.components);
+            this.hostsModView.DataSource = HostsModList.Instance;
+            this.bindingSourceMod.DataSource = this.hostsModView;
+            this.hostsModView.Sort = Reflect.GetPropertyName(() => (new HostsMod()).FileName);
 
             this.bindingSourceHostFile.DataSource = HostsFile.Instance;
 
@@ -1049,5 +1083,49 @@ namespace HostsFileEditor
         }
 
         #endregion
+
+
+        /// <summary>
+        /// Called when mod load clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnModLoadClick(object sender, EventArgs e)
+        {
+            HostsMod mod = this.dataGridViewMod.CurrentHostsMod;
+
+            if (mod != null)
+            {
+                HostsFile.Instance.ImportMod(mod.FilePath);
+                MessageBox.Show("Mod " + mod.FileName + " imported.", this.Text);
+            }
+        }
+
+        /// <summary>
+        /// Called when mod delete clicked.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void OnModDeleteClick(object sender, EventArgs e)
+        {
+            HostsMod mod = this.dataGridViewMod.CurrentHostsMod;
+
+            if (mod != null)
+            {
+                HostsModList.Instance.Delete(mod);
+            }
+        }
+
+
+        /// <summary>
+        /// An option to download mods from a server address
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void getModsFromServerToolClick(object sender, EventArgs e)
+        {
+            (new DownloadFromServer()).ShowDialog(this);
+            HostsModList.Instance.Refresh();
+        }
     }
 }
