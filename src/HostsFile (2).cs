@@ -226,6 +226,25 @@ namespace HostsFileEditor
         }
 
         /// <summary>
+        /// Import all new lines, and update exisiting lines
+        /// </summary>
+        /// <param name="importModFilePath">
+        /// The Import Modification's file path
+        /// </param>
+        public void ImportMod(string importModFilePath)
+        {
+            if (this.filePath != importModFilePath)
+            {
+                this.Entries.BatchUpdate(() =>
+                    {
+                        this.Entries.UpdateLines(File.ReadAllLines(importModFilePath), RemoveDefaultText);
+                        
+                    });
+            }
+
+        }
+
+        /// <summary>
         /// Archives the specified name.
         /// </summary>
         /// <param name="name">The name.</param>
@@ -234,6 +253,17 @@ namespace HostsFileEditor
             var archive = new HostsArchive(name);
             this.SaveAs(archive.FilePath);
             HostsArchiveList.Instance.Add(archive);
+        }
+
+        /// <summary>
+        /// Save a mod with a specified name.
+        /// </summary>
+        /// <param name="name"></param>
+        public void SaveMod(string name)
+        {
+            var mod = new HostsMod(name);
+            this.SaveAs(mod.FilePath);
+            HostsModList.Instance.Add(mod);
         }
 
         /// <summary>
