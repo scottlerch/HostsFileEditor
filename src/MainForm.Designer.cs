@@ -164,6 +164,7 @@ namespace HostsFileEditor
             this.menuTools = new System.Windows.Forms.ToolStripMenuItem();
             this.menuPingIPs = new System.Windows.Forms.ToolStripMenuItem();
             this.menuRemoveDefaultText = new System.Windows.Forms.ToolStripMenuItem();
+            this.getModsFromServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
@@ -184,7 +185,6 @@ namespace HostsFileEditor
             this.contextMenuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.bindingSourceHostEntries = new System.Windows.Forms.BindingSource(this.components);
-            this.getModsFromServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             toolStripSeparator22 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator23 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
@@ -1080,6 +1080,12 @@ namespace HostsFileEditor
             resources.ApplyResources(this.menuRemoveDefaultText, "menuRemoveDefaultText");
             this.menuRemoveDefaultText.Click += new System.EventHandler(this.OnRemoveDefaultTextClick);
             // 
+            // getModsFromServerToolStripMenuItem
+            // 
+            this.getModsFromServerToolStripMenuItem.Name = "getModsFromServerToolStripMenuItem";
+            resources.ApplyResources(this.getModsFromServerToolStripMenuItem, "getModsFromServerToolStripMenuItem");
+            this.getModsFromServerToolStripMenuItem.Click += new System.EventHandler(this.getModsFromServerToolClick);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -1209,12 +1215,6 @@ namespace HostsFileEditor
             // bindingSourceHostEntries
             // 
             this.bindingSourceHostEntries.DataSource = typeof(HostsFileEditor.HostsEntryList);
-            // 
-            // getModsFromServerToolStripMenuItem
-            // 
-            this.getModsFromServerToolStripMenuItem.Name = "getModsFromServerToolStripMenuItem";
-            resources.ApplyResources(this.getModsFromServerToolStripMenuItem, "getModsFromServerToolStripMenuItem");
-            this.getModsFromServerToolStripMenuItem.Click += new System.EventHandler(this.getModsFromServerToolClick);
             // 
             // MainForm
             // 
