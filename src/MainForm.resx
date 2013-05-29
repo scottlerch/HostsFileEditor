@@ -379,7 +379,7 @@
     <value>25</value>
   </data>
   <data name="dataGridViewHostsEntries.Size" type="System.Drawing.Size, System.Drawing">
-    <value>808, 542</value>
+    <value>807, 542</value>
   </data>
   <data name="dataGridViewHostsEntries.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -433,7 +433,7 @@
     <value>4, 4, 4, 4</value>
   </data>
   <data name="dataGridViewArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>348, 238</value>
+    <value>349, 238</value>
   </data>
   <data name="dataGridViewArchive.TabIndex" type="System.Int32, mscorlib">
     <value>1</value>
@@ -490,7 +490,7 @@
     <value>0, 0</value>
   </data>
   <data name="toolStripArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>348, 25</value>
+    <value>349, 25</value>
   </data>
   <data name="toolStripArchive.TabIndex" type="System.Int32, mscorlib">
     <value>0</value>
@@ -538,7 +538,7 @@
     <value>4, 4, 4, 4</value>
   </data>
   <data name="dataGridViewMod.Size" type="System.Drawing.Size, System.Drawing">
-    <value>348, 250</value>
+    <value>349, 250</value>
   </data>
   <data name="dataGridViewMod.TabIndex" type="System.Int32, mscorlib">
     <value>3</value>
@@ -595,7 +595,7 @@
     <value>0, 0</value>
   </data>
   <data name="toolStripMod.Size" type="System.Drawing.Size, System.Drawing">
-    <value>348, 25</value>
+    <value>349, 25</value>
   </data>
   <data name="toolStripMod.TabIndex" type="System.Int32, mscorlib">
     <value>2</value>
@@ -628,7 +628,7 @@
     <value>1</value>
   </data>
   <data name="splitContainer1.Size" type="System.Drawing.Size, System.Drawing">
-    <value>348, 542</value>
+    <value>349, 542</value>
   </data>
   <data name="splitContainer1.SplitterDistance" type="System.Int32, mscorlib">
     <value>263</value>
@@ -664,7 +664,7 @@
     <value>1161, 542</value>
   </data>
   <data name="splitContainer.SplitterDistance" type="System.Int32, mscorlib">
-    <value>808</value>
+    <value>807</value>
   </data>
   <data name="splitContainer.SplitterWidth" type="System.Int32, mscorlib">
     <value>5</value>
@@ -1146,23 +1146,14 @@
   <data name="toolStripSeparator16.Size" type="System.Drawing.Size, System.Drawing">
     <value>6, 27</value>
   </data>
-  <data name="toolStripButton2.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
-    <value>Magenta</value>
-  </data>
-  <data name="toolStripButton2.Size" type="System.Drawing.Size, System.Drawing">
-    <value>78, 24</value>
-  </data>
-  <data name="toolStripButton2.Text" xml:space="preserve">
-    <value>Archive</value>
-  </data>
   <data name="buttonArchive.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
     <value>Magenta</value>
   </data>
   <data name="buttonArchive.Size" type="System.Drawing.Size, System.Drawing">
-    <value>60, 24</value>
+    <value>78, 24</value>
   </data>
   <data name="buttonArchive.Text" xml:space="preserve">
-    <value>Mod</value>
+    <value>Archive</value>
   </data>
   <data name="buttonViewArchive.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
     <value>Magenta</value>
@@ -1201,7 +1192,7 @@
     <value>Filter Disabled</value>
   </data>
   <data name="textFilter.Size" type="System.Drawing.Size, System.Drawing">
-    <value>405, 27</value>
+    <value>486, 27</value>
   </data>
   <metadata name="toolStripSeparator19.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
@@ -4328,78 +4319,6 @@
   <data name="&gt;&gt;labelHostEntriesCount.Type" xml:space="preserve">
     <value>HostsFileEditor.Controls.ToolStripBindableStatusLabel, HostsFileEditor, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
   </data>
-  <data name="&gt;&gt;toolStripLabel1.Name" xml:space="preserve">
-    <value>toolStripLabel1</value>
-  </data>
-  <data name="&gt;&gt;toolStripLabel1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripLabel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripSeparator27.Name" xml:space="preserve">
-    <value>toolStripSeparator27</value>
-  </data>
-  <data name="&gt;&gt;toolStripSeparator27.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;buttonDeleteArchive.Name" xml:space="preserve">
-    <value>buttonDeleteArchive</value>
-  </data>
-  <data name="&gt;&gt;buttonDeleteArchive.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;buttonLoadArchive.Name" xml:space="preserve">
-    <value>buttonLoadArchive</value>
-  </data>
-  <data name="&gt;&gt;buttonLoadArchive.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;fileNameDataGridViewTextBoxColumn.Name" xml:space="preserve">
-    <value>fileNameDataGridViewTextBoxColumn</value>
-  </data>
-  <data name="&gt;&gt;fileNameDataGridViewTextBoxColumn.Type" xml:space="preserve">
-    <value>System.Windows.Forms.DataGridViewTextBoxColumn, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;bindingSourceArchive.Name" xml:space="preserve">
-    <value>bindingSourceArchive</value>
-  </data>
-  <data name="&gt;&gt;bindingSourceArchive.Type" xml:space="preserve">
-    <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripLabel2.Name" xml:space="preserve">
-    <value>toolStripLabel2</value>
-  </data>
-  <data name="&gt;&gt;toolStripLabel2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripLabel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripSeparator32.Name" xml:space="preserve">
-    <value>toolStripSeparator32</value>
-  </data>
-  <data name="&gt;&gt;toolStripSeparator32.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;buttonDeleteMod.Name" xml:space="preserve">
-    <value>buttonDeleteMod</value>
-  </data>
-  <data name="&gt;&gt;buttonDeleteMod.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;buttonLoadMod.Name" xml:space="preserve">
-    <value>buttonLoadMod</value>
-  </data>
-  <data name="&gt;&gt;buttonLoadMod.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewTextBoxColumn1.Name" xml:space="preserve">
-    <value>dataGridViewTextBoxColumn1</value>
-  </data>
-  <data name="&gt;&gt;dataGridViewTextBoxColumn1.Type" xml:space="preserve">
-    <value>System.Windows.Forms.DataGridViewTextBoxColumn, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;bindingSourceMod.Name" xml:space="preserve">
-    <value>bindingSourceMod</value>
-  </data>
-  <data name="&gt;&gt;bindingSourceMod.Type" xml:space="preserve">
-    <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
   <data name="&gt;&gt;columnValid.Name" xml:space="preserve">
     <value>columnValid</value>
   </data>
@@ -4531,6 +4450,78 @@
   </data>
   <data name="&gt;&gt;bindingSourceView.Type" xml:space="preserve">
     <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;fileNameDataGridViewTextBoxColumn.Name" xml:space="preserve">
+    <value>fileNameDataGridViewTextBoxColumn</value>
+  </data>
+  <data name="&gt;&gt;fileNameDataGridViewTextBoxColumn.Type" xml:space="preserve">
+    <value>System.Windows.Forms.DataGridViewTextBoxColumn, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;bindingSourceArchive.Name" xml:space="preserve">
+    <value>bindingSourceArchive</value>
+  </data>
+  <data name="&gt;&gt;bindingSourceArchive.Type" xml:space="preserve">
+    <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripLabel1.Name" xml:space="preserve">
+    <value>toolStripLabel1</value>
+  </data>
+  <data name="&gt;&gt;toolStripLabel1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripLabel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator27.Name" xml:space="preserve">
+    <value>toolStripSeparator27</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator27.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;buttonDeleteArchive.Name" xml:space="preserve">
+    <value>buttonDeleteArchive</value>
+  </data>
+  <data name="&gt;&gt;buttonDeleteArchive.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;buttonLoadArchive.Name" xml:space="preserve">
+    <value>buttonLoadArchive</value>
+  </data>
+  <data name="&gt;&gt;buttonLoadArchive.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewTextBoxColumn1.Name" xml:space="preserve">
+    <value>dataGridViewTextBoxColumn1</value>
+  </data>
+  <data name="&gt;&gt;dataGridViewTextBoxColumn1.Type" xml:space="preserve">
+    <value>System.Windows.Forms.DataGridViewTextBoxColumn, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;bindingSourceMod.Name" xml:space="preserve">
+    <value>bindingSourceMod</value>
+  </data>
+  <data name="&gt;&gt;bindingSourceMod.Type" xml:space="preserve">
+    <value>System.Windows.Forms.BindingSource, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripLabel2.Name" xml:space="preserve">
+    <value>toolStripLabel2</value>
+  </data>
+  <data name="&gt;&gt;toolStripLabel2.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripLabel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator32.Name" xml:space="preserve">
+    <value>toolStripSeparator32</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator32.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;buttonDeleteMod.Name" xml:space="preserve">
+    <value>buttonDeleteMod</value>
+  </data>
+  <data name="&gt;&gt;buttonDeleteMod.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;buttonLoadMod.Name" xml:space="preserve">
+    <value>buttonLoadMod</value>
+  </data>
+  <data name="&gt;&gt;buttonLoadMod.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;menuFile.Name" xml:space="preserve">
     <value>menuFile</value>
@@ -4843,12 +4834,6 @@
   </data>
   <data name="&gt;&gt;toolStripSeparator16.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-  </data>
-  <data name="&gt;&gt;toolStripButton2.Name" xml:space="preserve">
-    <value>toolStripButton2</value>
-  </data>
-  <data name="&gt;&gt;toolStripButton2.Type" xml:space="preserve">
-    <value>System.Windows.Forms.ToolStripButton, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;buttonArchive.Name" xml:space="preserve">
     <value>buttonArchive</value>

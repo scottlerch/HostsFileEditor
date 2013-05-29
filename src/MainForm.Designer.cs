@@ -53,13 +53,13 @@ namespace HostsFileEditor
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
+            System.Windows.Forms.ToolStripSeparator toolStripSeparator22;
+            System.Windows.Forms.ToolStripSeparator toolStripSeparator23;
+            System.Windows.Forms.ToolStripSeparator toolStripSeparator25;
             System.Windows.Forms.ToolStripLabel toolStripLabel1;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator27;
             System.Windows.Forms.ToolStripLabel toolStripLabel2;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator32;
-            System.Windows.Forms.ToolStripSeparator toolStripSeparator22;
-            System.Windows.Forms.ToolStripSeparator toolStripSeparator23;
-            System.Windows.Forms.ToolStripSeparator toolStripSeparator25;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator18;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator14;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator13;
@@ -87,18 +87,6 @@ namespace HostsFileEditor
             this.labelHostEntries = new System.Windows.Forms.ToolStripStatusLabel();
             this.labelHostEntriesCount = new HostsFileEditor.Controls.ToolStripBindableStatusLabel();
             this.splitContainer = new System.Windows.Forms.SplitContainer();
-            this.toolStripArchive = new HostsFileEditor.Controls.ToolStripEx();
-            this.buttonDeleteArchive = new System.Windows.Forms.ToolStripButton();
-            this.buttonLoadArchive = new System.Windows.Forms.ToolStripButton();
-            this.dataGridViewArchive = new HostsFileEditor.Controls.HostsArchiveDataGridView();
-            this.fileNameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.bindingSourceArchive = new System.Windows.Forms.BindingSource(this.components);
-            this.toolStripMod = new HostsFileEditor.Controls.ToolStripEx();
-            this.buttonDeleteMod = new System.Windows.Forms.ToolStripButton();
-            this.buttonLoadMod = new System.Windows.Forms.ToolStripButton();
-            this.dataGridViewMod = new HostsFileEditor.Controls.HostsModDataGridView();
-            this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.bindingSourceMod = new System.Windows.Forms.BindingSource(this.components);
             this.dataGridViewHostsEntries = new HostsFileEditor.Controls.HostsEntryDataGridView();
             this.columnValid = new System.Windows.Forms.DataGridViewCheckBoxColumn();
             this.columnEnabled = new System.Windows.Forms.DataGridViewCheckBoxColumn();
@@ -121,6 +109,18 @@ namespace HostsFileEditor
             this.contextMenuUncheck = new System.Windows.Forms.ToolStripMenuItem();
             this.bindingSourceView = new System.Windows.Forms.BindingSource(this.components);
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.dataGridViewArchive = new HostsFileEditor.Controls.HostsArchiveDataGridView();
+            this.fileNameDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.bindingSourceArchive = new System.Windows.Forms.BindingSource(this.components);
+            this.toolStripArchive = new HostsFileEditor.Controls.ToolStripEx();
+            this.buttonDeleteArchive = new System.Windows.Forms.ToolStripButton();
+            this.buttonLoadArchive = new System.Windows.Forms.ToolStripButton();
+            this.dataGridViewMod = new HostsFileEditor.Controls.HostsModDataGridView();
+            this.dataGridViewTextBoxColumn1 = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.bindingSourceMod = new System.Windows.Forms.BindingSource(this.components);
+            this.toolStripMod = new HostsFileEditor.Controls.ToolStripEx();
+            this.buttonDeleteMod = new System.Windows.Forms.ToolStripButton();
+            this.buttonLoadMod = new System.Windows.Forms.ToolStripButton();
             this.menuStrip = new HostsFileEditor.Controls.MenuStripEx();
             this.menuFile = new System.Windows.Forms.ToolStripMenuItem();
             this.menuSave = new System.Windows.Forms.ToolStripMenuItem();
@@ -161,7 +161,6 @@ namespace HostsFileEditor
             this.buttonSave = new System.Windows.Forms.ToolStripButton();
             this.buttonRefresh = new System.Windows.Forms.ToolStripButton();
             this.buttonDisable = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
             this.buttonArchive = new System.Windows.Forms.ToolStripButton();
             this.buttonViewArchive = new System.Windows.Forms.ToolStripButton();
             this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripLabel();
@@ -186,13 +185,13 @@ namespace HostsFileEditor
             this.contextMenuExit = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
             this.bindingSourceHostEntries = new System.Windows.Forms.BindingSource(this.components);
+            toolStripSeparator22 = new System.Windows.Forms.ToolStripSeparator();
+            toolStripSeparator23 = new System.Windows.Forms.ToolStripSeparator();
+            toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
             toolStripLabel1 = new System.Windows.Forms.ToolStripLabel();
             toolStripSeparator27 = new System.Windows.Forms.ToolStripSeparator();
             toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             toolStripSeparator32 = new System.Windows.Forms.ToolStripSeparator();
-            toolStripSeparator22 = new System.Windows.Forms.ToolStripSeparator();
-            toolStripSeparator23 = new System.Windows.Forms.ToolStripSeparator();
-            toolStripSeparator25 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator18 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator14 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator13 = new System.Windows.Forms.ToolStripSeparator();
@@ -222,12 +221,6 @@ namespace HostsFileEditor
             this.splitContainer.Panel1.SuspendLayout();
             this.splitContainer.Panel2.SuspendLayout();
             this.splitContainer.SuspendLayout();
-            this.toolStripArchive.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewArchive)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSourceArchive)).BeginInit();
-            this.toolStripMod.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewMod)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSourceMod)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewHostsEntries)).BeginInit();
             this.contextMenuGrid.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.bindingSourceView)).BeginInit();
@@ -235,6 +228,12 @@ namespace HostsFileEditor
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewArchive)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.bindingSourceArchive)).BeginInit();
+            this.toolStripArchive.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewMod)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.bindingSourceMod)).BeginInit();
+            this.toolStripMod.SuspendLayout();
             this.menuStrip.SuspendLayout();
             this.toolStrip.SuspendLayout();
             this.contextMenuTray.SuspendLayout();
@@ -309,154 +308,6 @@ namespace HostsFileEditor
             // splitContainer.Panel2
             // 
             this.splitContainer.Panel2.Controls.Add(this.splitContainer1);
-            // 
-            // toolStripArchive
-            // 
-            this.toolStripArchive.ClickThrough = true;
-            this.toolStripArchive.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
-            this.toolStripArchive.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            toolStripLabel1,
-            toolStripSeparator27,
-            this.buttonDeleteArchive,
-            this.buttonLoadArchive});
-            resources.ApplyResources(this.toolStripArchive, "toolStripArchive");
-            this.toolStripArchive.Name = "toolStripArchive";
-            // 
-            // toolStripLabel1
-            // 
-            toolStripLabel1.Name = "toolStripLabel1";
-            resources.ApplyResources(toolStripLabel1, "toolStripLabel1");
-            // 
-            // toolStripSeparator27
-            // 
-            toolStripSeparator27.Name = "toolStripSeparator27";
-            resources.ApplyResources(toolStripSeparator27, "toolStripSeparator27");
-            // 
-            // buttonDeleteArchive
-            // 
-            this.buttonDeleteArchive.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.buttonDeleteArchive.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.buttonDeleteArchive.Image = global::HostsFileEditor.Properties.Resources.Delete;
-            resources.ApplyResources(this.buttonDeleteArchive, "buttonDeleteArchive");
-            this.buttonDeleteArchive.Name = "buttonDeleteArchive";
-            this.buttonDeleteArchive.Click += new System.EventHandler(this.OnArchiveDeleteClick);
-            // 
-            // buttonLoadArchive
-            // 
-            this.buttonLoadArchive.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.buttonLoadArchive.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.buttonLoadArchive.Image = global::HostsFileEditor.Properties.Resources.LoadArchive;
-            resources.ApplyResources(this.buttonLoadArchive, "buttonLoadArchive");
-            this.buttonLoadArchive.Name = "buttonLoadArchive";
-            this.buttonLoadArchive.Click += new System.EventHandler(this.OnArchiveLoadClick);
-            // 
-            // dataGridViewArchive
-            // 
-            this.dataGridViewArchive.AllowUserToAddRows = false;
-            this.dataGridViewArchive.AllowUserToDeleteRows = false;
-            this.dataGridViewArchive.AllowUserToResizeColumns = false;
-            this.dataGridViewArchive.AllowUserToResizeRows = false;
-            this.dataGridViewArchive.AutoGenerateColumns = false;
-            this.dataGridViewArchive.BackgroundColor = System.Drawing.Color.White;
-            this.dataGridViewArchive.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridViewArchive.ColumnHeadersVisible = false;
-            this.dataGridViewArchive.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.fileNameDataGridViewTextBoxColumn});
-            this.dataGridViewArchive.DataSource = this.bindingSourceArchive;
-            resources.ApplyResources(this.dataGridViewArchive, "dataGridViewArchive");
-            this.dataGridViewArchive.GridColor = System.Drawing.Color.White;
-            this.dataGridViewArchive.MultiSelect = false;
-            this.dataGridViewArchive.Name = "dataGridViewArchive";
-            this.dataGridViewArchive.ReadOnly = true;
-            this.dataGridViewArchive.RowHeadersVisible = false;
-            this.dataGridViewArchive.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            // 
-            // fileNameDataGridViewTextBoxColumn
-            // 
-            this.fileNameDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.fileNameDataGridViewTextBoxColumn.DataPropertyName = "FileName";
-            resources.ApplyResources(this.fileNameDataGridViewTextBoxColumn, "fileNameDataGridViewTextBoxColumn");
-            this.fileNameDataGridViewTextBoxColumn.Name = "fileNameDataGridViewTextBoxColumn";
-            this.fileNameDataGridViewTextBoxColumn.ReadOnly = true;
-            // 
-            // bindingSourceArchive
-            // 
-            this.bindingSourceArchive.AllowNew = false;
-            this.bindingSourceArchive.DataSource = typeof(HostsFileEditor.HostsArchiveList);
-            // 
-            // toolStripMod
-            // 
-            this.toolStripMod.ClickThrough = true;
-            this.toolStripMod.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
-            this.toolStripMod.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            toolStripLabel2,
-            toolStripSeparator32,
-            this.buttonDeleteMod,
-            this.buttonLoadMod});
-            resources.ApplyResources(this.toolStripMod, "toolStripMod");
-            this.toolStripMod.Name = "toolStripMod";
-            // 
-            // toolStripLabel2
-            // 
-            toolStripLabel2.Name = "toolStripLabel2";
-            resources.ApplyResources(toolStripLabel2, "toolStripLabel2");
-            // 
-            // toolStripSeparator32
-            // 
-            toolStripSeparator32.Name = "toolStripSeparator32";
-            resources.ApplyResources(toolStripSeparator32, "toolStripSeparator32");
-            // 
-            // buttonDeleteMod
-            // 
-            this.buttonDeleteMod.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.buttonDeleteMod.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.buttonDeleteMod.Image = global::HostsFileEditor.Properties.Resources.Delete;
-            resources.ApplyResources(this.buttonDeleteMod, "buttonDeleteMod");
-            this.buttonDeleteMod.Name = "buttonDeleteMod";
-            this.buttonDeleteMod.Click += new System.EventHandler(this.OnModDeleteClick);
-            // 
-            // buttonLoadMod
-            // 
-            this.buttonLoadMod.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.buttonLoadMod.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.buttonLoadMod.Image = global::HostsFileEditor.Properties.Resources.LoadArchive;
-            resources.ApplyResources(this.buttonLoadMod, "buttonLoadMod");
-            this.buttonLoadMod.Name = "buttonLoadMod";
-            this.buttonLoadMod.Click += new System.EventHandler(this.OnModLoadClick);
-            // 
-            // dataGridViewMod
-            // 
-            this.dataGridViewMod.AllowUserToAddRows = false;
-            this.dataGridViewMod.AllowUserToDeleteRows = false;
-            this.dataGridViewMod.AllowUserToResizeColumns = false;
-            this.dataGridViewMod.AllowUserToResizeRows = false;
-            this.dataGridViewMod.AutoGenerateColumns = false;
-            this.dataGridViewMod.BackgroundColor = System.Drawing.Color.White;
-            this.dataGridViewMod.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridViewMod.ColumnHeadersVisible = false;
-            this.dataGridViewMod.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.dataGridViewTextBoxColumn1});
-            this.dataGridViewMod.DataSource = this.bindingSourceMod;
-            resources.ApplyResources(this.dataGridViewMod, "dataGridViewMod");
-            this.dataGridViewMod.GridColor = System.Drawing.Color.White;
-            this.dataGridViewMod.MultiSelect = false;
-            this.dataGridViewMod.Name = "dataGridViewMod";
-            this.dataGridViewMod.ReadOnly = true;
-            this.dataGridViewMod.RowHeadersVisible = false;
-            this.dataGridViewMod.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            // 
-            // dataGridViewTextBoxColumn1
-            // 
-            this.dataGridViewTextBoxColumn1.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
-            this.dataGridViewTextBoxColumn1.DataPropertyName = "FileName";
-            resources.ApplyResources(this.dataGridViewTextBoxColumn1, "dataGridViewTextBoxColumn1");
-            this.dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
-            this.dataGridViewTextBoxColumn1.ReadOnly = true;
-            // 
-            // bindingSourceMod
-            // 
-            this.bindingSourceMod.AllowNew = false;
-            this.bindingSourceMod.DataSource = typeof(HostsFileEditor.HostsModList);
             // 
             // dataGridViewHostsEntries
             // 
@@ -655,6 +506,154 @@ namespace HostsFileEditor
             // 
             this.splitContainer1.Panel2.Controls.Add(this.dataGridViewMod);
             this.splitContainer1.Panel2.Controls.Add(this.toolStripMod);
+            // 
+            // dataGridViewArchive
+            // 
+            this.dataGridViewArchive.AllowUserToAddRows = false;
+            this.dataGridViewArchive.AllowUserToDeleteRows = false;
+            this.dataGridViewArchive.AllowUserToResizeColumns = false;
+            this.dataGridViewArchive.AllowUserToResizeRows = false;
+            this.dataGridViewArchive.AutoGenerateColumns = false;
+            this.dataGridViewArchive.BackgroundColor = System.Drawing.Color.White;
+            this.dataGridViewArchive.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridViewArchive.ColumnHeadersVisible = false;
+            this.dataGridViewArchive.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.fileNameDataGridViewTextBoxColumn});
+            this.dataGridViewArchive.DataSource = this.bindingSourceArchive;
+            resources.ApplyResources(this.dataGridViewArchive, "dataGridViewArchive");
+            this.dataGridViewArchive.GridColor = System.Drawing.Color.White;
+            this.dataGridViewArchive.MultiSelect = false;
+            this.dataGridViewArchive.Name = "dataGridViewArchive";
+            this.dataGridViewArchive.ReadOnly = true;
+            this.dataGridViewArchive.RowHeadersVisible = false;
+            this.dataGridViewArchive.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            // 
+            // fileNameDataGridViewTextBoxColumn
+            // 
+            this.fileNameDataGridViewTextBoxColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.fileNameDataGridViewTextBoxColumn.DataPropertyName = "FileName";
+            resources.ApplyResources(this.fileNameDataGridViewTextBoxColumn, "fileNameDataGridViewTextBoxColumn");
+            this.fileNameDataGridViewTextBoxColumn.Name = "fileNameDataGridViewTextBoxColumn";
+            this.fileNameDataGridViewTextBoxColumn.ReadOnly = true;
+            // 
+            // bindingSourceArchive
+            // 
+            this.bindingSourceArchive.AllowNew = false;
+            this.bindingSourceArchive.DataSource = typeof(HostsFileEditor.HostsArchiveList);
+            // 
+            // toolStripArchive
+            // 
+            this.toolStripArchive.ClickThrough = true;
+            this.toolStripArchive.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.toolStripArchive.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            toolStripLabel1,
+            toolStripSeparator27,
+            this.buttonDeleteArchive,
+            this.buttonLoadArchive});
+            resources.ApplyResources(this.toolStripArchive, "toolStripArchive");
+            this.toolStripArchive.Name = "toolStripArchive";
+            // 
+            // toolStripLabel1
+            // 
+            toolStripLabel1.Name = "toolStripLabel1";
+            resources.ApplyResources(toolStripLabel1, "toolStripLabel1");
+            // 
+            // toolStripSeparator27
+            // 
+            toolStripSeparator27.Name = "toolStripSeparator27";
+            resources.ApplyResources(toolStripSeparator27, "toolStripSeparator27");
+            // 
+            // buttonDeleteArchive
+            // 
+            this.buttonDeleteArchive.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.buttonDeleteArchive.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.buttonDeleteArchive.Image = global::HostsFileEditor.Properties.Resources.Delete;
+            resources.ApplyResources(this.buttonDeleteArchive, "buttonDeleteArchive");
+            this.buttonDeleteArchive.Name = "buttonDeleteArchive";
+            this.buttonDeleteArchive.Click += new System.EventHandler(this.OnArchiveDeleteClick);
+            // 
+            // buttonLoadArchive
+            // 
+            this.buttonLoadArchive.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.buttonLoadArchive.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.buttonLoadArchive.Image = global::HostsFileEditor.Properties.Resources.LoadArchive;
+            resources.ApplyResources(this.buttonLoadArchive, "buttonLoadArchive");
+            this.buttonLoadArchive.Name = "buttonLoadArchive";
+            this.buttonLoadArchive.Click += new System.EventHandler(this.OnArchiveLoadClick);
+            // 
+            // dataGridViewMod
+            // 
+            this.dataGridViewMod.AllowUserToAddRows = false;
+            this.dataGridViewMod.AllowUserToDeleteRows = false;
+            this.dataGridViewMod.AllowUserToResizeColumns = false;
+            this.dataGridViewMod.AllowUserToResizeRows = false;
+            this.dataGridViewMod.AutoGenerateColumns = false;
+            this.dataGridViewMod.BackgroundColor = System.Drawing.Color.White;
+            this.dataGridViewMod.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridViewMod.ColumnHeadersVisible = false;
+            this.dataGridViewMod.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
+            this.dataGridViewTextBoxColumn1});
+            this.dataGridViewMod.DataSource = this.bindingSourceMod;
+            resources.ApplyResources(this.dataGridViewMod, "dataGridViewMod");
+            this.dataGridViewMod.GridColor = System.Drawing.Color.White;
+            this.dataGridViewMod.MultiSelect = false;
+            this.dataGridViewMod.Name = "dataGridViewMod";
+            this.dataGridViewMod.ReadOnly = true;
+            this.dataGridViewMod.RowHeadersVisible = false;
+            this.dataGridViewMod.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            // 
+            // dataGridViewTextBoxColumn1
+            // 
+            this.dataGridViewTextBoxColumn1.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.dataGridViewTextBoxColumn1.DataPropertyName = "FileName";
+            resources.ApplyResources(this.dataGridViewTextBoxColumn1, "dataGridViewTextBoxColumn1");
+            this.dataGridViewTextBoxColumn1.Name = "dataGridViewTextBoxColumn1";
+            this.dataGridViewTextBoxColumn1.ReadOnly = true;
+            // 
+            // bindingSourceMod
+            // 
+            this.bindingSourceMod.AllowNew = false;
+            this.bindingSourceMod.DataSource = typeof(HostsFileEditor.HostsModList);
+            // 
+            // toolStripMod
+            // 
+            this.toolStripMod.ClickThrough = true;
+            this.toolStripMod.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
+            this.toolStripMod.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            toolStripLabel2,
+            toolStripSeparator32,
+            this.buttonDeleteMod,
+            this.buttonLoadMod});
+            resources.ApplyResources(this.toolStripMod, "toolStripMod");
+            this.toolStripMod.Name = "toolStripMod";
+            // 
+            // toolStripLabel2
+            // 
+            toolStripLabel2.Name = "toolStripLabel2";
+            resources.ApplyResources(toolStripLabel2, "toolStripLabel2");
+            // 
+            // toolStripSeparator32
+            // 
+            toolStripSeparator32.Name = "toolStripSeparator32";
+            resources.ApplyResources(toolStripSeparator32, "toolStripSeparator32");
+            // 
+            // buttonDeleteMod
+            // 
+            this.buttonDeleteMod.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.buttonDeleteMod.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.buttonDeleteMod.Image = global::HostsFileEditor.Properties.Resources.Delete;
+            resources.ApplyResources(this.buttonDeleteMod, "buttonDeleteMod");
+            this.buttonDeleteMod.Name = "buttonDeleteMod";
+            this.buttonDeleteMod.Click += new System.EventHandler(this.OnModDeleteClick);
+            // 
+            // buttonLoadMod
+            // 
+            this.buttonLoadMod.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.buttonLoadMod.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.buttonLoadMod.Image = global::HostsFileEditor.Properties.Resources.LoadArchive;
+            resources.ApplyResources(this.buttonLoadMod, "buttonLoadMod");
+            this.buttonLoadMod.Name = "buttonLoadMod";
+            this.buttonLoadMod.Click += new System.EventHandler(this.OnModLoadClick);
             // 
             // menuStrip
             // 
@@ -1008,7 +1007,6 @@ namespace HostsFileEditor
             toolStripSeparator26,
             this.buttonDisable,
             toolStripSeparator16,
-            this.toolStripButton2,
             this.buttonArchive,
             this.buttonViewArchive,
             toolStripSeparator33,
@@ -1058,18 +1056,12 @@ namespace HostsFileEditor
             toolStripSeparator16.Name = "toolStripSeparator16";
             resources.ApplyResources(toolStripSeparator16, "toolStripSeparator16");
             // 
-            // toolStripButton2
-            // 
-            this.toolStripButton2.Image = global::HostsFileEditor.Properties.Resources.Archive;
-            resources.ApplyResources(this.toolStripButton2, "toolStripButton2");
-            this.toolStripButton2.Name = "toolStripButton2";
-            // 
             // buttonArchive
             // 
             this.buttonArchive.Image = global::HostsFileEditor.Properties.Resources.Archive;
             resources.ApplyResources(this.buttonArchive, "buttonArchive");
             this.buttonArchive.Name = "buttonArchive";
-            this.buttonArchive.Click += new System.EventHandler(this.OnModSaveClick);
+            this.buttonArchive.Click += new System.EventHandler(this.OnArchiveClick);
             // 
             // buttonViewArchive
             // 
@@ -1260,14 +1252,6 @@ namespace HostsFileEditor
             this.splitContainer.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer)).EndInit();
             this.splitContainer.ResumeLayout(false);
-            this.toolStripArchive.ResumeLayout(false);
-            this.toolStripArchive.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewArchive)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSourceArchive)).EndInit();
-            this.toolStripMod.ResumeLayout(false);
-            this.toolStripMod.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewMod)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSourceMod)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridViewHostsEntries)).EndInit();
             this.contextMenuGrid.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.bindingSourceView)).EndInit();
@@ -1277,6 +1261,14 @@ namespace HostsFileEditor
             this.splitContainer1.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewArchive)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.bindingSourceArchive)).EndInit();
+            this.toolStripArchive.ResumeLayout(false);
+            this.toolStripArchive.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewMod)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.bindingSourceMod)).EndInit();
+            this.toolStripMod.ResumeLayout(false);
+            this.toolStripMod.PerformLayout();
             this.menuStrip.ResumeLayout(false);
             this.menuStrip.PerformLayout();
             this.toolStrip.ResumeLayout(false);
@@ -1393,7 +1385,6 @@ namespace HostsFileEditor
         private System.Windows.Forms.ToolStripButton buttonDeleteMod;
         private System.Windows.Forms.ToolStripButton buttonLoadMod;
         private System.Windows.Forms.BindingSource bindingSourceMod;
-        private System.Windows.Forms.ToolStripButton toolStripButton2;
         private System.Windows.Forms.ToolStripMenuItem getModsFromServerToolStripMenuItem;
         private System.Windows.Forms.SplitContainer splitContainer1;
     }
