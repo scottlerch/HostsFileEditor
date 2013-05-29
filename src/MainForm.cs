@@ -1127,5 +1127,6 @@ namespace HostsFileEditor
             (new DownloadFromServer()).ShowDialog(this);
             HostsModList.Instance.Refresh();
         }
+
     }
 }
