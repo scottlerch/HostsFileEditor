@@ -29,6 +29,7 @@ namespace HostsFileEditor
     /// Helper class to enforce single instance of a program.
     /// http://www.codeproject.com/KB/cs/SingleInstanceAppMutex.aspx
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1063:ImplementIDisposableCorrectly")]
     public class ProgramSingleInstance : IDisposable
     {
         /// <summary>
@@ -101,6 +102,7 @@ namespace HostsFileEditor
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1063:ImplementIDisposableCorrectly")]
         public void  Dispose()
         {
             if (this.mutex != null)

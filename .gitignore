@@ -1,11 +1,11 @@
 *.user
 *.suo
 *.Cache
-/bin/*
-/logs/*
-/setup/Debug
-/setup/Release
+/bin
+/logs
 /setup/*/bin
 /setup/*/obj
+/setup/bin
+/setup/obj
 /src/bin
 /src/obj

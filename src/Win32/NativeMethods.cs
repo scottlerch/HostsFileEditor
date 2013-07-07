@@ -24,7 +24,7 @@ namespace HostsFileEditor.Win32
         /// </summary>
         /// <param name="message">The message.</param>
         /// <returns>Error code.</returns>
-        [DllImport("user32")]
+        [DllImport("user32", CharSet = CharSet.Unicode)]
         public static extern int RegisterWindowMessage(string message);
 
         /// <summary>

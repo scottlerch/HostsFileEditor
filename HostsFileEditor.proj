@@ -29,7 +29,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
   <Target Name="CollectBuiltFiles">
     <CreateItem
      Condition=" '$(Configuration)' == 'Release'"
-     Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\$(Configuration)\*.*"
+     Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\bin\$(Configuration)\*.*"
      Exclude=".\src\\**\bin\$(Configuration)\\**\*.pdb;.\\**\bin\$(Configuration)\\**\*.vshost.exe">
     <Output
       TaskParameter="Include"
@@ -37,7 +37,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
     </CreateItem>
     <CreateItem
       Condition=" '$(Configuration)' == 'Debug'"
-      Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\$(Configuration)\*.*"
+      Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\bin\$(Configuration)\*.*"
       Exclude=".\\**\bin\$(Configuration)\\**\*.vshost.exe">
       <Output
         TaskParameter="Include"
@@ -59,7 +59,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 
   <Target Name = "Clean">
     <CreateItem
-     Include=".\src\\**\bin\\**\*.*;.\setup\$(Configuration)\*.*">
+     Include=".\src\\**\bin\\**\*.*;.\setup\\**\bin\\**\*.*">
       <Output
         TaskParameter="Include"
         ItemName="CleanFiles"/>
@@ -69,7 +69,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 
   <!-- ==================== Build Targets ====================== -->
 
-  <Target Name = "Build" DependsOnTargets="InternalBuild;SetupBuild;CollectBuiltFiles">
+  <Target Name = "Build" DependsOnTargets="InternalBuild;CollectBuiltFiles">
     <Message Text="Copying @(BuildFiles) to bin" />
     <Copy SourceFiles="@(BuildFiles)" DestinationFolder="bin" />
     <Message Text="Build Complete!"/>
@@ -90,12 +90,6 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
     <MakeDir Directories="bin" Condition="!Exists('bin')" />
     <MakeDir Directories="docs" Condition="!Exists('docs')" />
     <MakeDir Directories="logs" Condition="!Exists('logs')" />
-  </Target>
-  
-  <!-- ========================= Setup Targets ================== -->
-
-  <Target Name="SetupBuild">
-    <Exec Command='devenv.exe /build $(Configuration) setup\HostsFileEditorSetup.vdproj'/>
   </Target>
 
 </Project>
