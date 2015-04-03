@@ -130,6 +130,7 @@
     <Compile Include="ProgramInfo.cs" />
     <Compile Include="ProgramSingleInstance.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities\DnsEx.cs" />
     <Compile Include="Utilities\FileEx.cs" />
     <Compile Include="Utilities\UndoManager.cs" />
     <Compile Include="Utilities\Reflect.cs" />

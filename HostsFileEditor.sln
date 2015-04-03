@@ -25,6 +25,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGenCustomAction", "setup\N
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "HostsFileEditorSetup", "setup\HostsFileEditorSetup.wixproj", "{A78A7EC4-2707-408C-A19F-AB237F0D85BA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{237C13F4-73B3-4BB2-A4EC-5D38962F07B9}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
