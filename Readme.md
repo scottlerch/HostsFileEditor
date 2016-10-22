@@ -8,7 +8,7 @@ Release binaries can be downloaded from [CodePlex](http://hostsfileeditor.codepl
 
 ## Build
 
-Requires Windows SDK for Windows 7 and .NET or Visual Studio 2010 or newer.  To build the installer you must have WiX Toolset 3.7+.
+Requires Visual Studio 2015 or newer.  To build the installer you must have WiX Toolset 3.7+.
 
 Run `build-release.bat` or `build-debug.bat`. 
 

@@ -4862,4 +4862,16 @@
   <data name="&gt;&gt;$this.Type" xml:space="preserve">
     <value>System.Windows.Forms.Form, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="openTextEditor.Size" type="System.Drawing.Size, System.Drawing">
+    <value>166, 22</value>
+  </data>
+  <data name="openTextEditor.Text" xml:space="preserve">
+    <value>Open &amp;Text Editor</value>
+  </data>
+  <data name="&gt;&gt;openTextEditor.Name" xml:space="preserve">
+    <value>openTextEditor</value>
+  </data>
+  <data name="&gt;&gt;openTextEditor.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

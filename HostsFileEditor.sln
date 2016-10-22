@@ -1,14 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostsFileEditor", "src\HostsFileEditor.csproj", "{17A37069-B2AC-4D58-8F6E-C955F284F94C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sources", "Sources", "{F4971D95-21F4-4E91-B8EE-3971F0B50FE3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{C802A54D-0F13-4EE0-B112-D9E55E3854F1}"
 	ProjectSection(SolutionItems) = preProject
-		License.txt = License.txt
-		Readme.txt = Readme.txt
+		License.md = License.md
+		Readme.md = Readme.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{BF6F8492-4872-444A-B62F-000A90D73EA4}"

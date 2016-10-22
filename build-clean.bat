@@ -4,4 +4,4 @@ if exist logs goto msbuild
 mkdir logs
 
 :msbuild
-%windir%\Microsoft.NET\Framework\v4.0.30319\MSBUILD.exe HostsFileEditor.proj /t:Clean
+"%PROGRAMFILES(X86)%\MSBuild\14.0\Bin\MSBUILD.exe" HostsFileEditor.proj /t:Clean

@@ -1048,6 +1048,16 @@ namespace HostsFileEditor
             (new AboutForm()).ShowDialog(this);
         }
 
+        /// <summary>
+        /// Called when open text editor clicked.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+        private void OnOpenTextEditorClick(object sender, EventArgs e)
+        {
+            FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
+        }
+
         #endregion
     }
 }

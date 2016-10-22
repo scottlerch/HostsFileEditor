@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="{EC9CF3E9-3C14-43D6-B9D0-5B4232926FAC}" Codepage="1252" Language="1033" Manufacturer="Scott Lerch" Name="Hosts File Editor" UpgradeCode="{3A4F4E01-1C91-4562-8C04-5F4273501698}" Version="1.0.0">
+  <Product Id="{23EEACB7-C78A-4334-900C-A260372997E2}" Codepage="1252" Language="1033" Manufacturer="Scott Lerch" Name="Hosts File Editor" UpgradeCode="{3A4F4E01-1C91-4562-8C04-5F4273501698}" Version="1.1.0">
     <Package Comments="Edit and manager your Windows hosts file." Compressed="yes" InstallerVersion="200" Keywords="hosts" Languages="1033" Manufacturer="Scott Lerch" Platform="x86" />
+    <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
     <Binary Id="InstallUtil" SourceFile="Resources\Binary\InstallUtil" />
     <Binary Id="MSVBDPCADLL" SourceFile="Resources\Binary\MSVBDPCADLL" />
     <Binary Id="VSDNETCFG" SourceFile="Resources\Binary\VSDNETCFG" />
@@ -714,7 +715,7 @@
     </UI>
     <Upgrade Id="{3A4F4E01-1C91-4562-8C04-5F4273501698}">
       <UpgradeVersion Maximum="1.0.0" Property="PREVIOUSVERSIONSINSTALLED" />
-      <UpgradeVersion Minimum="1.0.0" Property="NEWERPRODUCTFOUND" OnlyDetect="yes" IncludeMinimum="yes" />
+      <UpgradeVersion Minimum="1.1.0" Property="NEWERPRODUCTFOUND" OnlyDetect="yes" IncludeMinimum="yes" />
     </Upgrade>
     <InstallExecuteSequence>
       <Custom Action="DIRCA_CheckFX" Sequence="1" />
@@ -785,7 +786,6 @@
       <PublishFeatures Sequence="6300" />
       <PublishProduct Sequence="6400" />
       <InstallFinalize Sequence="6600" />
-      <RemoveExistingProducts Sequence="6550" />
       <InstallExecute Sequence="6500" />
       <MsiPublishAssemblies Sequence="6250" />
       <MsiUnpublishAssemblies Sequence="1650" />

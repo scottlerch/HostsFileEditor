@@ -117,6 +117,7 @@ namespace HostsFileEditor
             this.menuSave = new System.Windows.Forms.ToolStripMenuItem();
             this.menuSaveAs = new System.Windows.Forms.ToolStripMenuItem();
             this.menuArchive = new System.Windows.Forms.ToolStripMenuItem();
+            this.openTextEditor = new System.Windows.Forms.ToolStripMenuItem();
             this.menuRestoreDefaults = new System.Windows.Forms.ToolStripMenuItem();
             this.menuDisable = new System.Windows.Forms.ToolStripMenuItem();
             this.menuImport = new System.Windows.Forms.ToolStripMenuItem();
@@ -297,6 +298,7 @@ namespace HostsFileEditor
             this.dataGridViewHostsEntries.AllowUserToOrderColumns = true;
             this.dataGridViewHostsEntries.AllowUserToResizeRows = false;
             this.dataGridViewHostsEntries.AutoGenerateColumns = false;
+            this.dataGridViewHostsEntries.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dataGridViewHostsEntries.ClearSort = null;
             this.dataGridViewHostsEntries.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewHostsEntries.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -482,6 +484,7 @@ namespace HostsFileEditor
             this.dataGridViewArchive.AllowUserToResizeRows = false;
             this.dataGridViewArchive.AutoGenerateColumns = false;
             this.dataGridViewArchive.BackgroundColor = System.Drawing.Color.White;
+            this.dataGridViewArchive.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dataGridViewArchive.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridViewArchive.ColumnHeadersVisible = false;
             this.dataGridViewArchive.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
@@ -568,6 +571,7 @@ namespace HostsFileEditor
             toolStripSeparator18,
             this.menuArchive,
             toolStripSeparator14,
+            this.openTextEditor,
             this.menuRestoreDefaults,
             this.menuDisable,
             toolStripSeparator13,
@@ -606,6 +610,12 @@ namespace HostsFileEditor
             // 
             toolStripSeparator14.Name = "toolStripSeparator14";
             resources.ApplyResources(toolStripSeparator14, "toolStripSeparator14");
+            // 
+            // openTextEditor
+            // 
+            this.openTextEditor.Name = "openTextEditor";
+            resources.ApplyResources(this.openTextEditor, "openTextEditor");
+            this.openTextEditor.Click += new System.EventHandler(this.OnOpenTextEditorClick);
             // 
             // menuRestoreDefaults
             // 
@@ -1256,6 +1266,7 @@ namespace HostsFileEditor
         private System.Windows.Forms.ToolStripMenuItem contextMenuUncheck;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem openTextEditor;
     }
 }
 
