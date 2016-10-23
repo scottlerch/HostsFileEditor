@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="{23EEACB7-C78A-4334-900C-A260372997E2}" Codepage="1252" Language="1033" Manufacturer="Scott Lerch" Name="Hosts File Editor" UpgradeCode="{3A4F4E01-1C91-4562-8C04-5F4273501698}" Version="1.1.0">
+  <Product Id="{B2FB5AFF-D724-4F3E-865A-632BB78D8A21}" Codepage="1252" Language="1033" Manufacturer="Scott Lerch" Name="Hosts File Editor" UpgradeCode="{3A4F4E01-1C91-4562-8C04-5F4273501698}" Version="1.1.1">
     <Package Comments="Edit and manager your Windows hosts file." Compressed="yes" InstallerVersion="200" Keywords="hosts" Languages="1033" Manufacturer="Scott Lerch" Platform="x86" />
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
     <Binary Id="InstallUtil" SourceFile="Resources\Binary\InstallUtil" />
@@ -10,7 +10,7 @@
     <Binary Id="UpFldrBtn" SourceFile="Resources\WiXUpFolderBtn.ico" />
     <Binary Id="NewFldrBtn" SourceFile="Resources\WiXNewFolderBtn.ico" />
     <CustomAction Id="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install" BinaryKey="InstallUtil" DllEntry="ManagedInstall" Execute="deferred" Impersonate="no" />
-    <CustomAction Id="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install.SetProperty" Property="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install" Value="/installtype=notransaction /action=install /LogFile= /Args=&quot;[TARGETDIR]HostsFileEditor.exe;[TARGETDIR];Equin.ApplicationFramework.BindingListView.dll&quot; &quot;[#_2D8E9D5E0281E1A725F43A79C55FED20]&quot; &quot;[VSDFxConfigFile]&quot;" />
+    <CustomAction Id="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install.SetProperty" Property="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install" Value="/installtype=notransaction /action=install /LogFile= /Args=&quot;[TARGETDIR]HostsFileEditor.exe&quot; &quot;[#_2D8E9D5E0281E1A725F43A79C55FED20]&quot; &quot;[VSDFxConfigFile]&quot;" />
     <CustomAction Id="DIRCA_TARGETDIR" Property="TARGETDIR" Value="[ProgramFilesFolder]\[ProductName]" Execute="firstSequence" />
     <CustomAction Id="DIRCA_CheckFX" BinaryKey="MSVBDPCADLL" DllEntry="CheckFX" />
     <CustomAction Id="VSDCA_VsdLaunchConditions" BinaryKey="MSVBDPCADLL" DllEntry="VsdLaunchConditions" />
@@ -34,9 +34,6 @@
       <Component Id="C__512DCCDCB92D4CFD8A3089B67A8A4263" Guid="{98CEA644-3633-B151-A5CE-CF384373A401}">
         <File Id="_512DCCDCB92D4CFD8A3089B67A8A4263" Name="GPL.rtf" KeyPath="yes" ShortName="GPL.RTF" DiskId="1" Source="..\docs\GPL.rtf" />
       </Component>
-      <Component Id="C__C1BAD2B9F986BAFA5DDD4A98DA5DD033" Guid="{68248B84-8ECB-4C93-452A-9E9EAEF76F23}">
-        <File Id="_C1BAD2B9F986BAFA5DDD4A98DA5DD033" Name="Equin.ApplicationFramework.BindingListView.dll" KeyPath="yes" Assembly=".net" AssemblyManifest="_C1BAD2B9F986BAFA5DDD4A98DA5DD033" AssemblyApplication="_C1BAD2B9F986BAFA5DDD4A98DA5DD033" DiskId="1" Source="..\lib\Equin.ApplicationFramework.BindingListView.dll" />
-      </Component>
       <Component Id="C__F2F67BD1029D14C71AA23673BB451CF3" Guid="{1CA560A2-8F15-0FD9-D8D8-833971CA5678}">
         <File Id="_F2F67BD1029D14C71AA23673BB451CF3" Name="HostsFileEditor.exe" KeyPath="yes" Assembly=".net" AssemblyManifest="_F2F67BD1029D14C71AA23673BB451CF3" AssemblyApplication="_F2F67BD1029D14C71AA23673BB451CF3" DiskId="1" Source="$(var.HostsFileEditor.TargetPath)" />
         <Shortcut Id="_2EA308A3B95644B5BDDE322AB98BB2D1" Directory="ProgramMenuFolder" Name="Hosts File Editor" Icon="_14D645D83F085D2F851E9B.exe" IconIndex="0" Show="normal" WorkingDirectory="TARGETDIR" Advertise="yes" />
@@ -54,7 +51,6 @@
     <Feature Id="DefaultFeature" ConfigurableDirectory="TARGETDIR" Level="1">
       <ComponentRef Id="C__25D63E1D9A144B7AB0C586AAC97BBB28" />
       <ComponentRef Id="C__512DCCDCB92D4CFD8A3089B67A8A4263" />
-      <ComponentRef Id="C__C1BAD2B9F986BAFA5DDD4A98DA5DD033" Primary="yes" />
       <ComponentRef Id="C__F2F67BD1029D14C71AA23673BB451CF3" Primary="yes" />
       <ComponentRef Id="C__2D8E9D5E0281E1A725F43A79C55FED20" Primary="yes" />
       <ComponentRef Id="C__AB6CE3EF0F39A7ADFF2DE542E7ACD3E2" />
@@ -715,7 +711,7 @@
     </UI>
     <Upgrade Id="{3A4F4E01-1C91-4562-8C04-5F4273501698}">
       <UpgradeVersion Maximum="1.0.0" Property="PREVIOUSVERSIONSINSTALLED" />
-      <UpgradeVersion Minimum="1.1.0" Property="NEWERPRODUCTFOUND" OnlyDetect="yes" IncludeMinimum="yes" />
+      <UpgradeVersion Minimum="1.1.1" Property="NEWERPRODUCTFOUND" OnlyDetect="yes" IncludeMinimum="yes" />
     </Upgrade>
     <InstallExecuteSequence>
       <Custom Action="DIRCA_CheckFX" Sequence="1" />
