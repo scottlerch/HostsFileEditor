@@ -230,6 +230,7 @@
   <Target Name="BeforeBuild">
   </Target>-->
   <Target Name="AfterBuild">
+    <Exec Condition="'$(Sign)'=='true'" Command="&quot;C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe&quot; sign /f &quot;ScottLerch.pfx&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.verisign.com/scripts/timstamp.dll &quot;$(TargetPath)&quot;" />
     <Exec Command="..\packages\7ZipCLI.9.20.0\tools\7za.exe a &quot;$(TargetDir)$(ProjectName).zip&quot; &quot;$(TargetPath)&quot; &quot;$(TargetPath).config&quot;" />
   </Target>
 </Project>
