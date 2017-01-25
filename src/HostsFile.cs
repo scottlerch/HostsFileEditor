@@ -36,6 +36,18 @@ namespace HostsFileEditor
     {
         #region Constants and Fields
 
+#if DEBUG
+        /// <summary>
+        /// This command execute flush DNS and show output command into shell.
+        /// </summary>
+        private const string CMD_FLUSH_DNS = "/K ipconfig /flushdns";
+#else
+        /// <summary>
+        /// This command execute flush DNS and close shell.
+        /// </summary>
+        private const string CMD_FLUSH_DNS = "/C ipconfig /flushdns";
+#endif
+
         /// <summary>
         /// The default hosts file directory location.
         /// </summary>
@@ -297,6 +309,9 @@ namespace HostsFileEditor
             {
                 this.Entries.Clear();
                 this.Entries.AddLines(File.ReadAllLines(this.filePath), removeDefault);
+
+                //flush dns
+                System.Diagnostics.Process.Start("CMD.exe", CMD_FLUSH_DNS);
             });
         }
 
