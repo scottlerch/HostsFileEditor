@@ -28,6 +28,7 @@ namespace HostsFileEditor
     using HostsFileEditor.Extensions;
     using HostsFileEditor.Properties;
     using HostsFileEditor.Utilities;
+    using HostsFileEditor.Win32;
 
     /// <summary>
     /// This class represents a hosts file.
@@ -258,6 +259,7 @@ namespace HostsFileEditor
         public void Save()
         {
             this.SaveAs(this.filePath);
+            NativeMethods.FlushDns();
         }
 
         /// <summary>
@@ -298,6 +300,8 @@ namespace HostsFileEditor
                 this.Entries.Clear();
                 this.Entries.AddLines(File.ReadAllLines(this.filePath), removeDefault);
             });
+
+            NativeMethods.FlushDns();
         }
 
         #endregion
