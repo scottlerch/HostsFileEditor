@@ -33,7 +33,7 @@ namespace HostsFileEditor.Utilities
                 return false;
             }
 
-            var openCommand = GetClassesRootKeyDefaultValue(extensionId + "/shell/open/command");
+            var openCommand = GetClassesRootKeyDefaultValue(extensionId + @"\shell\open\command");
 
             if (openCommand == null)
             {
