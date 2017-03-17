@@ -210,12 +210,12 @@ namespace HostsFileEditor
         /// <exception cref="ArgumentNullException">
         /// Argument cannot be null.
         /// </exception>
-        public void InsertBefore(HostsEntry entry)
+        public void InsertBefore(HostsEntry entry, HostsEntry newEntry = null)
         {
             entry.ThrowIfNull("entry");
 
             int insertIndex = this.IndexOf(entry);
-            this.Insert(insertIndex, new HostsEntry());
+            this.Insert(insertIndex, newEntry ?? new HostsEntry());
         }
 
         /// <summary>
@@ -225,12 +225,12 @@ namespace HostsFileEditor
         /// <exception cref="ArgumentNullException">
         /// Argument cannot be null.
         /// </exception>
-        public void InsertAfter(HostsEntry entry)
+        public void InsertAfter(HostsEntry entry, HostsEntry newEntry = null)
         {
             entry.ThrowIfNull("entry");
 
             int insertIndex = this.IndexOf(entry) + 1;
-            this.Insert(insertIndex, new HostsEntry());
+            this.Insert(insertIndex, newEntry ?? new HostsEntry());
         }
 
         /// <summary>

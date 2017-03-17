@@ -98,11 +98,14 @@ namespace HostsFileEditor
             this.menuContextCopy = new System.Windows.Forms.ToolStripMenuItem();
             this.menuContextPaste = new System.Windows.Forms.ToolStripMenuItem();
             this.menuContextDelete = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuContextDuplicate = new System.Windows.Forms.ToolStripMenuItem();
             this.menuContextMoveUp = new System.Windows.Forms.ToolStripMenuItem();
             this.menuContextMoveDown = new System.Windows.Forms.ToolStripMenuItem();
             this.menuContextInsertAbove = new System.Windows.Forms.ToolStripMenuItem();
             this.menuContextInsertBelow = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator31 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripSeparator32 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripSeparator33 = new System.Windows.Forms.ToolStripSeparator();
             this.contextMenuCheck = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuUncheck = new System.Windows.Forms.ToolStripMenuItem();
             this.bindingSourceView = new System.Windows.Forms.BindingSource(this.components);
@@ -130,6 +133,7 @@ namespace HostsFileEditor
             this.menuCopy = new System.Windows.Forms.ToolStripMenuItem();
             this.menuPaste = new System.Windows.Forms.ToolStripMenuItem();
             this.menuDelete = new System.Windows.Forms.ToolStripMenuItem();
+            this.menuDuplicate = new System.Windows.Forms.ToolStripMenuItem();
             this.menuMoveUp = new System.Windows.Forms.ToolStripMenuItem();
             this.menuMoveDown = new System.Windows.Forms.ToolStripMenuItem();
             this.insertRowAboveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -368,6 +372,8 @@ namespace HostsFileEditor
             this.menuContextCut,
             this.menuContextCopy,
             this.menuContextPaste,
+            this.toolStripSeparator32,
+            this.menuContextDuplicate,
             toolStripSeparator22,
             this.menuContextDelete,
             toolStripSeparator23,
@@ -415,6 +421,13 @@ namespace HostsFileEditor
             resources.ApplyResources(this.menuContextDelete, "menuContextDelete");
             this.menuContextDelete.Click += new System.EventHandler(this.OnDeleteClick);
             // 
+            // menuContextDuplicate
+            // 
+            this.menuContextDuplicate.Image = global::HostsFileEditor.Properties.Resources.Duplicate;
+            this.menuContextDuplicate.Name = "menuContextDuplicate";
+            resources.ApplyResources(this.menuContextDuplicate, "menuContextDuplicate");
+            this.menuContextDuplicate.Click += new System.EventHandler(this.OnDuplicateClick);
+            // 
             // toolStripSeparator23
             // 
             toolStripSeparator23.Name = "toolStripSeparator23";
@@ -457,6 +470,11 @@ namespace HostsFileEditor
             // 
             this.toolStripSeparator31.Name = "toolStripSeparator31";
             resources.ApplyResources(this.toolStripSeparator31, "toolStripSeparator31");
+            // 
+            // toolStripSeparator32
+            // 
+            this.toolStripSeparator32.Name = "toolStripSeparator32";
+            resources.ApplyResources(this.toolStripSeparator31, "toolStripSeparator32");
             // 
             // contextMenuCheck
             // 
@@ -664,6 +682,8 @@ namespace HostsFileEditor
             this.menuCut,
             this.menuCopy,
             this.menuPaste,
+            toolStripSeparator33,
+            this.menuDuplicate,
             toolStripSeparator5,
             this.menuDelete,
             toolStripSeparator6,
@@ -741,6 +761,13 @@ namespace HostsFileEditor
             this.menuDelete.Name = "menuDelete";
             resources.ApplyResources(this.menuDelete, "menuDelete");
             this.menuDelete.Click += new System.EventHandler(this.OnDeleteClick);
+            // 
+            // menuDuplicate
+            // 
+            this.menuDuplicate.Image = global::HostsFileEditor.Properties.Resources.Duplicate;
+            this.menuDuplicate.Name = "menuDuplicate";
+            resources.ApplyResources(this.menuDuplicate, "menuDuplicate");
+            this.menuDuplicate.Click += new System.EventHandler(this.OnDuplicateClick);
             // 
             // toolStripSeparator6
             // 
@@ -1192,6 +1219,7 @@ namespace HostsFileEditor
         private System.Windows.Forms.ToolStripMenuItem menuCopy;
         private System.Windows.Forms.ToolStripMenuItem menuPaste;
         private System.Windows.Forms.ToolStripMenuItem menuDelete;
+        private System.Windows.Forms.ToolStripMenuItem menuDuplicate;
         private System.Windows.Forms.ToolStripMenuItem menuMoveUp;
         private System.Windows.Forms.ToolStripMenuItem menuMoveDown;
         private System.Windows.Forms.ToolStripMenuItem viewToolStripMenuItem;
@@ -1236,6 +1264,7 @@ namespace HostsFileEditor
         private System.Windows.Forms.ToolStripMenuItem menuContextCopy;
         private System.Windows.Forms.ToolStripMenuItem menuContextPaste;
         private System.Windows.Forms.ToolStripMenuItem menuContextDelete;
+        private System.Windows.Forms.ToolStripMenuItem menuContextDuplicate;
         private System.Windows.Forms.ToolStripMenuItem menuContextMoveUp;
         private System.Windows.Forms.ToolStripMenuItem menuContextMoveDown;
         private System.Windows.Forms.ToolStripMenuItem menuContextInsertAbove;
@@ -1262,6 +1291,8 @@ namespace HostsFileEditor
         private System.Windows.Forms.ToolStripMenuItem menuCheck;
         private System.Windows.Forms.ToolStripMenuItem menuUncheck;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator31;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator32;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator33;
         private System.Windows.Forms.ToolStripMenuItem contextMenuCheck;
         private System.Windows.Forms.ToolStripMenuItem contextMenuUncheck;
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;

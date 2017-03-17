@@ -660,6 +660,15 @@
   <data name="menuContextDelete.Text" xml:space="preserve">
     <value>Delete</value>
   </data>
+  <data name="menuContextDuplicate.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
+    <value>Ctrl+D</value>
+  </data>
+  <data name="menuContextDuplicate.Size" type="System.Drawing.Size, System.Drawing">
+    <value>226, 22</value>
+  </data>
+  <data name="menuContextDuplicate.Text" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
   <metadata name="toolStripSeparator23.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
   </metadata>
@@ -709,6 +718,12 @@
     <value>Insert Below</value>
   </data>
   <data name="toolStripSeparator31.Size" type="System.Drawing.Size, System.Drawing">
+    <value>223, 6</value>
+  </data>
+  <data name="toolStripSeparator32.Size" type="System.Drawing.Size, System.Drawing">
+    <value>223, 6</value>
+  </data>
+  <data name="toolStripSeparator33.Size" type="System.Drawing.Size, System.Drawing">
     <value>223, 6</value>
   </data>
   <data name="contextMenuCheck.ImageTransparentColor" type="System.Drawing.Color, System.Drawing">
@@ -923,6 +938,15 @@
   </data>
   <data name="menuDelete.Text" xml:space="preserve">
     <value>&amp;Delete</value>
+  </data>
+  <data name="menuDuplicate.ShortcutKeys" type="System.Windows.Forms.Keys, System.Windows.Forms">
+    <value>Ctrl+D</value>
+  </data>
+  <data name="menuDuplicate.Size" type="System.Drawing.Size, System.Drawing">
+    <value>226, 22</value>
+  </data>
+  <data name="menuDuplicate.Text" xml:space="preserve">
+    <value>&amp;Duplicate</value>
   </data>
   <metadata name="toolStripSeparator6.GenerateMember" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>False</value>
@@ -4286,6 +4310,12 @@
   <data name="&gt;&gt;menuContextDelete.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
+  <data name="&gt;&gt;menuContextDuplicate.Name" xml:space="preserve">
+    <value>menuContextDuplicate</value>
+  </data>
+  <data name="&gt;&gt;menuContextDuplicate.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
   <data name="&gt;&gt;toolStripSeparator23.Name" xml:space="preserve">
     <value>toolStripSeparator23</value>
   </data>
@@ -4326,6 +4356,18 @@
     <value>toolStripSeparator31</value>
   </data>
   <data name="&gt;&gt;toolStripSeparator31.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator32.Name" xml:space="preserve">
+    <value>toolStripSeparator32</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator32.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator33.Name" xml:space="preserve">
+    <value>toolStripSeparator33</value>
+  </data>
+  <data name="&gt;&gt;toolStripSeparator33.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripSeparator, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;contextMenuCheck.Name" xml:space="preserve">
@@ -4518,6 +4560,12 @@
     <value>menuDelete</value>
   </data>
   <data name="&gt;&gt;menuDelete.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;menuDuplicate.Name" xml:space="preserve">
+    <value>menuDuplicate</value>
+  </data>
+  <data name="&gt;&gt;menuDuplicate.Type" xml:space="preserve">
     <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
   <data name="&gt;&gt;toolStripSeparator6.Name" xml:space="preserve">

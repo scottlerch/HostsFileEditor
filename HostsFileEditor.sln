@@ -17,6 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{BF6F
 	ProjectSection(SolutionItems) = preProject
 		build-clean.bat = build-clean.bat
 		build-debug.bat = build-debug.bat
+		build-release-signed.bat = build-release-signed.bat
 		build-release.bat = build-release.bat
 		HostsFileEditor.proj = HostsFileEditor.proj
 	EndProjectSection

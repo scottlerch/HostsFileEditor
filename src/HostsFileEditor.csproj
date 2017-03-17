@@ -178,6 +178,7 @@
   <ItemGroup>
     <Content Include="HostsFileEditor.ico" />
     <Content Include="ILMergeOrder.txt" />
+    <None Include="Resources\edit-copy-4.png" />
     <None Include="Resources\Checkbox.bmp" />
     <None Include="Resources\Control_Box.bmp" />
     <None Include="Resources\CheckBoxHS.png" />

@@ -20,7 +20,7 @@
     <ILMergeOrderFile></ILMergeOrderFile>
 
     <!-- The strong key file name if not specified in the project -->
-    <ILMergeKeyFile Condition="'$(Sign)'=='true'">ScottLerch.snk</ILMergeKeyFile>
+    <ILMergeKeyFile Condition="'$(StrongName)'=='true'">ScottLerch.snk</ILMergeKeyFile>
 
     <!-- The assembly version if differs for the version of the main assembly -->
     <ILMergeAssemblyVersion></ILMergeAssemblyVersion>

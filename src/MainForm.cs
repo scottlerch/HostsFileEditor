@@ -268,6 +268,32 @@ namespace HostsFileEditor
         }
 
         /// <summary>
+        /// Occurs when duplicate clicked.
+        /// </summary>
+        /// <param name="sender">
+        /// The sender.
+        /// </param>
+        /// <param name="e">
+        /// The event arguments.
+        /// </param>
+        private void OnDuplicateClick(object sender, EventArgs e)
+        {
+            if (this.dataGridViewHostsEntries.SelectedRows.Count > 0)
+            {
+                foreach (var entry in this.dataGridViewHostsEntries.SelectedHostEntries)
+                {
+                    HostsFile.Instance.Entries.InsertAfter(entry, new HostsEntry(entry));
+                }
+            }
+            else if (this.dataGridViewHostsEntries.CurrentRow.DataBoundItem != null)
+            {
+                HostsFile.Instance.Entries.InsertAfter(
+                    this.dataGridViewHostsEntries.CurrentHostEntry,
+                    new HostsEntry(this.dataGridViewHostsEntries.CurrentHostEntry));
+            }
+        }
+
+        /// <summary>
         /// Occurs when disable hosts clicked.
         /// </summary>
         /// <param name="sender">
