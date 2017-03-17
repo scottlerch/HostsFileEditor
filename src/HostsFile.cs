@@ -194,6 +194,7 @@ namespace HostsFileEditor
             using (FileEx.DisableAttributes(DefaultHostFilePath, FileAttributes.ReadOnly))
             {
                 File.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
+                NativeMethods.FlushDns();
             }
         }
 
@@ -205,6 +206,7 @@ namespace HostsFileEditor
             using (FileEx.DisableAttributes(DefaultDisabledHostFilePath, FileAttributes.ReadOnly))
             {
                 File.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
+                NativeMethods.FlushDns();
             }
         }
 
