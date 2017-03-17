@@ -57,6 +57,7 @@ namespace HostsFileEditor
             this.labelCopyright = new System.Windows.Forms.Label();
             this.textBoxDescription = new System.Windows.Forms.TextBox();
             this.okButton = new System.Windows.Forms.Button();
+            this.githubLink = new System.Windows.Forms.LinkLabel();
             this.tableLayoutPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.logoPictureBox)).BeginInit();
             this.SuspendLayout();
@@ -72,6 +73,7 @@ namespace HostsFileEditor
             this.tableLayoutPanel.Controls.Add(this.labelCopyright, 1, 2);
             this.tableLayoutPanel.Controls.Add(this.textBoxDescription, 1, 4);
             this.tableLayoutPanel.Controls.Add(this.okButton, 1, 5);
+            this.tableLayoutPanel.Controls.Add(this.githubLink, 1, 3);
             this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel.Location = new System.Drawing.Point(9, 9);
             this.tableLayoutPanel.Name = "tableLayoutPanel";
@@ -157,6 +159,18 @@ namespace HostsFileEditor
             this.okButton.TabIndex = 24;
             this.okButton.Text = "&OK";
             // 
+            // githubLink
+            // 
+            this.githubLink.AutoSize = true;
+            this.githubLink.Location = new System.Drawing.Point(143, 78);
+            this.githubLink.Margin = new System.Windows.Forms.Padding(6, 0, 3, 0);
+            this.githubLink.Name = "githubLink";
+            this.githubLink.Size = new System.Drawing.Size(221, 13);
+            this.githubLink.TabIndex = 25;
+            this.githubLink.TabStop = true;
+            this.githubLink.Text = "https://github.com/scottlerch/HostsFileEditor";
+            this.githubLink.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.OnLinkClicked);
+            // 
             // AboutForm
             // 
             this.AcceptButton = this.okButton;
@@ -189,5 +203,6 @@ namespace HostsFileEditor
         private System.Windows.Forms.Label labelCopyright;
         private System.Windows.Forms.TextBox textBoxDescription;
         private System.Windows.Forms.Button okButton;
+        private System.Windows.Forms.LinkLabel githubLink;
     }
 }

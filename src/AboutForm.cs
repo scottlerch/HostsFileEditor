@@ -19,6 +19,7 @@
 
 namespace HostsFileEditor
 {
+    using System.Diagnostics;
     using System.Reflection;
     using System.Windows.Forms;
 
@@ -134,6 +135,17 @@ namespace HostsFileEditor
                 }
                 return ((AssemblyCompanyAttribute)attributes[0]).Company;
             }
+        }
+
+        /// <summary>
+        /// Called when link clicked.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="System.EventArgs"/> instance
+        /// containing the event data.</param>
+        private void OnLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            Process.Start(this.githubLink.Text);
         }
     }
 }

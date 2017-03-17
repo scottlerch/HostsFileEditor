@@ -29,7 +29,7 @@ using System.Runtime.InteropServices;
     "Hosts File Editor makes it easy to change your hosts file as well as " +
     "archive multiple versions for easy retrieval. It also includes " +
     "features to ping IP addresses and enable/disable your hosts file " + 
-    "altogether. It's development in C# using the .NET 4.0 framework.")]
+    "altogether.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("N/A")]
 [assembly: AssemblyProduct("Hosts File Editor")]
