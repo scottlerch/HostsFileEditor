@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="{B2FB5AFF-D724-4F3E-865A-632BB78D8A21}" Codepage="1252" Language="1033" Manufacturer="Scott Lerch" Name="Hosts File Editor" UpgradeCode="{3A4F4E01-1C91-4562-8C04-5F4273501698}" Version="1.1.1">
+  <Product Id="{E1F266C8-A3D5-47BA-88EB-2E72AE184605}" Codepage="1252" Language="1033" Manufacturer="Scott Lerch" Name="Hosts File Editor" UpgradeCode="{3A4F4E01-1C91-4562-8C04-5F4273501698}" Version="1.2.0">
     <Package Comments="Edit and manager your Windows hosts file." Compressed="yes" InstallerVersion="200" Keywords="hosts" Languages="1033" Manufacturer="Scott Lerch" Platform="x86" />
     <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
     <Binary Id="InstallUtil" SourceFile="Resources\Binary\InstallUtil" />
@@ -711,7 +711,7 @@
     </UI>
     <Upgrade Id="{3A4F4E01-1C91-4562-8C04-5F4273501698}">
       <UpgradeVersion Maximum="1.0.0" Property="PREVIOUSVERSIONSINSTALLED" />
-      <UpgradeVersion Minimum="1.1.1" Property="NEWERPRODUCTFOUND" OnlyDetect="yes" IncludeMinimum="yes" />
+      <UpgradeVersion Minimum="1.2.0" Property="NEWERPRODUCTFOUND" OnlyDetect="yes" IncludeMinimum="yes" />
     </Upgrade>
     <InstallExecuteSequence>
       <Custom Action="DIRCA_CheckFX" Sequence="1" />

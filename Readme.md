@@ -4,7 +4,7 @@ Easily edit and manage the hosts file for your Windows PC.
 
 ## Binaries
 
-Release binaries can be downloaded from [CodePlex](http://hostsfileeditor.codeplex.com/).
+Release binaries can be downloaded from [GitHub](https://github.com/scottlerch/HostsFileEditor/releases) or [CodePlex](http://hostsfileeditor.codeplex.com/).
 
 ## Build
 
