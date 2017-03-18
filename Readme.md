@@ -2,10 +2,10 @@
 
 Easily edit and manage the hosts file for your Windows PC.
 
-![Main screen](http://download-codeplex.sec.s-msft.com/Download?ProjectName=hostsfileeditor&DownloadId=290948)  
+![Main screen](https://cloud.githubusercontent.com/assets/1789883/24075121/a68ddcc8-0bd2-11e7-9eed-c53d02a08930.png)  
 *main editor screen with archive visible on right*
 
-![Tray](http://download-codeplex.sec.s-msft.com/Download?ProjectName=hostsfileeditor&DownloadId=290949)  
+![Tray](https://cloud.githubusercontent.com/assets/1789883/24075122/a98c7628-0bd2-11e7-845d-0e52a5e2cc7d.png)  
 *tray icon with context menu*
 
 ## Binaries
@@ -22,7 +22,7 @@ The binaries and setup file will be copied to the `bin` directory
 
 ## License
  
-[GNU General Public](http://www.gnu.org/licenses/)
+[GNU General Public](https://www.gnu.org/licenses/)
 
 Equin.ApplicationFramework.BindingListView is by Andrew Davey and license
 terms can be found at
