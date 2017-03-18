@@ -1,6 +1,12 @@
 # Hosts File Editor
 
-Easily edit and manage the hosts file for your Windows PC. 
+Easily edit and manage the hosts file for your Windows PC.
+
+![Main screen](http://download-codeplex.sec.s-msft.com/Download?ProjectName=hostsfileeditor&DownloadId=290948)  
+*main editor screen with archive visible on right*
+
+![Tray](http://download-codeplex.sec.s-msft.com/Download?ProjectName=hostsfileeditor&DownloadId=290949)  
+*tray icon with context menu*
 
 ## Binaries
 
