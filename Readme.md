@@ -4,11 +4,7 @@ Release binaries can be downloaded from [GitHub](https://github.com/scottlerch/H
  * [Download Latest Installer](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditorSetup-1.2.0.msi)
  * [Download Latest Portable](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditor-1.2.0.zip)
 
-## Overview
-
-Easily edit and manage the hosts file for your Windows PC.
-
-### Features
+## Features
  * Cut, copy, paste, duplicate, enable, disable and move one or more entries at a time
  * Filter and sort when there are a large number of host entries
  * Enable and disable entire hostsfile from application or tray
