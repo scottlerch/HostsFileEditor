@@ -1,14 +1,4 @@
 theme: jekyll-theme-cayman
 title: Hosts File Editor
 description: Easily edit and manage the hosts file for Windows.
-twitter_username: scottlerch
-github_username:  scottlerch
-linkedin: scottlerch
-
-nav:
-  - name: "View on GitHub"
-    href: "https://github.com/scottlerch/HostsFileEditor"
-  - name: "Download Installer"
-    href: "https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditorSetup-1.2.0.msi"
-  - name: "Download Portable"
-    href: "https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditor-1.2.0.zip"
+show_downloads: true
