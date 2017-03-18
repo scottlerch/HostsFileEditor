@@ -17,6 +17,14 @@ Release binaries can be downloaded from [GitHub](https://github.com/scottlerch/H
 ![Tray](https://cloud.githubusercontent.com/assets/1789883/24075122/a98c7628-0bd2-11e7-845d-0e52a5e2cc7d.png)  
 *tray icon with context menu*
 
+### Usage Notes
+
+By default the application closes to the tray. To exit completely you must select Exit from the File menu or tray context menu. Only one instance of the application is allowed at a time. If you try to open it again it will just activate the previously running instance.
+
+When selecting rows to move, delete, copy, or cut be sure to select the entire row using the row header cell. If no entire rows are selected, cut, copy, paste, and delete apply individually to the selected cells.
+
+Using the filter and sort while editing is quirky. The filter and sort are applied once a cell is edited so your cell may change positions or disappear depending on the current sort and filter.
+
 ## Build
 
 Requires Visual Studio 2015 or newer.  To build the installer you must have WiX Toolset 3.7+.
