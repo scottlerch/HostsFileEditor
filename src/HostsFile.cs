@@ -196,6 +196,11 @@ namespace HostsFileEditor
         /// </summary>
         public static void DisableHostsFile()
         {
+            if (IsEnabled && IsDisabled)
+            {
+                throw new InvalidOperationException("The HostsFile is enabled and disabled at the same time.");
+            }
+
             using (FileEx.DisableAttributes(DefaultHostFilePath, FileAttributes.ReadOnly))
             {
                 File.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
@@ -208,6 +213,11 @@ namespace HostsFileEditor
         /// </summary>
         public static void EnableHostsFile()
         {
+            if (IsEnabled && IsDisabled)
+            {
+                throw new InvalidOperationException("The HostsFile is enabled and disabled at the same time.");
+            }
+
             using (FileEx.DisableAttributes(DefaultDisabledHostFilePath, FileAttributes.ReadOnly))
             {
                 File.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
