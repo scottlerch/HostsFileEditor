@@ -614,6 +614,12 @@ namespace HostsFileEditor
             this.dataGridViewHostsEntries.CommitEdit(
                 DataGridViewDataErrorContexts.Commit);
 
+            if (HostsFile.IsDisabled)
+            {
+                MessageBox.Show("The HostsFile is currently disabled. Enable the HostsFile before editing entries.");
+                return;
+            }
+
             HostsFile.Instance.Save();
         }
 

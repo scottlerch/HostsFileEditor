@@ -182,6 +182,11 @@ namespace HostsFileEditor
             }
         }
 
+        /// <summary>
+        /// Gets value indicating if the HostsFile is currently disabled.
+        /// </summary>
+        public static bool IsDisabled => File.Exists(DefaultDisabledHostFilePath);
+
         #endregion
 
         #region Public Methods
