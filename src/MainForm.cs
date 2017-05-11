@@ -615,6 +615,7 @@ namespace HostsFileEditor
                 DataGridViewDataErrorContexts.Commit);
 
             HostsFile.Instance.Save();
+            DnsEx.FlushMyCache();
         }
 
         /// <summary>
