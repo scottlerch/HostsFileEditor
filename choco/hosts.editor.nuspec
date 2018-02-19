@@ -6,7 +6,7 @@
     <title>Hosts File Editor</title>
     <authors>scottlerch,stimpy77</authors>
     <owners>scottlerch,stimpy77</owners>
-    <licenseUrl>https://raw.githubusercontent.com/scottlerch/HostsFileEditor/master/License.md</licenseUrl>
+    <licenseUrl>https://cdn.rawgit.com/scottlerch/HostsFileEditor/d6b946ef/License.md</licenseUrl>
     <projectUrl>https://scottlerch.github.io/HostsFileEditor/</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Hosts File Editor makes it easy to change your hosts file as well as archive multiple versions for easy retrieval.</description>
@@ -18,5 +18,7 @@ Consolidate into one executable and config file and create portable install.
 Added ability to open hosts file in default text editor.</releaseNotes>
     <copyright>Copyright 2018 Scott M. Lerch</copyright>
     <tags>hosts hostsfile editor network admin tool</tags>
+    <iconUrl>https://cdn.rawgit.com/scottlerch/HostsFileEditor/d6b946ef/src/Resources/HostsFileEditor.png</iconUrl>
+    <packageSourceUrl>https://github.com/scottlerch/HostsFileEditor/tree/master/choco</packageSourceUrl>
   </metadata>
 </package>
