@@ -27,7 +27,7 @@ Using the filter and sort while editing is quirky. The filter and sort are appli
 
 ## Build
 
-Requires Visual Studio 2015 or newer.  To build the installer you must have WiX Toolset 3.7+.
+Requires Visual Studio 2017 or newer.  To build the installer you must have WiX Toolset 3.7+.
 
 Run `build-release.bat` or `build-debug.bat`. 
 

@@ -7,7 +7,7 @@
     <authors>scottlerch,stimpy77</authors>
     <owners>scottlerch,stimpy77</owners>
     <licenseUrl>https://cdn.rawgit.com/scottlerch/HostsFileEditor/d6b946ef/License.md</licenseUrl>
-    <projectUrl>https://www.hostsfileeditor.com</projectUrl>
+    <projectUrl>http://www.hostsfileeditor.com</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Hosts File Editor makes it easy to change your hosts file as well as archive multiple versions for easy retrieval.</description>
     <summary>Hosts File Editor is a GUI that makes it easy to change your hosts file as well as archive multiple versions for easy retrieval.</summary>

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostsFileEditor", "src\HostsFileEditor.csproj", "{17A37069-B2AC-4D58-8F6E-C955F284F94C}"
 EndProject
@@ -27,6 +27,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGenCustomAction", "setup\NGenInstallCustomAction\NGenCustomAction.csproj", "{BD2FA119-BB09-4F09-A646-338CD73F9491}"
 EndProject
 Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "HostsFileEditorSetup", "setup\HostsFileEditorSetup.wixproj", "{A78A7EC4-2707-408C-A19F-AB237F0D85BA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "choco", "choco", "{28C2637D-F3C9-4040-B7B4-A7C7AAA898CC}"
+	ProjectSection(SolutionItems) = preProject
+		choco\hosts.editor.nuspec = choco\hosts.editor.nuspec
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{90653B84-9F43-4140-AACC-6F9970696669}"
+	ProjectSection(SolutionItems) = preProject
+		choco\tools\chocolateyInstall.ps1 = choco\tools\chocolateyInstall.ps1
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -82,5 +92,10 @@ Global
 		{17A37069-B2AC-4D58-8F6E-C955F284F94C} = {F4971D95-21F4-4E91-B8EE-3971F0B50FE3}
 		{BD2FA119-BB09-4F09-A646-338CD73F9491} = {51E2000C-3F31-4E18-8A74-02CDEEBEC6A4}
 		{A78A7EC4-2707-408C-A19F-AB237F0D85BA} = {51E2000C-3F31-4E18-8A74-02CDEEBEC6A4}
+		{28C2637D-F3C9-4040-B7B4-A7C7AAA898CC} = {51E2000C-3F31-4E18-8A74-02CDEEBEC6A4}
+		{90653B84-9F43-4140-AACC-6F9970696669} = {28C2637D-F3C9-4040-B7B4-A7C7AAA898CC}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6B9B22EC-7277-4462-8D3A-0D12C3B80BF4}
 	EndGlobalSection
 EndGlobal
