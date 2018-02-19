@@ -12,3 +12,5 @@
 /packages
 /src/ScottLerch.snk
 /src/ScottLerch.pfx
+/.vs
+*.nupkg
