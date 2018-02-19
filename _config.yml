@@ -1,0 +1,5 @@
+theme: jekyll-theme-cayman
+baseurl: "/HostsFileEditor"
+title: Hosts File Editor
+description: Easily edit and manage the hosts file for Windows.
+show_downloads: false
