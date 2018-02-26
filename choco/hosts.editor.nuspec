@@ -4,7 +4,7 @@
     <id>hosts.editor</id>
     <version>1.2.0</version>
     <title>Hosts File Editor</title>
-    <authors>scottlerch,stimpy77</authors>
+    <authors>scottlerch</authors>
     <owners>scottlerch,stimpy77</owners>
     <licenseUrl>https://cdn.rawgit.com/scottlerch/HostsFileEditor/d6b946ef/License.md</licenseUrl>
     <projectUrl>http://www.hostsfileeditor.com</projectUrl>
