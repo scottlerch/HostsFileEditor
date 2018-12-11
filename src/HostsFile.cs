@@ -182,6 +182,11 @@ namespace HostsFileEditor
             }
         }
 
+        /// <summary>
+        /// Gets value indicating if the HostsFile is currently disabled.
+        /// </summary>
+        public static bool IsDisabled => File.Exists(DefaultDisabledHostFilePath);
+
         #endregion
 
         #region Public Methods
@@ -191,6 +196,11 @@ namespace HostsFileEditor
         /// </summary>
         public static void DisableHostsFile()
         {
+            if (IsEnabled && IsDisabled)
+            {
+                throw new InvalidOperationException("The HostsFile is enabled and disabled at the same time.");
+            }
+
             using (FileEx.DisableAttributes(DefaultHostFilePath, FileAttributes.ReadOnly))
             {
                 File.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
@@ -203,6 +213,11 @@ namespace HostsFileEditor
         /// </summary>
         public static void EnableHostsFile()
         {
+            if (IsEnabled && IsDisabled)
+            {
+                throw new InvalidOperationException("The HostsFile is enabled and disabled at the same time.");
+            }
+
             using (FileEx.DisableAttributes(DefaultDisabledHostFilePath, FileAttributes.ReadOnly))
             {
                 File.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);

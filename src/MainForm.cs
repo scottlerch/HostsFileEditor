@@ -312,11 +312,31 @@ namespace HostsFileEditor
 
             if (checkState)
             {
-                HostsFile.EnableHostsFile();
+                try
+                {
+                    HostsFile.EnableHostsFile();
+                }
+                catch (InvalidOperationException invalidOperationException)
+                {
+                    Console.WriteLine(invalidOperationException);
+                    MessageBox.Show(invalidOperationException.Message, "Error during operation!", MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    return;
+                }
             }
             else
             {
-                HostsFile.DisableHostsFile();
+                try
+                {
+                    HostsFile.DisableHostsFile();
+                }
+                catch (InvalidOperationException invalidOperationException)
+                {
+                    Console.WriteLine(invalidOperationException);
+                    MessageBox.Show(invalidOperationException.Message, "Error during operation!", MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    return;
+                }
             }
 
             this.UpdateNotifyIcon();
@@ -613,6 +633,12 @@ namespace HostsFileEditor
         {
             this.dataGridViewHostsEntries.CommitEdit(
                 DataGridViewDataErrorContexts.Commit);
+
+            if (HostsFile.IsDisabled)
+            {
+                MessageBox.Show("The HostsFile is currently disabled. Enable the HostsFile before editing entries.");
+                return;
+            }
 
             HostsFile.Instance.Save();
         }
