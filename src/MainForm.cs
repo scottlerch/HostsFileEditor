@@ -17,6 +17,8 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
+using System.Drawing;
+
 namespace HostsFileEditor
 {
     using System;
@@ -879,11 +881,30 @@ namespace HostsFileEditor
         /// containing the event data.</param>
         private void OnArchiveDeleteClick(object sender, EventArgs e)
         {
+            SelectedArchiveDelete();
+        }
+
+        /// <summary>
+        /// Delete the selected archive
+        /// </summary>
+        private void SelectedArchiveDelete()
+        {
             HostsArchive archive = this.dataGridViewArchive.CurrentHostsArchive;
 
             if (archive != null)
             {
-                HostsArchiveList.Instance.Delete(archive);
+                DialogResult result = MessageBox.Show(
+                    this,
+                    string.Format(Resources.ArchiveDeleteQuestion, archive.FileName),
+                    Resources.ArchiveDeleteDialogCaption,
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question,
+                    MessageBoxDefaultButton.Button1);
+
+                if (result == DialogResult.Yes)
+                {
+                    HostsArchiveList.Instance.Delete(archive);
+                }
             }
         }
 
@@ -894,6 +915,14 @@ namespace HostsFileEditor
         /// <param name="e">The <see cref="System.EventArgs"/> instance
         /// containing the event data.</param>
         private void OnArchiveLoadClick(object sender, EventArgs e)
+        {
+            SelectedArchiveLoad();
+        }
+
+        /// <summary>
+        /// Load the selected archive
+        /// </summary>
+        private void SelectedArchiveLoad()
         {
             HostsArchive archive = this.dataGridViewArchive.CurrentHostsArchive;
 
@@ -1085,5 +1114,35 @@ namespace HostsFileEditor
         }
 
         #endregion
+
+        private void dataGridViewArchive_CellMouseDown(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                dataGridViewArchive.CurrentCell = dataGridViewArchive.Rows[e.RowIndex].Cells[e.ColumnIndex];
+                // Can leave these here - doesn't hurt
+                dataGridViewArchive.Rows[e.RowIndex].Selected = true;
+                dataGridViewArchive.Focus();
+            }
+        }
+
+        private void dataGridViewArchive_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                var relativeMousePosition = dataGridViewArchive.PointToClient(Cursor.Position);
+                contextMenuArchive.Show(dataGridViewArchive, relativeMousePosition);
+            }
+        }
+
+        private void toolStripMenuArchiveLoad_Click(object sender, EventArgs e)
+        {
+            SelectedArchiveLoad();
+        }
+
+        private void toolStripMenuArchiveDelete_Click(object sender, EventArgs e)
+        {
+            SelectedArchiveDelete();
+        }
     }
 }
