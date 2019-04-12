@@ -19,7 +19,7 @@ namespace HostsFileEditor.Properties {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
@@ -67,6 +67,24 @@ namespace HostsFileEditor.Properties {
             get {
                 object obj = ResourceManager.GetObject("Archive", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Host File Delete Question.
+        /// </summary>
+        internal static string ArchiveDeleteDialogCaption {
+            get {
+                return ResourceManager.GetString("ArchiveDeleteDialogCaption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Are you sure you want to delete the &apos;{0}&apos; archive?.
+        /// </summary>
+        internal static string ArchiveDeleteQuestion {
+            get {
+                return ResourceManager.GetString("ArchiveDeleteQuestion", resourceCulture);
             }
         }
         
