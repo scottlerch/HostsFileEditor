@@ -24,7 +24,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
   </PropertyGroup>
 
   <Target Name="CollectBuiltFiles">
