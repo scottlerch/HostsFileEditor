@@ -23,25 +23,17 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">Any CPU</Platform>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <Target Name="CollectBuiltFiles">
     <CreateItem
-     Condition=" '$(Configuration)' == 'Release'"
-     Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\bin\$(Configuration)\*.*"
-     Exclude=".\src\\**\bin\$(Configuration)\\**\*.pdb;.\\**\bin\$(Configuration)\\**\*.vshost.exe">
+     Include=".\src\**\bin\**\$(Configuration)\**\publish\**\*.*"
+     Exclude="*.pdb">
     <Output
       TaskParameter="Include"
       ItemName="BuildFiles"/>
-    </CreateItem>
-    <CreateItem
-      Condition=" '$(Configuration)' == 'Debug'"
-      Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\bin\$(Configuration)\*.*"
-      Exclude=".\\**\bin\$(Configuration)\\**\*.vshost.exe">
-      <Output
-        TaskParameter="Include"
-        ItemName="BuildFiles"/>
     </CreateItem>
   </Target>
 
@@ -59,7 +51,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 
   <Target Name = "Clean">
     <CreateItem
-     Include=".\src\\**\bin\\**\*.*;.\setup\\**\bin\\**\*.*">
+     Include=".\src\**\bin\**\*.*;.\setup\**\bin\**\*.*">
       <Output
         TaskParameter="Include"
         ItemName="CleanFiles"/>
@@ -77,13 +69,19 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 
   <Target Name="InternalBuild" DependsOnTargets = "CleanBin;CreateDirectories">
     <CreateItem
-      Include=".\*.sln">
+     Include=".\src\*.csproj">
       <Output
         TaskParameter="Include"
-        ItemName="SolutionFiles"/>
+        ItemName="HostsFileEditor"/>
     </CreateItem>
-    <MSBuild Projects="@(SolutionFiles)" Targets="Build"
-         Properties="Configuration=$(Configuration);Platform=$(Platform)" />
+    <CreateItem
+     Include=".\setup\*.wixproj">
+      <Output
+        TaskParameter="Include"
+        ItemName="HostsFileEditorSetup"/>
+    </CreateItem>
+    <MSBuild Projects="@(HostsFileEditor)" Targets="Restore;Build;Publish" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);RuntimeIdentifier=$(RuntimeIdentifier)" />
+    <MSBuild Projects="@(HostsFileEditorSetup)" Targets="Build" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);RuntimeIdentifier=$(RuntimeIdentifier)" />
   </Target>
 
   <Target Name = "CreateDirectories">

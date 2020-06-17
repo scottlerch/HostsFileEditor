@@ -1,8 +1,8 @@
 ## Download
 
 Release binaries can be downloaded from [GitHub](https://github.com/scottlerch/HostsFileEditor/releases) or [CodePlex](https://hostsfileeditor.codeplex.com/).
- * [Download Latest Installer](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditorSetup-1.2.0.msi)
- * [Download Latest Portable](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditor-1.2.0.zip)
+ * [Download Latest Installer](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.0/HostsFileEditorSetup-1.3.0.msi)
+ * [Download Latest Portable](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.0/HostsFileEditor-1.3.0.zip)
 
 ## Features
  * Cut, copy, paste, duplicate, enable, disable and move one or more entries at a time
@@ -27,7 +27,7 @@ Using the filter and sort while editing is quirky. The filter and sort are appli
 
 ## Build
 
-Requires Visual Studio 2017 or newer.  To build the installer you must have WiX Toolset 3.7+.
+Requires Visual Studio 2019 or newer.  To build the installer you must have WiX Toolset 3.7+.
 
 Run `build-release.bat` or `build-debug.bat`. 
 
