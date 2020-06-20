@@ -10,6 +10,7 @@
     <OutputType>Package</OutputType>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' AND '$(MSBuildExtensionsPath32)' != '' ">$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <WixTargetsPath Condition=" '$(WixTargetsPath)' == '' ">$(MSBuildExtensionsPath)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
+    <DefineSolutionProperties>false</DefineSolutionProperties>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <OutputPath>bin\$(Configuration)\</OutputPath>
@@ -28,29 +29,10 @@
     <Compile Include="Product.wxs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\HostsFileEditor.csproj">
-      <Name>HostsFileEditor</Name>
-      <Project>{17a37069-b2ac-4d58-8f6e-c955f284f94c}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-    <ProjectReference Include="NGenInstallCustomAction\NGenCustomAction.csproj">
-      <Name>NGenCustomAction</Name>
-      <Project>{bd2fa119-bb09-4f09-a646-338cd73f9491}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Resources" />
     <Folder Include="Resources\Binary" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\Binary\InstallUtil" />
     <Content Include="Resources\Binary\MSVBDPCADLL" />
     <Content Include="Resources\Binary\VSDNETCFG" />
     <Content Include="Resources\WiXDefBannerBitmap.bmp" />
