@@ -1,14 +1,35 @@
 @echo off
+setlocal
 
-if "%1"=="" goto passwordblank
-if exist logs goto msbuild
-mkdir logs
+:: Check if password is provided
+if "%~1"=="" goto passwordblank
 
-:msbuild
-"%PROGRAMFILES(X86)%\MSBuild\14.0\Bin\MSBUILD.exe" HostsFileEditor.proj /t:Build /p:Configuration=Release /p:StrongName=true /p:Sign=true /p:CertPassword=%1 /l:FileLogger,Microsoft.Build.Engine;logfile=logs\build-release.log
-goto end
+:: Ensure logs folder exists
+if not exist logs (
+    mkdir logs
+)
+
+:: Locate vswhere
+set VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+
+:: Use vswhere to find latest MSBuild.exe
+for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) do (
+    set "MSBUILD=%%i"
+)
+
+:: Run MSBuild
+if defined MSBUILD (
+    "%MSBUILD%" HostsFileEditor.proj /t:Build /p:Configuration=Release /p:Sign=true /p:CertPassword=%~1 /l:FileLogger,Microsoft.Build.Engine;logfile=logs\build-release.log
+    goto :end
+
+) else (
+    echo MSBuild.exe not found. Make sure Visual Studio is installed.
+    exit /b 1
+)
 
 :passwordblank
 echo Must specify certificate password
+exit /b 1
 
 :end
+endlocal

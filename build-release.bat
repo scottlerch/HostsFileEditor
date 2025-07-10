@@ -1,10 +1,25 @@
 @echo off
+setlocal EnableDelayedExpansion
 
-if exist logs goto msbuild
-mkdir logs
+:: Ensure logs folder exists
+if not exist logs (
+    mkdir logs
+)
 
-:msbuild
-"%PROGRAMFILES(X86)%\MSBuild\14.0\Bin\MSBUILD.exe" HostsFileEditor.proj /t:Build /p:Configuration=Release /p:StrongName=true /l:FileLogger,Microsoft.Build.Engine;logfile=logs\build-release.log
-goto end
+:: Locate vswhere
+set VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
 
-:end
+:: Use vswhere to find latest MSBuild.exe
+for /f "usebackq delims=" %%i in (`"%VSWHERE%" -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe`) do (
+    set "MSBUILD=%%i"
+)
+
+:: Run MSBuild
+if defined MSBUILD (
+    "%MSBUILD%" HostsFileEditor.proj /t:Build /p:Configuration=Release /l:FileLogger,Microsoft.Build.Engine;logfile=logs\build-release.log
+) else (
+    echo MSBuild.exe not found. Make sure Visual Studio is installed.
+    exit /b 1
+)
+
+endlocal
