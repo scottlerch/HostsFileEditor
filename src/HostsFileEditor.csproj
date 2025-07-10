@@ -11,8 +11,8 @@
     <AssemblyTitle>Hosts File Editor</AssemblyTitle>
     <ProductName>Hosts File Editor</ProductName>
     <Product>Hosts File Editor</Product>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <ProductVersion>1.2.0.0</ProductVersion>
+    <AssemblyVersion>1.3.0.0</AssemblyVersion>
+    <ProductVersion>1.3.0.0</ProductVersion>
     <PublishAot>true</PublishAot>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
