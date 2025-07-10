@@ -1,5 +1,5 @@
 ﻿// <copyright file="InputForm.cs" company="N/A">
-// Copyright 2011 Scott M. Lerch
+// Copyright 2025 Scott M. Lerch
 // 
 // This file is part of HostsFileEditor.
 // 
@@ -20,6 +20,7 @@
 namespace HostsFileEditor
 {
     using System;
+    using System.ComponentModel;
     using System.Windows.Forms;
 
     /// <summary>
@@ -40,6 +41,7 @@ namespace HostsFileEditor
         /// <summary>
         /// Gets or sets the input.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public string Input
         {
             get { return this.textBox.Text; }
@@ -49,6 +51,7 @@ namespace HostsFileEditor
         /// <summary>
         /// Gets or sets the prompt.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
         public string Prompt
         {
             get { return this.labelPrompt.Text; }

@@ -1,5 +1,5 @@
 ﻿// <copyright file="AboutForm.cs" company="N/A">
-// Copyright 2011 Scott M. Lerch
+// Copyright 2025 Scott M. Lerch
 // 
 // This file is part of HostsFileEditor.
 // 
@@ -58,7 +58,7 @@ namespace HostsFileEditor
                         return titleAttribute.Title;
                     }
                 }
-                return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().CodeBase);
+                return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
             }
         }
 

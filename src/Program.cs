@@ -1,5 +1,5 @@
 ﻿// <copyright file="Program.cs" company="N/A">
-// Copyright 2011 Scott M. Lerch
+// Copyright 2025 Scott M. Lerch
 // 
 // This file is part of HostsFileEditor.
 // 

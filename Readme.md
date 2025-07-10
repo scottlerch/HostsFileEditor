@@ -27,7 +27,7 @@ Using the filter and sort while editing is quirky. The filter and sort are appli
 
 ## Build
 
-Requires Visual Studio 2017 or newer.  To build the installer you must have WiX Toolset 3.7+.
+Requires Visual Studio 2022 or newer. To build the installer you must have [WiX Toolset 3.14+](https://github.com/wixtoolset/wix3/releases) and the [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=WixToolset.WixToolsetVisualStudio2022Extension).
 
 Run `build-release.bat` or `build-debug.bat`. 
 
@@ -43,6 +43,3 @@ terms can be found at
 
 Icons are from the Open Icon Library and their license and terms can be found at
 <http://openiconlibrary.sourceforge.net/>.
-
-
-
