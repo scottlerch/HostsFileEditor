@@ -9,8 +9,6 @@
     <Binary Id="DefBannerBitmap" SourceFile="Resources\WiXDefBannerBitmap.bmp" />
     <Binary Id="UpFldrBtn" SourceFile="Resources\WiXUpFolderBtn.ico" />
     <Binary Id="NewFldrBtn" SourceFile="Resources\WiXNewFolderBtn.ico" />
-    <CustomAction Id="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install" BinaryKey="InstallUtil" DllEntry="ManagedInstall" Execute="deferred" Impersonate="no" />
-    <CustomAction Id="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install.SetProperty" Property="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install" Value="/installtype=notransaction /action=install /LogFile= /Args=&quot;[TARGETDIR]HostsFileEditor.exe&quot; &quot;[#_2D8E9D5E0281E1A725F43A79C55FED20]&quot; &quot;[VSDFxConfigFile]&quot;" />
     <CustomAction Id="DIRCA_TARGETDIR" Property="TARGETDIR" Value="[ProgramFilesFolder]\[ProductName]" Execute="firstSequence" />
     <CustomAction Id="DIRCA_CheckFX" BinaryKey="MSVBDPCADLL" DllEntry="CheckFX" />
     <CustomAction Id="VSDCA_VsdLaunchConditions" BinaryKey="MSVBDPCADLL" DllEntry="VsdLaunchConditions" />
@@ -38,12 +36,6 @@
         <File Id="_F2F67BD1029D14C71AA23673BB451CF3" Name="HostsFileEditor.exe" KeyPath="yes" Assembly=".net" AssemblyManifest="_F2F67BD1029D14C71AA23673BB451CF3" AssemblyApplication="_F2F67BD1029D14C71AA23673BB451CF3" DiskId="1" Source="$(var.HostsFileEditor.TargetPath)" />
         <Shortcut Id="_2EA308A3B95644B5BDDE322AB98BB2D1" Directory="ProgramMenuFolder" Name="Hosts File Editor" Icon="_14D645D83F085D2F851E9B.exe" IconIndex="0" Show="normal" WorkingDirectory="TARGETDIR" Advertise="yes" />
       </Component>
-      <Component Id="C__2D8E9D5E0281E1A725F43A79C55FED20" Guid="{84CA21F9-A6D2-A60F-65A4-86E080520441}">
-        <File Id="_2D8E9D5E0281E1A725F43A79C55FED20" Name="NGenInstallCustomAction.dll" KeyPath="yes" Assembly=".net" AssemblyManifest="_2D8E9D5E0281E1A725F43A79C55FED20" AssemblyApplication="_2D8E9D5E0281E1A725F43A79C55FED20" DiskId="1" Source="$(var.NGenCustomAction.TargetPath)" />
-      </Component>
-      <Component Id="C__AB6CE3EF0F39A7ADFF2DE542E7ACD3E2" Guid="{395BB7B2-C785-ACAA-ABB0-A06BCF70E66F}">
-        <File Id="_AB6CE3EF0F39A7ADFF2DE542E7ACD3E2" Name="HostsFileEditor.exe.config" KeyPath="yes" DiskId="1" Source="$(var.HostsFileEditor.TargetPath).config" />
-      </Component>
       <Directory Id="StartupFolder" SourceName="User's Startup Folder" />
       <Directory Id="DesktopFolder" SourceName="User's Desktop" />
       <Directory Id="ProgramMenuFolder" SourceName="User's Programs Menu" />
@@ -52,8 +44,6 @@
       <ComponentRef Id="C__25D63E1D9A144B7AB0C586AAC97BBB28" />
       <ComponentRef Id="C__512DCCDCB92D4CFD8A3089B67A8A4263" />
       <ComponentRef Id="C__F2F67BD1029D14C71AA23673BB451CF3" Primary="yes" />
-      <ComponentRef Id="C__2D8E9D5E0281E1A725F43A79C55FED20" Primary="yes" />
-      <ComponentRef Id="C__AB6CE3EF0F39A7ADFF2DE542E7ACD3E2" />
     </Feature>
     <Icon Id="_853F67D554F05449430E7E.exe" SourceFile="..\src\HostsFileEditor.ico" />
     <Icon Id="_14D645D83F085D2F851E9B.exe" SourceFile="..\src\HostsFileEditor.ico" />
@@ -718,8 +708,6 @@
       <Custom Action="ERRCA_CANCELNEWERVERSION" Sequence="201">NEWERPRODUCTFOUND AND NOT Installed</Custom>
       <Custom Action="VSDCA_VsdLaunchConditions" Sequence="399">NOT Installed</Custom>
       <Custom Action="DIRCA_TARGETDIR" Sequence="750">TARGETDIR=""</Custom>
-      <Custom Action="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install.SetProperty" Sequence="5998">$C__2D8E9D5E0281E1A725F43A79C55FED20&gt;2</Custom>
-      <Custom Action="_0AF7C00C_A272_4854_A84B_8BC9C0206C71.install" Sequence="5999">$C__2D8E9D5E0281E1A725F43A79C55FED20&gt;2</Custom>
       <LaunchConditions Sequence="400">NOT Installed</LaunchConditions>
       <FindRelatedProducts Sequence="200" />
       <AppSearch Sequence="100" />

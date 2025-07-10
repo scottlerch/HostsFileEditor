@@ -7,43 +7,31 @@
     <StartupObject>HostsFileEditor.Program</StartupObject>
     <ApplicationIcon>HostsFileEditor.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <NoWarn>NU1701</NoWarn>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyTitle>Hosts File Editor</AssemblyTitle>
     <ProductName>Hosts File Editor</ProductName>
     <Product>Hosts File Editor"</Product>
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
     <ProductVersion>1.2.0.0</ProductVersion>
+    <PublishAot>true</PublishAot>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <StripSymbols>true</StripSymbols>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <NoWarn>NU1701;IL2026;IL3000;IL3050;IL3053</NoWarn>
+    <_SuppressWinFormsTrimError>true</_SuppressWinFormsTrimError>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="7ZipCLI" Version="9.20.0" />
+    <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Equin.ApplicationFramework.BindingListView" Version="1.4.5222.35545" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="Controls\HostsArchiveDataGridView.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="Controls\MenuStripEx.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="Controls\ToolStripEx.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="Controls\ToolStripSpringTextBox.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="Controls\ToolStripBindableStatusLabel.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="Controls\HostsEntryDataGridView.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="HostsFileEditor.ico" />  </ItemGroup>
   <Target Name="AfterBuild">
     <Exec Condition="'$(Sign)'=='true'" Command="&quot;C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe&quot; sign /f &quot;ScottLerch.pfx&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.verisign.com/scripts/timstamp.dll &quot;$(TargetPath)&quot;" />
-    <Exec Command="..\packages\7ZipCLI.9.20.0\tools\7za.exe a &quot;$(TargetDir)$(ProjectName).zip&quot; &quot;$(TargetPath)&quot; &quot;$(TargetPath).config&quot;" />
+    <Exec Command="$(Pkg7ZipCLI)\tools\7za.exe a &quot;$(TargetDir)$(ProjectName).zip&quot; &quot;$(TargetPath)&quot;" />
   </Target>
 </Project>
