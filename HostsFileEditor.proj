@@ -28,7 +28,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
   <Target Name="CollectBuiltFiles">
     <CreateItem
      Condition=" '$(Configuration)' == 'Release'"
-     Include=".\src\\**\bin\$(Configuration)\\**\publish\*.*;.\setup\\**\bin\$(Configuration)\*.*"
+     Include=".\src\\**\bin\$(Configuration)\\**\publish\*.*"
      Exclude=".\src\\**\bin\$(Configuration)\\**\*.pdb;.\\**\bin\$(Configuration)\\**\*.vshost.exe">
     <Output
       TaskParameter="Include"
@@ -36,7 +36,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
     </CreateItem>
     <CreateItem
       Condition=" '$(Configuration)' == 'Debug'"
-      Include=".\src\\**\bin\$(Configuration)\\**\publish\*.*;.\setup\\**\bin\$(Configuration)\*.*"
+      Include=".\src\\**\bin\$(Configuration)\\**\publish\*.*"
       Exclude=".\\**\bin\$(Configuration)\\**\*.vshost.exe">
       <Output
         TaskParameter="Include"
@@ -58,7 +58,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 
   <Target Name = "Clean">
     <CreateItem
-     Include=".\src\\**\bin\\**\*.*;.\setup\\**\bin\\**\*.*">
+     Include=".\src\\**\bin\\**\*.*">
       <Output
         TaskParameter="Include"
         ItemName="CleanFiles"/>
@@ -81,17 +81,11 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
         TaskParameter="Include"
         ItemName="SolutionFiles"/>
     </CreateItem>
-    <CreateItem
-      Include=".\**\*.csproj">
-      <Output
-        TaskParameter="Include"
-        ItemName="CSharpProjectFiles"/>
-    </CreateItem>
-    <MSBuild Projects="@(CSharpProjectFiles)" Targets="Restore"
+    <MSBuild Projects="@(SolutionFiles)" Targets="Restore"
          Properties="Configuration=$(Configuration)" />
     <MSBuild Projects="@(SolutionFiles)" Targets="Build"
          Properties="Configuration=$(Configuration)" />
-    <MSBuild Projects="@(CSharpProjectFiles)" Targets="Publish"
+    <MSBuild Projects="@(SolutionFiles)" Targets="Publish"
          Properties="Configuration=$(Configuration)" />
   </Target>
 

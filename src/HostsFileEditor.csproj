@@ -28,13 +28,28 @@
     <PackageReference Include="Equin.ApplicationFramework.BindingListView" Version="1.4.5222.35545" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="AppxManifest.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
-  <Target Name="SignAndZipAfterPublish" AfterTargets="CopyNativeBinary">
-    <Exec Condition="'$(Sign)'=='true'" Command="&quot;C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe&quot; sign /f &quot;ScottLerch.pfx&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.verisign.com/scripts/timstamp.dll &quot;$(PublishDir)$(ProjectName).exe&quot;" />
+  <Target Name="SignAndPackageAfterPublish" AfterTargets="CopyNativeBinary">
     <PropertyGroup>
-      <PublishZipFile>$(PublishDir)$(ProjectName).zip</PublishZipFile>
+      <CertFile Condition="'$(CertFile)'==''">HostsFileEditorTestCert.pfx</CertFile>
+      <CertPassword Condition="'$(CertPassword)'==''">test</CertPassword>
+      <PublishZipFile>$(ProjectName).zip</PublishZipFile>
+      <MsixFile>$(PublishDir)$(ProjectName).msix</MsixFile>
     </PropertyGroup>
-    <Exec Command='cd /d "$(PublishDir)" &amp;&amp; "$(Pkg7ZipCLI)\tools\7za.exe" a -tzip -aoa "$(PublishZipFile)" *.exe' />
+    <!-- Sign the executable -->
+    <Exec Command="signtool sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(PublishDir)$(ProjectName).exe&quot;" />
+    <!-- Create the MSIX package -->
+    <Exec Command="makeappx pack /d &quot;$(PublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
+    <!-- Sign the MSIX package -->
+    <Exec Command="signtool sign /fd SHA256 /a /f $(CertFile) /p $(CertPassword) &quot;$(MsixFile)&quot;" />
+    <!-- Create a ZIP file of the published files -->
+    <Exec Command="cd /d &quot;$(PublishDir)&quot; &amp;&amp; &quot;$(Pkg7ZipCLI)\tools\7za.exe&quot; a -tzip -aoa &quot;$(PublishZipFile)&quot; *.exe" />
   </Target>
 </Project>
