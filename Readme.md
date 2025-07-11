@@ -1,6 +1,6 @@
 ## Download
 
-Release binaries can be downloaded from [GitHub](https://github.com/scottlerch/HostsFileEditor/releases) or [CodePlex](https://hostsfileeditor.codeplex.com/).
+Release binaries can be downloaded from [GitHub](https://github.com/scottlerch/HostsFileEditor/releases).
  * [Download Latest Installer](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditorSetup-1.2.0.msi)
  * [Download Latest Portable](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditor-1.2.0.zip)
 
@@ -37,9 +37,7 @@ The binaries and setup file will be copied to the `bin` directory
  
 [GNU General Public](https://www.gnu.org/licenses/)
 
-Equin.ApplicationFramework.BindingListView is by Andrew Davey and license
-terms can be found at
-<http://blw.sourceforge.net/>.
+_Equin.ApplicationFramework.BindingListView_ is by Andrew Davey and license
+terms can be found at <http://blw.sourceforge.net/>.
 
-Icons are from the Open Icon Library and their license and terms can be found at
-<http://openiconlibrary.sourceforge.net/>.
+Icons are from the _Open Icon Library_ and their license and terms can be found at <http://openiconlibrary.sourceforge.net/>.
