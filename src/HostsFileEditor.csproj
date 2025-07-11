@@ -1,237 +1,55 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\packages\MSBuild.ILMerge.Task.1.0.5\build\MSBuild.ILMerge.Task.props" Condition="Exists('..\packages\MSBuild.ILMerge.Task.1.0.5\build\MSBuild.ILMerge.Task.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{17A37069-B2AC-4D58-8F6E-C955F284F94C}</ProjectGuid>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>HostsFileEditor</RootNamespace>
-    <AssemblyName>HostsFileEditor</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
-    <FileAlignment>512</FileAlignment>
-    <NuGetPackageImportStamp>
-    </NuGetPackageImportStamp>
-  </PropertyGroup>
-  <PropertyGroup>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
     <StartupObject>HostsFileEditor.Program</StartupObject>
-  </PropertyGroup>
-  <PropertyGroup>
     <ApplicationIcon>HostsFileEditor.ico</ApplicationIcon>
-  </PropertyGroup>
-  <PropertyGroup />
-  <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisLogFile>bin\Debug\HostsFileEditor.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
-    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
-    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <CodeAnalysisIgnoreGeneratedCode>true</CodeAnalysisIgnoreGeneratedCode>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <CodeAnalysisLogFile>bin\Release\HostsFileEditor.exe.CodeAnalysisLog.xml</CodeAnalysisLogFile>
-    <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
-    <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
-    <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <CodeAnalysisIgnoreBuiltInRuleSets>false</CodeAnalysisIgnoreBuiltInRuleSets>
-    <CodeAnalysisIgnoreBuiltInRules>false</CodeAnalysisIgnoreBuiltInRules>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
+    <AssemblyTitle>Hosts File Editor</AssemblyTitle>
+    <ProductName>Hosts File Editor</ProductName>
+    <Product>Hosts File Editor</Product>
+    <AssemblyVersion>1.3.0.0</AssemblyVersion>
+    <ProductVersion>1.3.0.0</ProductVersion>
+    <PublishAot>true</PublishAot>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <StripSymbols>true</StripSymbols>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <NoWarn>NU1701;IL2026;IL3000;IL3050;IL3053</NoWarn>
+    <_SuppressWinFormsTrimError>true</_SuppressWinFormsTrimError>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Equin.ApplicationFramework.BindingListView">
-      <HintPath>..\lib\Equin.ApplicationFramework.BindingListView.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
+    <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Equin.ApplicationFramework.BindingListView" Version="1.4.5222.35545" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AboutForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="AboutForm.Designer.cs">
-      <DependentUpon>AboutForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Controls\HostsArchiveDataGridView.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Controls\MenuStripEx.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Controls\ToolStripEx.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Controls\ToolStripSpringTextBox.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Extensions\BindingListExtensions.cs" />
-    <Compile Include="Extensions\ReferenceExtensions.cs" />
-    <Compile Include="Extensions\FormExtensions.cs" />
-    <Compile Include="HostsArchive.cs" />
-    <Compile Include="HostsArchiveList.cs" />
-    <Compile Include="HostsFilter.cs" />
-    <Compile Include="HostsFile.cs" />
-    <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="Controls\ToolStripBindableStatusLabel.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="Controls\HostsEntryDataGridView.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="HostsEntry.cs" />
-    <Compile Include="HostsEntryList.cs" />
-    <Compile Include="InputForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="InputForm.Designer.cs">
-      <DependentUpon>InputForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MainForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="MainForm.Designer.cs">
-      <DependentUpon>MainForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Program.cs" />
-    <Compile Include="ProgramInfo.cs" />
-    <Compile Include="ProgramSingleInstance.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utilities\FileEx.cs" />
-    <Compile Include="Utilities\FileOpener.cs" />
-    <Compile Include="Utilities\UndoManager.cs" />
-    <Compile Include="Utilities\Reflect.cs" />
-    <Compile Include="Win32\NativeMethods.cs" />
-    <EmbeddedResource Include="AboutForm.resx">
-      <DependentUpon>AboutForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="InputForm.resx">
-      <DependentUpon>InputForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MainForm.resx">
-      <DependentUpon>MainForm.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <None Include="app.config" />
-    <None Include="app.manifest" />
-    <None Include="ILMerge.props" />
-    <None Include="packages.config" />
-    <None Include="Properties\DataSources\HostsEntryList.datasource" />
-    <None Include="Properties\DataSources\HostsArchiveList.datasource" />
-    <None Include="Properties\DataSources\HostsFile.datasource" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\hosts.txt" />
-  </ItemGroup>
-  <ItemGroup>
+    <Content Include="AppxManifest.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="HostsFileEditor.ico" />
-    <Content Include="ILMergeOrder.txt" />
-    <None Include="Resources\edit-copy-4.png" />
-    <None Include="Resources\Checkbox.bmp" />
-    <None Include="Resources\Control_Box.bmp" />
-    <None Include="Resources\CheckBoxHS.png" />
-    <None Include="Resources\112_UpArrowShort_Green_16x16_72.png" />
-    <None Include="Resources\112_DownArrowShort_Green_16x16_72.png" />
-    <None Include="Resources\saveHS.png" />
-    <None Include="Resources\Filter2HS.png" />
-    <None Include="Resources\Edit_UndoHS.png" />
-    <None Include="Resources\Edit_RedoHS.png" />
-    <None Include="Resources\112_RefreshArrow_Blue_16x16_72.png" />
-    <None Include="Resources\077_AddFile_16x16_72.png" />
-    <None Include="Resources\HostsFileEditorDisabled.ico" />
-    <None Include="Resources\HostsFileEditor.ico" />
-    <None Include="Resources\view-refresh-3.png" />
-    <None Include="Resources\view-filter.png" />
-    <None Include="Resources\paste-plain.png" />
-    <None Include="Resources\go-up-5.png" />
-    <None Include="Resources\go-down-5.png" />
-    <None Include="Resources\edit-undo-8.png" />
-    <None Include="Resources\edit-redo-8.png" />
-    <None Include="Resources\edit-delete-6.png" />
-    <None Include="Resources\edit-delete-4.png" />
-    <None Include="Resources\edit-cut-7.png" />
-    <None Include="Resources\edit-copy-3.png" />
-    <None Include="Resources\document-save-5.png" />
-    <None Include="Resources\document-save-2.png" />
-    <None Include="Resources\document-open-2.png" />
-    <None Include="Resources\database-add.png" />
-    <None Include="Resources\database.png" />
-    <None Include="Resources\comment-delete.png" />
-    <None Include="Resources\checkbox-2.png" />
-    <None Include="Resources\arrow-up-2.png" />
-    <None Include="Resources\arrow-down-2.png" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-  </PropertyGroup>
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+  <Target Name="SignAndPackageAfterPublish" AfterTargets="CopyNativeBinary">
     <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+      <CertFile Condition="'$(CertFile)'==''">HostsFileEditorTestCert.pfx</CertFile>
+      <CertPassword Condition="'$(CertPassword)'==''">test</CertPassword>
+      <PublishZipFile>$(ProjectName).zip</PublishZipFile>
+      <MsixFile>$(PublishDir)$(ProjectName).msix</MsixFile>
     </PropertyGroup>
-    <Error Condition="!Exists('..\packages\MSBuild.ILMerge.Task.1.0.5\build\MSBuild.ILMerge.Task.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MSBuild.ILMerge.Task.1.0.5\build\MSBuild.ILMerge.Task.props'))" />
-    <Error Condition="!Exists('..\packages\MSBuild.ILMerge.Task.1.0.5\build\MSBuild.ILMerge.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\MSBuild.ILMerge.Task.1.0.5\build\MSBuild.ILMerge.Task.targets'))" />
-  </Target>
-  <Import Project="..\packages\MSBuild.ILMerge.Task.1.0.5\build\MSBuild.ILMerge.Task.targets" Condition="Exists('..\packages\MSBuild.ILMerge.Task.1.0.5\build\MSBuild.ILMerge.Task.targets')" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>-->
-  <Target Name="AfterBuild">
-    <Exec Condition="'$(Sign)'=='true'" Command="&quot;C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe&quot; sign /f &quot;ScottLerch.pfx&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.verisign.com/scripts/timstamp.dll &quot;$(TargetPath)&quot;" />
-    <Exec Command="..\packages\7ZipCLI.9.20.0\tools\7za.exe a &quot;$(TargetDir)$(ProjectName).zip&quot; &quot;$(TargetPath)&quot; &quot;$(TargetPath).config&quot;" />
+    <!-- Sign the executable -->
+    <Exec Command="signtool sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(PublishDir)$(ProjectName).exe&quot;" />
+    <!-- Create the MSIX package -->
+    <Exec Command="makeappx pack /d &quot;$(PublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
+    <!-- Sign the MSIX package -->
+    <Exec Command="signtool sign /fd SHA256 /a /f $(CertFile) /p $(CertPassword) &quot;$(MsixFile)&quot;" />
+    <!-- Create a ZIP file of the published files -->
+    <Exec Command="cd /d &quot;$(PublishDir)&quot; &amp;&amp; &quot;$(Pkg7ZipCLI)\tools\7za.exe&quot; a -tzip -aoa &quot;$(PublishZipFile)&quot; *.exe" />
   </Target>
 </Project>

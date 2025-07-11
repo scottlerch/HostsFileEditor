@@ -1,5 +1,5 @@
 <!--
-Copyright 2011 Scott M. Lerch
+Copyright 2025 Scott M. Lerch
 
 This file is part of HostsFileEditor.
 
@@ -23,13 +23,12 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">Any CPU</Platform>
   </PropertyGroup>
 
   <Target Name="CollectBuiltFiles">
     <CreateItem
      Condition=" '$(Configuration)' == 'Release'"
-     Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\bin\$(Configuration)\*.*"
+     Include=".\src\\**\bin\$(Configuration)\\**\publish\*.*"
      Exclude=".\src\\**\bin\$(Configuration)\\**\*.pdb;.\\**\bin\$(Configuration)\\**\*.vshost.exe">
     <Output
       TaskParameter="Include"
@@ -37,7 +36,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
     </CreateItem>
     <CreateItem
       Condition=" '$(Configuration)' == 'Debug'"
-      Include=".\src\\**\bin\$(Configuration)\\**\*.*;.\setup\\**\bin\$(Configuration)\*.*"
+      Include=".\src\\**\bin\$(Configuration)\\**\publish\*.*"
       Exclude=".\\**\bin\$(Configuration)\\**\*.vshost.exe">
       <Output
         TaskParameter="Include"
@@ -59,7 +58,7 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 
   <Target Name = "Clean">
     <CreateItem
-     Include=".\src\\**\bin\\**\*.*;.\setup\\**\bin\\**\*.*">
+     Include=".\src\\**\bin\\**\*.*">
       <Output
         TaskParameter="Include"
         ItemName="CleanFiles"/>
@@ -70,9 +69,9 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
   <!-- ==================== Build Targets ====================== -->
 
   <Target Name = "Build" DependsOnTargets="InternalBuild;CollectBuiltFiles">
-    <Message Text="Copying @(BuildFiles) to bin" />
+    <Message Text="Copying @(BuildFiles) to bin" Importance="high" />
     <Copy SourceFiles="@(BuildFiles)" DestinationFolder="bin" />
-    <Message Text="Build Complete!"/>
+    <Message Text="Build Complete!" Importance="high" />
   </Target>
 
   <Target Name="InternalBuild" DependsOnTargets = "CleanBin;CreateDirectories">
@@ -82,8 +81,12 @@ with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
         TaskParameter="Include"
         ItemName="SolutionFiles"/>
     </CreateItem>
+    <MSBuild Projects="@(SolutionFiles)" Targets="Restore"
+         Properties="Configuration=$(Configuration)" />
     <MSBuild Projects="@(SolutionFiles)" Targets="Build"
-         Properties="Configuration=$(Configuration);Platform=$(Platform)" />
+         Properties="Configuration=$(Configuration)" />
+    <MSBuild Projects="@(SolutionFiles)" Targets="Publish"
+         Properties="Configuration=$(Configuration)" />
   </Target>
 
   <Target Name = "CreateDirectories">

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2027
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36301.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostsFileEditor", "src\HostsFileEditor.csproj", "{17A37069-B2AC-4D58-8F6E-C955F284F94C}"
 EndProject
@@ -20,22 +20,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{BF6F
 		build-release-signed.bat = build-release-signed.bat
 		build-release.bat = build-release.bat
 		HostsFileEditor.proj = HostsFileEditor.proj
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Deployment", "Deployment", "{51E2000C-3F31-4E18-8A74-02CDEEBEC6A4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NGenCustomAction", "setup\NGenInstallCustomAction\NGenCustomAction.csproj", "{BD2FA119-BB09-4F09-A646-338CD73F9491}"
-EndProject
-Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "HostsFileEditorSetup", "setup\HostsFileEditorSetup.wixproj", "{A78A7EC4-2707-408C-A19F-AB237F0D85BA}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "choco", "choco", "{28C2637D-F3C9-4040-B7B4-A7C7AAA898CC}"
-	ProjectSection(SolutionItems) = preProject
-		choco\hosts.editor.nuspec = choco\hosts.editor.nuspec
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{90653B84-9F43-4140-AACC-6F9970696669}"
-	ProjectSection(SolutionItems) = preProject
-		choco\tools\chocolateyInstall.ps1 = choco\tools\chocolateyInstall.ps1
 	EndProjectSection
 EndProject
 Global
@@ -60,40 +44,12 @@ Global
 		{17A37069-B2AC-4D58-8F6E-C955F284F94C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{17A37069-B2AC-4D58-8F6E-C955F284F94C}.Release|x86.ActiveCfg = Release|Any CPU
 		{17A37069-B2AC-4D58-8F6E-C955F284F94C}.Release|x86.Build.0 = Release|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Debug|x86.Build.0 = Debug|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Release|x86.ActiveCfg = Release|Any CPU
-		{BD2FA119-BB09-4F09-A646-338CD73F9491}.Release|x86.Build.0 = Release|Any CPU
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Debug|Any CPU.ActiveCfg = Debug|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Debug|Any CPU.Build.0 = Debug|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Debug|Mixed Platforms.Build.0 = Debug|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Debug|x86.ActiveCfg = Debug|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Debug|x86.Build.0 = Debug|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Release|Any CPU.ActiveCfg = Release|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Release|Any CPU.Build.0 = Release|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Release|Mixed Platforms.ActiveCfg = Release|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Release|Mixed Platforms.Build.0 = Release|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Release|x86.ActiveCfg = Release|x86
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{17A37069-B2AC-4D58-8F6E-C955F284F94C} = {F4971D95-21F4-4E91-B8EE-3971F0B50FE3}
-		{BD2FA119-BB09-4F09-A646-338CD73F9491} = {51E2000C-3F31-4E18-8A74-02CDEEBEC6A4}
-		{A78A7EC4-2707-408C-A19F-AB237F0D85BA} = {51E2000C-3F31-4E18-8A74-02CDEEBEC6A4}
-		{28C2637D-F3C9-4040-B7B4-A7C7AAA898CC} = {51E2000C-3F31-4E18-8A74-02CDEEBEC6A4}
-		{90653B84-9F43-4140-AACC-6F9970696669} = {28C2637D-F3C9-4040-B7B4-A7C7AAA898CC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6B9B22EC-7277-4462-8D3A-0D12C3B80BF4}

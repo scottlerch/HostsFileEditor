@@ -1,5 +1,5 @@
 ﻿// <copyright file="ToolStripBindableStatusLabel.cs" company="N/A">
-// Copyright 2011 Scott M. Lerch
+// Copyright 2025 Scott M. Lerch
 // 
 // This file is part of HostsFileEditor.
 // 
@@ -55,7 +55,8 @@ namespace HostsFileEditor.Controls
         /// The collection of <see cref="T:System.Windows.Forms.BindingManagerBase"/> objects for this <see cref="T:System.Windows.Forms.IBindableComponent"/>.
         /// </returns>
         [Browsable(false)]
-        public BindingContext BindingContext
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public new BindingContext BindingContext
         {
             get
             {
@@ -93,7 +94,7 @@ namespace HostsFileEditor.Controls
         /// </returns>
         [Category("Data")]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
-        public ControlBindingsCollection DataBindings
+        public new ControlBindingsCollection DataBindings
         {
             get
             {

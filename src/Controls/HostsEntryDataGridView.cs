@@ -1,5 +1,5 @@
 ﻿// <copyright file="HostsEntryDataGridView.cs" company="N/A">
-// Copyright 2011 Scott M. Lerch
+// Copyright 2025 Scott M. Lerch
 // 
 // This file is part of HostsFileEditor.
 // 
@@ -19,12 +19,13 @@
 
 namespace HostsFileEditor.Controls
 {
+    using Equin.ApplicationFramework;
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Drawing;
     using System.Linq;
     using System.Windows.Forms;
-    using Equin.ApplicationFramework;
 
     /// <summary>
     /// DataGridView class for HostsEntry.
@@ -63,6 +64,7 @@ namespace HostsFileEditor.Controls
         /// Gets or sets the action to clear the sort of the underlying 
         /// data source.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Action ClearSort
         {
             get;
@@ -72,6 +74,7 @@ namespace HostsFileEditor.Controls
         /// <summary>
         /// Gets the selected host entries.
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public IEnumerable<HostsEntry> SelectedHostEntries
         {
             get
