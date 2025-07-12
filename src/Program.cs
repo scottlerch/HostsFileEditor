@@ -18,9 +18,6 @@
 // </copyright>
 
 using HostsFileEditor.Properties;
-using System;
-using System.Threading;
-using System.Windows.Forms;
 
 namespace HostsFileEditor;
 

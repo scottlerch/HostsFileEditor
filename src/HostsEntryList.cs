@@ -20,10 +20,7 @@
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 
 namespace HostsFileEditor;
 

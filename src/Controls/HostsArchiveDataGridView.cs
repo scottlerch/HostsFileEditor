@@ -18,7 +18,6 @@
 // </copyright>
 
 using Equin.ApplicationFramework;
-using System.Windows.Forms;
 
 namespace HostsFileEditor.Controls;
 

@@ -21,10 +21,7 @@ using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using HostsFileEditor.Win32;
-using System;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace HostsFileEditor;

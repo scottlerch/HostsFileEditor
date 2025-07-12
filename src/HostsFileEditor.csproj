@@ -32,6 +32,7 @@
     <!-- Reflection based JSON serialization is required for WinForms designer -->
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(Configuration)' == 'Debug'">true</JsonSerializerIsReflectionEnabledByDefault>
     <CustomResourceTypesSupport>true</CustomResourceTypesSupport>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />

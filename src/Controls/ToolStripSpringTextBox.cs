@@ -17,8 +17,6 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-using System.Drawing;
-using System.Windows.Forms;
 using System.Windows.Forms.Design;
 
 namespace HostsFileEditor.Controls;

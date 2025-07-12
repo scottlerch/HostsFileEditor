@@ -17,9 +17,7 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-using System;
 using System.ComponentModel;
-using System.Windows.Forms;
 
 namespace HostsFileEditor;
 

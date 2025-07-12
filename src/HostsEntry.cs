@@ -17,19 +17,13 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Xml.Linq;
 
 namespace HostsFileEditor;
 
