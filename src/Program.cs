@@ -29,7 +29,7 @@ internal static class Program
     /// <summary>
     /// The application's main form.
     /// </summary>
-    private static Form mainForm;
+    private static Form? mainForm;
 
     /// <summary>
     /// The main entry point for the application.

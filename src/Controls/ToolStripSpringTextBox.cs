@@ -40,7 +40,13 @@ internal class ToolStripSpringTextBox : ToolStripTextBox
     {
         // Use the default size if the text box is on the overflow menu
         // or is on a vertical ToolStrip.
-        if (IsOnOverflow || Owner.Orientation == Orientation.Vertical)
+        if (IsOnOverflow || Owner?.Orientation == Orientation.Vertical)
+        {
+            return DefaultSize;
+        }
+
+        // Return default size if Owner is null
+        if (Owner == null)
         {
             return DefaultSize;
         }

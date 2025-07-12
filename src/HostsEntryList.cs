@@ -186,10 +186,11 @@ internal class HostsEntryList : BindingList<HostsEntry>
     /// Inserts new host entry before specified host entry.
     /// </summary>
     /// <param name="entry">The entry.</param>
+    /// <param name="newEntry">The new entry to insert.</param>
     /// <exception cref="ArgumentNullException">
     /// Argument cannot be null.
     /// </exception>
-    public void InsertBefore(HostsEntry entry, HostsEntry newEntry = null)
+    public void InsertBefore(HostsEntry entry, HostsEntry? newEntry = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
 
@@ -201,10 +202,11 @@ internal class HostsEntryList : BindingList<HostsEntry>
     /// Inserts new host entry after specified host entry.
     /// </summary>
     /// <param name="entry">The entry.</param>
+    /// <param name="newEntry">The new entry to insert.</param>
     /// <exception cref="ArgumentNullException">
     /// Argument cannot be null.
     /// </exception>
-    public void InsertAfter(HostsEntry entry, HostsEntry newEntry = null)
+    public void InsertAfter(HostsEntry entry, HostsEntry? newEntry = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
 

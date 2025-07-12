@@ -59,36 +59,19 @@ partial class AboutForm : Form
                 }
             }
 
-            return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
+            return Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
         }
     }
 
     /// <summary>
     /// Gets the assembly version.
     /// </summary>
-    public static string AssemblyVersion
-    {
-        get
-        {
-            return Assembly.GetExecutingAssembly().GetName().Version.ToString();
-        }
-    }
+    public static string AssemblyVersion => Assembly.GetExecutingAssembly()?.GetName()?.Version?.ToString() ?? "1.0.0.0";
 
     /// <summary>
     /// Gets the assembly description.
     /// </summary>
-    public static string AssemblyDescription
-    {
-        get
-        {
-            object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
-            if (attributes.Length == 0)
-            {
-                return "";
-            }
-            return ((AssemblyDescriptionAttribute)attributes[0]).Description;
-        }
-    }
+    public static string AssemblyDescription => ((AssemblyDescriptionAttribute)Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false)[0]).Description;
 
     /// <summary>
     /// Gets the assembly product.

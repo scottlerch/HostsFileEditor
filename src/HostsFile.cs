@@ -110,7 +110,7 @@ internal class HostsFile : INotifyPropertyChanged
     /// <summary>
     /// The property changed.
     /// </summary>
-    public event PropertyChangedEventHandler PropertyChanged = delegate { };
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
     /// Gets the singleton instance.
@@ -254,7 +254,7 @@ internal class HostsFile : INotifyPropertyChanged
 
         if (!Directory.Exists(info.DirectoryName))
         {
-            Directory.CreateDirectory(info.DirectoryName);
+            Directory.CreateDirectory(info.DirectoryName!);
         }
 
         using (FileEx.DisableAttributes(saveFilePath, FileAttributes.ReadOnly))
@@ -295,7 +295,7 @@ internal class HostsFile : INotifyPropertyChanged
     /// </typeparam>
     protected void OnPropertyChanged<T>(Expression<Func<T>> property)
     {
-        PropertyChanged(this, new PropertyChangedEventArgs(property.GetPropertyName()));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property.GetPropertyName()));
     }
 
     /// <summary>
@@ -307,7 +307,7 @@ internal class HostsFile : INotifyPropertyChanged
     /// <param name="e">
     /// The event arguments.
     /// </param>
-    private void OnHostsEntriesListChanged(object sender, ListChangedEventArgs e)
+    private void OnHostsEntriesListChanged(object? sender, ListChangedEventArgs e)
     {
         OnPropertyChanged(() => LineCount);
         OnPropertyChanged(() => EnabledCount);

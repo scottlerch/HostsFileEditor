@@ -33,7 +33,7 @@ public class FileOpener
     /// <param name="path">Full path to text file.</param>
     public static void OpenTextFile(string path)
     {
-        if (!TryGetRegisteredApplication(".txt", out string application))
+        if (!TryGetRegisteredApplication(".txt", out string? application) || application == null)
         {
             application = "notepad.exe";
         }
@@ -41,7 +41,7 @@ public class FileOpener
         Process.Start(application, path);
     }
 
-    private static bool TryGetRegisteredApplication(string extension, out string registeredApp)
+    private static bool TryGetRegisteredApplication(string extension, out string? registeredApp)
     {
         var extensionId = GetClassesRootKeyDefaultValue(extension);
 
@@ -67,7 +67,7 @@ public class FileOpener
         return true;
     }
 
-    private static string GetClassesRootKeyDefaultValue(string keyPath)
+    private static string? GetClassesRootKeyDefaultValue(string keyPath)
     {
         using var key = Registry.ClassesRoot.OpenSubKey(keyPath);
         return key?.GetValue(null)?.ToString();

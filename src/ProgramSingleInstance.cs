@@ -39,7 +39,7 @@ public sealed class ProgramSingleInstance : IDisposable
     /// <summary>
     /// The program mutex.
     /// </summary>
-    private Mutex mutex;
+    private Mutex? mutex;
 
     /// <summary>
     /// Gets a value indicating whether this instance is only instance.

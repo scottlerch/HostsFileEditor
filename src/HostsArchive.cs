@@ -29,7 +29,7 @@ internal class HostsArchive
     /// <summary>
     /// The full file path.
     /// </summary>
-    private string filePath;
+    private string filePath = string.Empty;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HostsArchive"/> class.
@@ -76,7 +76,7 @@ internal class HostsArchive
     {
         get => FilePath
             .Split(Path.DirectorySeparatorChar)
-            .LastOrDefault();
+            .LastOrDefault() ?? string.Empty;
     }
 
     /// <summary>

@@ -32,12 +32,12 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
     /// <summary>
     /// Binding context.
     /// </summary>
-    private BindingContext bindingContext;
+    private BindingContext? bindingContext;
 
     /// <summary>
     /// Data bindings.
     /// </summary>
-    private ControlBindingsCollection dataBindings;
+    private ControlBindingsCollection? dataBindings;
 
     /// <summary>
     /// Gets or sets the collection of currency managers for the <see cref="T:System.Windows.Forms.IBindableComponent"/>.
@@ -48,17 +48,17 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
     /// </returns>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public new BindingContext BindingContext
+    public new BindingContext? BindingContext
     {
         get
         {
             if (bindingContext == null)
             {
-                if (Owner != null && Owner.BindingContext != null)
+                if (Owner?.BindingContext != null)
                 {
                     bindingContext = Owner.BindingContext;
                 }
-                else if (Parent != null && Parent.BindingContext != null)
+                else if (Parent?.BindingContext != null)
                 {
                     bindingContext = Parent.BindingContext;
                 }
