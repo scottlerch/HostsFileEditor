@@ -42,10 +42,6 @@
     <PackageReference Include="System.Resources.ResourceManager" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Exclude designer files from nullable reference type checks -->
-    <Compile Update="**/*.Designer.cs">
-      <Nullable>disable</Nullable>
-    </Compile>
     <Content Include="AppxManifest.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
