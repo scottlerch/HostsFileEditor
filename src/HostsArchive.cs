@@ -17,123 +17,114 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
+using HostsFileEditor.Extensions;
+using HostsFileEditor.Properties;
+using System;
+using System.IO;
+using System.Linq;
+
+namespace HostsFileEditor;
+
+/// <summary>
+/// Hosts archive.
+/// </summary>
+internal class HostsArchive
 {
-    using System;
-    using System.IO;
-    using System.Linq;
-    using HostsFileEditor.Extensions;
-    using HostsFileEditor.Properties;
+    /// <summary>
+    /// The full file path.
+    /// </summary>
+    private string filePath;
 
     /// <summary>
-    /// Hosts archive.
+    /// Initializes a new instance of the <see cref="HostsArchive"/> class.
     /// </summary>
-    internal class HostsArchive
+    public HostsArchive()
     {
-        /// <summary>
-        /// The full file path.
-        /// </summary>
-        private string filePath;
+        FilePath = string.Empty;
+    }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HostsArchive"/> class.
-        /// </summary>
-        public HostsArchive()
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HostsArchive"/> class.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <exception cref="ArgumentNullException">
+    /// name cannot be null
+    /// </exception>
+    public HostsArchive(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        FilePath = Path.Combine(HostsArchiveList.ArchiveDirectory, name);
+    }
+
+    /// <summary>
+    /// Gets or sets the file path.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">
+    /// value cannot be null
+    /// </exception>
+    public string FilePath 
+    {
+        get => filePath;
+        set
         {
-            this.FilePath = string.Empty;
+            ArgumentNullException.ThrowIfNull(value);
+            filePath = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the name of the file.
+    /// </summary>
+    public string FileName
+    {
+        get => FilePath
+            .Split(Path.DirectorySeparatorChar)
+            .LastOrDefault();
+    }
+
+    /// <summary>
+    /// Validates the specified file path.
+    /// </summary>
+    /// <param name="filePath">The file path.</param>
+    /// <param name="error">
+    /// The error.  This will be the emptry string if there is no error.
+    /// </param>
+    /// <returns>true if file path is valid for archive, false otherwise</returns>
+    public static bool Validate(string filePath, out string error)
+    {
+        bool isValid = false;
+
+        error = string.Empty;
+
+        /* TODO: Is there a better way to determine file name is valid
+         * instead of catching exception from FileInfo?
+         */
+
+        try
+        {
+            _ = new FileInfo(filePath);
+            isValid = true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HostsArchive"/> class.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        /// <exception cref="ArgumentNullException">
-        /// name cannot be null
-        /// </exception>
-        public HostsArchive(string name)
+        if (isValid)
         {
-            name.ThrowIfNull("name");
-
-            this.FilePath = Path.Combine(HostsArchiveList.ArchiveDirectory, name);
-        }
-
-        /// <summary>
-        /// Gets or sets the file path.
-        /// </summary>
-        /// <exception cref="ArgumentNullException">
-        /// value cannot be null
-        /// </exception>
-        public string FilePath 
-        {
-            get
+            if (Directory.Exists(HostsArchiveList.ArchiveDirectory))
             {
-                return this.filePath;
-            }
-
-            set
-            {
-                value.ThrowIfNull("value");
-
-                this.filePath = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets the name of the file.
-        /// </summary>
-        public string FileName
-        { 
-            get
-            {
-                return this.FilePath
-                    .Split(Path.DirectorySeparatorChar)
-                    .LastOrDefault();
-            }
-        }
-
-        /// <summary>
-        /// Validates the specified file path.
-        /// </summary>
-        /// <param name="filePath">The file path.</param>
-        /// <param name="error">
-        /// The error.  This will be the emptry string if there is no error.
-        /// </param>
-        /// <returns>true if file path is valid for archive, false otherwise</returns>
-        public static bool Validate(string filePath, out string error)
-        {
-            bool isValid = false;
-
-            error = string.Empty;
-
-            /* TODO: Is there a better way to determine file name is valid
-             * instead of catching exception from FileInfo?
-             */
-
-            try
-            {
-                new FileInfo(filePath);
-                isValid = true;
-            }
-            catch (Exception ex)
-            {
-                error = ex.Message;
-            }
-
-            if (isValid)
-            {
-                if (Directory.Exists(HostsArchiveList.ArchiveDirectory))
+                if (Directory.GetFiles(HostsArchiveList.ArchiveDirectory)
+                    .Select(fullFilePath => Path.GetFileName(fullFilePath))
+                    .Contains(filePath))
                 {
-                    if (Directory.GetFiles(HostsArchiveList.ArchiveDirectory)
-                        .Select(fullFilePath => Path.GetFileName(fullFilePath))
-                        .Contains(filePath))
-                    {
-                        isValid = false;
-                        error = Resources.ArchiveExists;
-                    }
+                    isValid = false;
+                    error = Resources.ArchiveExists;
                 }
             }
-
-            return isValid;
         }
+
+        return isValid;
     }
 }

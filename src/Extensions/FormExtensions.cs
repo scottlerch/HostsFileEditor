@@ -17,35 +17,30 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor.Extensions
+using System.Windows.Forms;
+
+namespace HostsFileEditor.Extensions;
+
+/// <summary>
+/// Helper Form extension methods.
+/// </summary>
+internal static class FormExtensions
 {
-    using System.Windows.Forms;
-
     /// <summary>
-    /// Helper Form extension methods.
+    /// Show form if not visible, otherwise just Activate.
     /// </summary>
-    internal static class FormExtensions
+    /// <param name="form">
+    /// The form to show or activate.
+    /// </param>
+    public static void ShowOrActivate(this Form form)
     {
-        #region Public Methods
-
-        /// <summary>
-        /// Show form if not visible, otherwise just Activate.
-        /// </summary>
-        /// <param name="form">
-        /// The form to show or activate.
-        /// </param>
-        public static void ShowOrActivate(this Form form)
+        if (form.Visible)
         {
-            if (form.Visible)
-            {
-                form.Activate();
-            }
-            else
-            {
-                form.Show();
-            }
+            form.Activate();
         }
-
-        #endregion
+        else
+        {
+            form.Show();
+        }
     }
 }

@@ -17,328 +17,302 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
-{
-    using System;
-    using System.ComponentModel;
-    using System.IO;
-    using System.Linq;
-    using System.Linq.Expressions;
+using HostsFileEditor.Extensions;
+using HostsFileEditor.Properties;
+using HostsFileEditor.Utilities;
+using HostsFileEditor.Win32;
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Linq.Expressions;
 
-    using HostsFileEditor.Extensions;
-    using HostsFileEditor.Properties;
-    using HostsFileEditor.Utilities;
-    using HostsFileEditor.Win32;
+namespace HostsFileEditor;
+
+/// <summary>
+/// This class represents a hosts file.
+/// </summary>
+internal class HostsFile : INotifyPropertyChanged
+{
+    /// <summary>
+    /// The default hosts file directory location.
+    /// </summary>
+    public static readonly string DefaultHostFileDirectory = 
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows), 
+            @"System32\drivers\etc");
 
     /// <summary>
-    /// This class represents a hosts file.
+    /// The default host file path.
     /// </summary>
-    internal class HostsFile : INotifyPropertyChanged
-    {
-        #region Constants and Fields
+    public static readonly string DefaultHostFilePath =
+        Path.Combine(DefaultHostFileDirectory, @"hosts");
 
-        /// <summary>
-        /// The default hosts file directory location.
-        /// </summary>
-        public static readonly string DefaultHostFileDirectory = 
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Windows), 
-                @"System32\drivers\etc");
+    /// <summary>
+    /// The default disabled host file path.
+    /// </summary>
+    public static readonly string DefaultBackupHostFilePath = 
+        DefaultHostFilePath + ".bak";
 
-        /// <summary>
-        /// The default host file path.
-        /// </summary>
-        public static readonly string DefaultHostFilePath =
-            Path.Combine(DefaultHostFileDirectory, @"hosts");
+    /// <summary>
+    /// The backup host file path.
+    /// </summary>
+    public static readonly string DefaultDisabledHostFilePath = 
+        DefaultHostFilePath + ".disabled";
 
-        /// <summary>
-        /// The default disabled host file path.
-        /// </summary>
-        public static readonly string DefaultBackupHostFilePath = 
-            DefaultHostFilePath + ".bak";
-
-        /// <summary>
-        /// The backup host file path.
-        /// </summary>
-        public static readonly string DefaultDisabledHostFilePath = 
-            DefaultHostFilePath + ".disabled";
-
-        /// <summary>
-        /// The singleton instance of the hosts file.
-        /// </summary>
-        private static readonly Lazy<HostsFile> instance =
-            new Lazy<HostsFile>(() =>
-            {
-                UndoManager.Instance.ClearHistory();
-
-                if (IsEnabled)
-                {
-                    return new HostsFile(DefaultHostFilePath);
-                }
-                else
-                {
-                    return new HostsFile(DefaultDisabledHostFilePath);
-                }
-            });
-
-        /// <summary>
-        /// The file path.
-        /// </summary>
-        private readonly string filePath;
-
-        #endregion
-
-        #region Constructors and Destructors
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HostsFile"/> class.
-        /// </summary>
-        /// <param name="filePath">
-        /// The file path.
-        /// </param>
-        private HostsFile(string filePath)
+    /// <summary>
+    /// The singleton instance of the hosts file.
+    /// </summary>
+    private static readonly Lazy<HostsFile> instance =
+        new(() =>
         {
-            this.filePath = filePath;
+            UndoManager.Instance.ClearHistory();
 
-            if (!File.Exists(filePath))
+            if (IsEnabled)
             {
-                this.Entries = new HostsEntryList();
+                return new HostsFile(DefaultHostFilePath);
             }
             else
             {
-                using (FileEx.DisableAttributes(DefaultBackupHostFilePath, FileAttributes.ReadOnly))
-                {
-                    File.Copy(filePath, DefaultBackupHostFilePath, true);
-                }
+                return new HostsFile(DefaultDisabledHostFilePath);
+            }
+        });
 
-                this.Entries = new HostsEntryList(File.ReadAllLines(filePath), RemoveDefaultText);
+    /// <summary>
+    /// The file path.
+    /// </summary>
+    private readonly string filePath;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HostsFile"/> class.
+    /// </summary>
+    /// <param name="filePath">
+    /// The file path.
+    /// </param>
+    private HostsFile(string filePath)
+    {
+        this.filePath = filePath;
+
+        if (!File.Exists(filePath))
+        {
+            Entries = [];
+        }
+        else
+        {
+            using (FileEx.DisableAttributes(DefaultBackupHostFilePath, FileAttributes.ReadOnly))
+            {
+                File.Copy(filePath, DefaultBackupHostFilePath, true);
             }
 
-            this.Entries.ListChanged += this.OnHostsEntriesListChanged;
+            Entries = new HostsEntryList(File.ReadAllLines(filePath), RemoveDefaultText);
         }
 
-        #endregion
+        Entries.ListChanged += OnHostsEntriesListChanged;
+    }
 
-        #region Public Events
+    /// <summary>
+    /// The property changed.
+    /// </summary>
+    public event PropertyChangedEventHandler PropertyChanged = delegate { };
 
-        /// <summary>
-        /// The property changed.
-        /// </summary>
-        public event PropertyChangedEventHandler PropertyChanged = delegate { };
+    /// <summary>
+    /// Gets the singleton instance.
+    /// </summary>
+    public static HostsFile Instance
+    {
+        get { return instance.Value; }
+    }
 
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// Gets the singleton instance.
-        /// </summary>
-        public static HostsFile Instance
+    /// <summary>
+    /// Gets a value indicating whether IsEnabled.
+    /// </summary>
+    public static bool IsEnabled
+    {
+        get
         {
-            get { return instance.Value; }
+            return File.Exists(DefaultHostFilePath);
         }
+    }
 
-        /// <summary>
-        /// Gets a value indicating whether IsEnabled.
-        /// </summary>
-        public static bool IsEnabled
+    /// <summary>
+    /// Gets or sets a value indicating whether to 
+    /// remove default hosts file text.
+    /// </summary>
+    public static bool RemoveDefaultText { get; set; }
+
+    /// <summary>
+    /// Gets EnabledCount.
+    /// </summary>
+    public int EnabledCount
+    {
+        get
         {
-            get
-            {
-                return File.Exists(DefaultHostFilePath);
-            }
+            return Entries.Count(entry => entry.Enabled);
         }
+    }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether to 
-        /// remove default hosts file text.
-        /// </summary>
-        public static bool RemoveDefaultText { get; set; }
+    /// <summary>
+    /// Gets Entries.
+    /// </summary>
+    public HostsEntryList Entries { get; private set; }
 
-        /// <summary>
-        /// Gets EnabledCount.
-        /// </summary>
-        public int EnabledCount
+    /// <summary>
+    /// Gets LineCount.
+    /// </summary>
+    public int LineCount
+    {
+        get
         {
-            get
-            {
-                return this.Entries.Count(entry => entry.Enabled);
-            }
+            return Entries.Count;
         }
+    }
 
-        /// <summary>
-        /// Gets Entries.
-        /// </summary>
-        public HostsEntryList Entries { get; private set; }
-
-        /// <summary>
-        /// Gets LineCount.
-        /// </summary>
-        public int LineCount
+    /// <summary>
+    /// The disable hosts file.
+    /// </summary>
+    public static void DisableHostsFile()
+    {
+        using (FileEx.DisableAttributes(DefaultHostFilePath, FileAttributes.ReadOnly))
         {
-            get
-            {
-                return this.Entries.Count;
-            }
-        }
-
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// The disable hosts file.
-        /// </summary>
-        public static void DisableHostsFile()
-        {
-            using (FileEx.DisableAttributes(DefaultHostFilePath, FileAttributes.ReadOnly))
-            {
-                File.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
-                NativeMethods.FlushDns();
-            }
-        }
-
-        /// <summary>
-        /// Enable hosts file.
-        /// </summary>
-        public static void EnableHostsFile()
-        {
-            using (FileEx.DisableAttributes(DefaultDisabledHostFilePath, FileAttributes.ReadOnly))
-            {
-                File.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
-                NativeMethods.FlushDns();
-            }
-        }
-
-        /// <summary>
-        /// Import specified hosts file into this hosts file.
-        /// </summary>
-        /// <param name="importFilePath">
-        /// The import file path.
-        /// </param>
-        public void Import(string importFilePath)
-        {
-            if (this.filePath != importFilePath)
-            {
-                this.Entries.BatchUpdate(() =>
-                {
-                    this.Entries.Clear();
-                    this.Entries.AddLines(File.ReadAllLines(importFilePath), RemoveDefaultText);
-                });
-            }
-        }
-
-        /// <summary>
-        /// Archives the specified name.
-        /// </summary>
-        /// <param name="name">The name.</param>
-        public void Archive(string name)
-        {
-            var archive = new HostsArchive(name);
-            this.SaveAs(archive.FilePath);
-            HostsArchiveList.Instance.Add(archive);
-        }
-
-        /// <summary>
-        /// Restore to default OS hosts file.
-        /// </summary>
-        public void RestoreDefault()
-        {
-            UndoManager.Instance.ClearHistory();
-
-            this.Entries.BatchUpdate(() =>
-            {
-                this.Entries.Clear();
-                this.Entries.AddLines(
-                    Resources.hosts.Split(new[] { Environment.NewLine }, StringSplitOptions.None),
-                    false);
-            });
-        }
-
-        /// <summary>
-        /// Save the hosts file changes to disk.
-        /// </summary>
-        public void Save()
-        {
-            this.SaveAs(this.filePath);
+            File.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
             NativeMethods.FlushDns();
         }
+    }
 
-        /// <summary>
-        /// Save the hosts file to the specified file.
-        /// </summary>
-        /// <param name="saveFilePath">
-        /// The save file path.
-        /// </param>
-        public void SaveAs(string saveFilePath)
+    /// <summary>
+    /// Enable hosts file.
+    /// </summary>
+    public static void EnableHostsFile()
+    {
+        using (FileEx.DisableAttributes(DefaultDisabledHostFilePath, FileAttributes.ReadOnly))
         {
-            FileInfo info = new FileInfo(saveFilePath);
-
-            if (!Directory.Exists(info.DirectoryName))
-            {
-                Directory.CreateDirectory(info.DirectoryName);
-            }
-
-            using (FileEx.DisableAttributes(saveFilePath, FileAttributes.ReadOnly))
-            {
-                File.WriteAllLines(
-                    saveFilePath,
-                    this.Entries.Select(entry => entry.UnparsedText));
-            }
-        }
-
-        /// <summary>
-        /// Refreshes to reflect current hosts file.
-        /// </summary>
-        /// <param name="removeDefault">
-        /// if set to <c>true</c> remove default entries.
-        /// </param>
-        public void Refresh(bool removeDefault = true)
-        {
-            UndoManager.Instance.ClearHistory();
-
-            this.Entries.BatchUpdate(() =>
-            {
-                this.Entries.Clear();
-                this.Entries.AddLines(File.ReadAllLines(this.filePath), removeDefault);
-            });
-
+            File.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
             NativeMethods.FlushDns();
         }
+    }
 
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// Raise property changed event.
-        /// </summary>
-        /// <param name="property">
-        /// The property.
-        /// </param>
-        /// <typeparam name="T">
-        /// Type of object containing property.
-        /// </typeparam>
-        protected void OnPropertyChanged<T>(Expression<Func<T>> property)
+    /// <summary>
+    /// Import specified hosts file into this hosts file.
+    /// </summary>
+    /// <param name="importFilePath">
+    /// The import file path.
+    /// </param>
+    public void Import(string importFilePath)
+    {
+        if (filePath != importFilePath)
         {
-            this.PropertyChanged(this, new PropertyChangedEventArgs(property.GetPropertyName()));
+            Entries.BatchUpdate(() =>
+            {
+                Entries.Clear();
+                Entries.AddLines(File.ReadAllLines(importFilePath), RemoveDefaultText);
+            });
+        }
+    }
+
+    /// <summary>
+    /// Archives the specified name.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    public void Archive(string name)
+    {
+        var archive = new HostsArchive(name);
+        SaveAs(archive.FilePath);
+        HostsArchiveList.Instance.Add(archive);
+    }
+
+    /// <summary>
+    /// Restore to default OS hosts file.
+    /// </summary>
+    public void RestoreDefault()
+    {
+        UndoManager.Instance.ClearHistory();
+
+        Entries.BatchUpdate(() =>
+        {
+            Entries.Clear();
+            Entries.AddLines(
+                Resources.hosts.Split([Environment.NewLine], StringSplitOptions.None),
+                false);
+        });
+    }
+
+    /// <summary>
+    /// Save the hosts file changes to disk.
+    /// </summary>
+    public void Save()
+    {
+        SaveAs(filePath);
+        NativeMethods.FlushDns();
+    }
+
+    /// <summary>
+    /// Save the hosts file to the specified file.
+    /// </summary>
+    /// <param name="saveFilePath">
+    /// The save file path.
+    /// </param>
+    public void SaveAs(string saveFilePath)
+    {
+        FileInfo info = new(saveFilePath);
+
+        if (!Directory.Exists(info.DirectoryName))
+        {
+            Directory.CreateDirectory(info.DirectoryName);
         }
 
-        /// <summary>
-        /// Occurs when the hosts entries list changed.
-        /// </summary>
-        /// <param name="sender">
-        /// The sender.
-        /// </param>
-        /// <param name="e">
-        /// The event arguments.
-        /// </param>
-        private void OnHostsEntriesListChanged(object sender, ListChangedEventArgs e)
+        using (FileEx.DisableAttributes(saveFilePath, FileAttributes.ReadOnly))
         {
-            this.OnPropertyChanged(() => this.LineCount);
-            this.OnPropertyChanged(() => this.EnabledCount);
+            File.WriteAllLines(
+                saveFilePath,
+                Entries.Select(entry => entry.UnparsedText));
         }
+    }
 
-        #endregion
+    /// <summary>
+    /// Refreshes to reflect current hosts file.
+    /// </summary>
+    /// <param name="removeDefault">
+    /// if set to <c>true</c> remove default entries.
+    /// </param>
+    public void Refresh(bool removeDefault = true)
+    {
+        UndoManager.Instance.ClearHistory();
+
+        Entries.BatchUpdate(() =>
+        {
+            Entries.Clear();
+            Entries.AddLines(File.ReadAllLines(filePath), removeDefault);
+        });
+
+        NativeMethods.FlushDns();
+    }
+
+    /// <summary>
+    /// Raise property changed event.
+    /// </summary>
+    /// <param name="property">
+    /// The property.
+    /// </param>
+    /// <typeparam name="T">
+    /// Type of object containing property.
+    /// </typeparam>
+    protected void OnPropertyChanged<T>(Expression<Func<T>> property)
+    {
+        PropertyChanged(this, new PropertyChangedEventArgs(property.GetPropertyName()));
+    }
+
+    /// <summary>
+    /// Occurs when the hosts entries list changed.
+    /// </summary>
+    /// <param name="sender">
+    /// The sender.
+    /// </param>
+    /// <param name="e">
+    /// The event arguments.
+    /// </param>
+    private void OnHostsEntriesListChanged(object sender, ListChangedEventArgs e)
+    {
+        OnPropertyChanged(() => LineCount);
+        OnPropertyChanged(() => EnabledCount);
     }
 }

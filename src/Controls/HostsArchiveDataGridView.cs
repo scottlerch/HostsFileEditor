@@ -17,54 +17,45 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor.Controls
+using Equin.ApplicationFramework;
+using System.Windows.Forms;
+
+namespace HostsFileEditor.Controls;
+
+/// <summary>
+/// DataGridView class for use with HostsArchive objects.
+/// </summary>
+internal sealed class HostsArchiveDataGridView : DataGridView
 {
-    using System.Windows.Forms;
-    using Equin.ApplicationFramework;
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HostsArchiveDataGridView"/> class.
+    /// </summary>
+    public HostsArchiveDataGridView()
+    {
+        AllowUserToResizeRows = false;
+        AllowUserToResizeColumns = false;
+        AllowUserToDeleteRows = false;
+        AllowDrop = false;
+        AllowUserToAddRows = false;
+        AllowUserToOrderColumns = false;
+    }
 
     /// <summary>
-    /// DataGridView class for use with HostsArchive objects.
+    /// Gets the current hosts archive.
     /// </summary>
-    internal sealed class HostsArchiveDataGridView : DataGridView
+    public HostsArchive CurrentHostsArchive
     {
-        #region Constructors and Destructors
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HostsArchiveDataGridView"/> class.
-        /// </summary>
-        public HostsArchiveDataGridView()
+        get
         {
-            this.AllowUserToResizeRows = false;
-            this.AllowUserToResizeColumns = false;
-            this.AllowUserToDeleteRows = false;
-            this.AllowDrop = false;
-            this.AllowUserToAddRows = false;
-            this.AllowUserToOrderColumns = false;
-        }
+            HostsArchive archive = null;
 
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// Gets the current hosts archive.
-        /// </summary>
-        public HostsArchive CurrentHostsArchive
-        {
-            get
+            if (CurrentRow != null)
             {
-                HostsArchive archive = null;
-
-                if (this.CurrentRow != null)
-                {
-                    var view = this.CurrentRow.DataBoundItem as ObjectView<HostsArchive>;
-                    archive = view.Object;
-                }
-
-                return archive;
+                var view = CurrentRow.DataBoundItem as ObjectView<HostsArchive>;
+                archive = view.Object;
             }
-        }
 
-        #endregion
+            return archive;
+        }
     }
 }

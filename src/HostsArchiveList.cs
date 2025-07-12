@@ -17,80 +17,76 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
+namespace HostsFileEditor;
+
+using HostsFileEditor.Extensions;
+using HostsFileEditor.Utilities;
+using System;
+using System.ComponentModel;
+using System.IO;
+
+/// <summary>
+/// Hosts archive list.
+/// </summary>
+internal class HostsArchiveList : BindingList<HostsArchive>
 {
-    using System;
-    using System.ComponentModel;
-    using System.IO;
-    using HostsFileEditor.Extensions;
-    using HostsFileEditor.Utilities;
+    /// <summary>
+    /// The archive directory.
+    /// </summary>
+    public static readonly string ArchiveDirectory = 
+        Path.Combine(HostsFile.DefaultHostFileDirectory, "archive");
 
     /// <summary>
-    /// Hosts archive list.
+    /// Singleton instance.
     /// </summary>
-    internal class HostsArchiveList : BindingList<HostsArchive>
+    private static readonly Lazy<HostsArchiveList> instance = 
+        new(() => new HostsArchiveList());
+
+    /// <summary>
+    /// Prevents a default instance of the <see cref="HostsArchiveList"/> class from being created.
+    /// </summary>
+    private HostsArchiveList()
     {
-        /// <summary>
-        /// The archive directory.
-        /// </summary>
-        public static readonly string ArchiveDirectory = 
-            Path.Combine(HostsFile.DefaultHostFileDirectory, "archive");
+        Refresh();
+    }
 
-        /// <summary>
-        /// Singleton instance.
-        /// </summary>
-        private static readonly Lazy<HostsArchiveList> instance = 
-            new Lazy<HostsArchiveList>(() => new HostsArchiveList());
+    /// <summary>
+    /// Gets the singleton instance.
+    /// </summary>
+    public static HostsArchiveList Instance => instance.Value;
 
-        /// <summary>
-        /// Prevents a default instance of the <see cref="HostsArchiveList"/> class from being created.
-        /// </summary>
-        private HostsArchiveList()
+    /// <summary>
+    /// Deletes the specified archive.
+    /// </summary>
+    /// <param name="archive">The archive.</param>
+    public void Delete(HostsArchive archive)
+    {
+        using (FileEx.DisableAttributes(archive.FilePath, FileAttributes.ReadOnly))
         {
-            this.Refresh();
+            File.Delete(archive.FilePath);
         }
 
-        /// <summary>
-        /// Gets the singleton instance.
-        /// </summary>
-        public static HostsArchiveList Instance 
-        { 
-            get { return instance.Value; } 
-        }
+        Remove(archive);
+    }
 
-        /// <summary>
-        /// Deletes the specified archive.
-        /// </summary>
-        /// <param name="archive">The archive.</param>
-        public void Delete(HostsArchive archive)
+    /// <summary>
+    /// Refreshes this instance.
+    /// </summary>
+    public void Refresh()
+    {
+        this.BatchUpdate(() =>
         {
-            using (FileEx.DisableAttributes(archive.FilePath, FileAttributes.ReadOnly))
+            Clear();
+
+            if (Directory.Exists(ArchiveDirectory))
             {
-                File.Delete(archive.FilePath);
-            }
+                var files = Directory.GetFiles(ArchiveDirectory);
 
-            this.Remove(archive);
-        }
-
-        /// <summary>
-        /// Refreshes this instance.
-        /// </summary>
-        public void Refresh()
-        {
-            this.BatchUpdate(() =>
-            {
-                this.Clear();
-
-                if (Directory.Exists(ArchiveDirectory))
+                foreach (var file in files)
                 {
-                    var files = Directory.GetFiles(ArchiveDirectory);
-
-                    foreach (var file in files)
-                    {
-                        this.Add(new HostsArchive { FilePath = file });
-                    }
+                    Add(new HostsArchive { FilePath = file });
                 }
-            });
-        }
+            }
+        });
     }
 }

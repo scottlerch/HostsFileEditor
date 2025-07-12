@@ -17,135 +17,136 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
+using System.Diagnostics;
+using System.Reflection;
+using System.Windows.Forms;
+
+namespace HostsFileEditor;
+
+/// <summary>
+/// The about dialog.
+/// </summary>
+partial class AboutForm : Form
 {
-    using System.Diagnostics;
-    using System.Reflection;
-    using System.Windows.Forms;
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AboutForm"/> class.
+    /// </summary>
+    public AboutForm()
+    {
+        InitializeComponent();
+
+        Text = $"About {AssemblyTitle}";
+        labelProductName.Text = AssemblyProduct;
+        labelVersion.Text = $"Version {AssemblyVersion}";
+        labelCopyright.Text = AssemblyCopyright;
+        textBoxDescription.Text = AssemblyDescription;
+    }
 
     /// <summary>
-    /// The about dialog.
+    /// Gets the assembly title.
     /// </summary>
-    partial class AboutForm : Form
+    public static string AssemblyTitle
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AboutForm"/> class.
-        /// </summary>
-        public AboutForm()
+        get
         {
-            this.InitializeComponent();
+            var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
 
-            this.Text = string.Format("About {0}", AssemblyTitle);
-            this.labelProductName.Text = AssemblyProduct;
-            this.labelVersion.Text = string.Format("Version {0}", AssemblyVersion);
-            this.labelCopyright.Text = AssemblyCopyright;
-            this.textBoxDescription.Text = AssemblyDescription;
-        }
-
-        /// <summary>
-        /// Gets the assembly title.
-        /// </summary>
-        public string AssemblyTitle
-        {
-            get
+            if (attributes.Length > 0)
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyTitleAttribute), false);
-                if (attributes.Length > 0)
+                AssemblyTitleAttribute titleAttribute = (AssemblyTitleAttribute)attributes[0];
+                if (titleAttribute.Title != "")
                 {
-                    AssemblyTitleAttribute titleAttribute = (AssemblyTitleAttribute)attributes[0];
-                    if (titleAttribute.Title != "")
-                    {
-                        return titleAttribute.Title;
-                    }
+                    return titleAttribute.Title;
                 }
-                return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
             }
-        }
 
-        /// <summary>
-        /// Gets the assembly version.
-        /// </summary>
-        public string AssemblyVersion
+            return System.IO.Path.GetFileNameWithoutExtension(Assembly.GetExecutingAssembly().Location);
+        }
+    }
+
+    /// <summary>
+    /// Gets the assembly version.
+    /// </summary>
+    public static string AssemblyVersion
+    {
+        get
         {
-            get
+            return Assembly.GetExecutingAssembly().GetName().Version.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Gets the assembly description.
+    /// </summary>
+    public static string AssemblyDescription
+    {
+        get
+        {
+            object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
+            if (attributes.Length == 0)
             {
-                return Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                return "";
             }
+            return ((AssemblyDescriptionAttribute)attributes[0]).Description;
         }
+    }
 
-        /// <summary>
-        /// Gets the assembly description.
-        /// </summary>
-        public string AssemblyDescription
+    /// <summary>
+    /// Gets the assembly product.
+    /// </summary>
+    public static string AssemblyProduct
+    {
+        get
         {
-            get
+            var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyProductAttribute), false);
+
+            if (attributes.Length == 0)
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyDescriptionAttribute), false);
-                if (attributes.Length == 0)
-                {
-                    return "";
-                }
-                return ((AssemblyDescriptionAttribute)attributes[0]).Description;
+                return "";
             }
-        }
 
-        /// <summary>
-        /// Gets the assembly product.
-        /// </summary>
-        public string AssemblyProduct
+            return ((AssemblyProductAttribute)attributes[0]).Product;
+        }
+    }
+
+    /// <summary>
+    /// Gets the assembly copyright.
+    /// </summary>
+    public static string AssemblyCopyright
+    {
+        get
         {
-            get
+            var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
+
+            if (attributes.Length == 0)
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyProductAttribute), false);
-                if (attributes.Length == 0)
-                {
-                    return "";
-                }
-                return ((AssemblyProductAttribute)attributes[0]).Product;
+                return "";
             }
-        }
 
-        /// <summary>
-        /// Gets the assembly copyright.
-        /// </summary>
-        public string AssemblyCopyright
+            return ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
+        }
+    }
+
+    /// <summary>
+    /// Gets the assembly company.
+    /// </summary>
+    public static string AssemblyCompany
+    {
+        get
         {
-            get
+            var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
+
+            if (attributes.Length == 0)
             {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
-                if (attributes.Length == 0)
-                {
-                    return "";
-                }
-                return ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
+                return "";
             }
-        }
 
-        /// <summary>
-        /// Gets the assembly company.
-        /// </summary>
-        public string AssemblyCompany
-        {
-            get
-            {
-                object[] attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
-                if (attributes.Length == 0)
-                {
-                    return "";
-                }
-                return ((AssemblyCompanyAttribute)attributes[0]).Company;
-            }
+            return ((AssemblyCompanyAttribute)attributes[0]).Company;
         }
+    }
 
-        /// <summary>
-        /// Called when link clicked.
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="System.EventArgs"/> instance
-        /// containing the event data.</param>
-        private void OnLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            Process.Start(this.githubLink.Text);
-        }
+    private void OnLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+    {
+        Process.Start(githubLink.Text);
     }
 }

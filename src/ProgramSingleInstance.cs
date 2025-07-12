@@ -17,104 +17,100 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
+using HostsFileEditor.Win32;
+using System;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace HostsFileEditor;
+
+/// <summary>
+/// Helper class to enforce single instance of a program.
+/// http://www.codeproject.com/KB/cs/SingleInstanceAppMutex.aspx
+/// </summary>
+public sealed class ProgramSingleInstance : IDisposable
 {
-    using System;
-    using System.Threading;
-    using HostsFileEditor.Win32;
-    using System.Threading.Tasks;
-    using System.Diagnostics;
+    /// <summary>
+    /// Message to tell first instance to show itself.
+    /// </summary>
+    public static readonly int WM_SHOWFIRSTINSTANCE =
+        NativeMethods.RegisterWindowMessage(
+            "WM_SHOWFIRSTINSTANCE|{0}", 
+            ProgramInfo.AssemblyGuid);
 
     /// <summary>
-    /// Helper class to enforce single instance of a program.
-    /// http://www.codeproject.com/KB/cs/SingleInstanceAppMutex.aspx
+    /// The program mutex.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1063:ImplementIDisposableCorrectly")]
-    public class ProgramSingleInstance : IDisposable
+    private Mutex mutex;
+
+    /// <summary>
+    /// Gets a value indicating whether this instance is only instance.
+    /// </summary>
+    /// <value>
+    /// <c>true</c> if this instance is only instance; otherwise, <c>false</c>.
+    /// </value>
+    public bool IsOnlyInstance { get; private set; }
+
+    private ProgramSingleInstance()
     {
-        /// <summary>
-        /// Message to tell first instance to show itself.
-        /// </summary>
-        public static readonly int WM_SHOWFIRSTINSTANCE =
-            NativeMethods.RegisterWindowMessage(
-                "WM_SHOWFIRSTINSTANCE|{0}", 
-                ProgramInfo.AssemblyGuid);
+        IsOnlyInstance = false;
+        string mutexName = $"Local\\{ProgramInfo.AssemblyGuid}";
 
-        /// <summary>
-        /// The program mutex.
-        /// </summary>
-        private Mutex mutex;
+        // if you want your app to be limited to a single instance
+        // across ALL SESSIONS (multiple users & terminal services), then use the following line instead:
+        // string mutexName = $"Global\\{ProgramInfo.AssemblyGuid}";
 
-        /// <summary>
-        /// Gets a value indicating whether this instance is only instance.
-        /// </summary>
-        /// <value>
-        /// <c>true</c> if this instance is only instance; otherwise, <c>false</c>.
-        /// </value>
-        public bool IsOnlyInstance { get; private set; }
+        mutex = new Mutex(true, mutexName, out bool onlyInstance);
+        IsOnlyInstance = onlyInstance;
+    }
 
-        private ProgramSingleInstance()
+    /// <summary>
+    /// Starts this instance.
+    /// </summary>
+    /// <returns>True if successful.</returns>
+    public static ProgramSingleInstance Start()
+    {
+        return new ProgramSingleInstance();
+    }
+
+    /// <summary>
+    /// Shows the first instance.
+    /// </summary>
+    public static void ShowFirstInstance()
+    {
+        // HACK: the second process won't return from SendMessage
+        // so kill process after a few seconds
+        Task.Factory.StartNew(async () => 
         {
-            this.IsOnlyInstance = false;
-            string mutexName = string.Format("Local\\{0}", ProgramInfo.AssemblyGuid);
+            await Task.Delay(5000);
+            Process.GetCurrentProcess().Kill();
+        });
 
-            // if you want your app to be limited to a single instance
-            // across ALL SESSIONS (multiple users & terminal services), then use the following line instead:
-            // string mutexName = String.Format("Global\\{0}", ProgramInfo.AssemblyGuid);
+        // Must use SendMessage instead of PostMessage so the
+        // first instance can still receive the message even
+        // if it's minimized to tray bar
+        NativeMethods.SendMessage(
+            (IntPtr)NativeMethods.HWND_BROADCAST,
+            WM_SHOWFIRSTINSTANCE,
+            IntPtr.Zero,
+            IntPtr.Zero);
+    }
 
-            bool onlyInstance;
-            this.mutex = new Mutex(true, mutexName, out onlyInstance);
-            this.IsOnlyInstance = onlyInstance;
-        }
-
-        /// <summary>
-        /// Starts this instance.
-        /// </summary>
-        /// <returns>True if successful.</returns>
-        public static ProgramSingleInstance Start()
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        if (mutex != null)
         {
-            return new ProgramSingleInstance();
-        }
-
-        /// <summary>
-        /// Shows the first instance.
-        /// </summary>
-        public void ShowFirstInstance()
-        {
-            // HACK: the second process won't return from SendMessage
-            // so kill process after a few seconds
-            Task.Factory.StartNew(() => 
+            if (IsOnlyInstance)
             {
-                Thread.Sleep(5000);
-                Process.GetCurrentProcess().Kill();
-            });
-
-            // Must use SendMessage instead of PostMessage so the
-            // first instance can still receive the message even
-            // if it's minimized to tray bar
-            NativeMethods.SendMessage(
-                (IntPtr)NativeMethods.HWND_BROADCAST,
-                WM_SHOWFIRSTINSTANCE,
-                IntPtr.Zero,
-                IntPtr.Zero);
-        }
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1063:ImplementIDisposableCorrectly")]
-        public void  Dispose()
-        {
-            if (this.mutex != null)
-            {
-                if (this.IsOnlyInstance)
-                {
-                    this.mutex.ReleaseMutex();
-                }
-
-                this.mutex.Dispose();
-                this.mutex = null;
+                mutex.ReleaseMutex();
             }
+
+            mutex.Dispose();
+            mutex = null;
         }
     }
 }

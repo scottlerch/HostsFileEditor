@@ -17,342 +17,307 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
-{
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Linq;
+using HostsFileEditor.Extensions;
+using HostsFileEditor.Properties;
+using HostsFileEditor.Utilities;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 
-    using HostsFileEditor.Extensions;
-    using HostsFileEditor.Properties;
-    using HostsFileEditor.Utilities;
+namespace HostsFileEditor;
+
+/// <summary>
+/// This class represents one or more host entries.
+/// </summary>
+internal class HostsEntryList : BindingList<HostsEntry>
+{
+    /// <summary>
+    /// Default hosts file lines.
+    /// </summary>
+    public static readonly string[] DefaultLines = Resources.hosts.Split(
+        [Environment.NewLine],
+        StringSplitOptions.None);
 
     /// <summary>
-    /// This class represents one or more host entries.
+    /// Initializes a new instance of the <see cref="HostsEntryList"/> class.
     /// </summary>
-    internal class HostsEntryList : BindingList<HostsEntry>
+    /// <param name="entryLines">
+    /// The entry lines.
+    /// </param>
+    /// <param name="filterDefault">
+    /// if set to <c>true</c> filter default text.
+    /// </param>
+    public HostsEntryList(IEnumerable<string> entryLines, bool filterDefault)
+        : this()
     {
-        #region Fields and Constants
+        AddLines(entryLines, filterDefault);
+    }
 
-        /// <summary>
-        /// Default hosts file lines.
-        /// </summary>
-        public static readonly string[] DefaultLines = Resources.hosts.Split(
-            new[] { Environment.NewLine }, 
-            StringSplitOptions.None);
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HostsEntryList"/> class.
+    /// </summary>
+    public HostsEntryList()
+    {
+        AllowEdit = true;
+        AllowNew = true;
+        AllowRemove = true;
+        RaiseListChangedEvents = true;
+    }
 
-        #endregion
+    /// <summary>
+    /// Gets the error text.
+    /// </summary>
+    public string Error => this.Any(entry => !entry.Valid) ? Resources.InvalidHostEntries : string.Empty;
 
-        #region Constructors and Destructors
+    /// <summary>
+    /// The add lines.
+    /// </summary>
+    /// <param name="lines">The lines.</param>
+    /// <param name="removeDefault">
+    /// if set to <c>true</c> remove default entries.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Argument cannot be null.
+    /// </exception>
+    public void AddLines(IEnumerable<string> lines, bool removeDefault = true)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HostsEntryList"/> class.
-        /// </summary>
-        /// <param name="entryLines">
-        /// The entry lines.
-        /// </param>
-        /// <param name="filterDefault">
-        /// if set to <c>true</c> filter default text.
-        /// </param>
-        public HostsEntryList(IEnumerable<string> entryLines, bool filterDefault)
-            : this()
+        UndoManager.Instance.SuspendUndoRedo(() =>
         {
-            this.AddLines(entryLines, filterDefault);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HostsEntryList"/> class.
-        /// </summary>
-        public HostsEntryList()
-        {
-            this.AllowEdit = true;
-            this.AllowNew = true;
-            this.AllowRemove = true;
-            this.RaiseListChangedEvents = true;
-        }
-
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// Gets the error text.
-        /// </summary>
-        public string Error
-        {
-            get { return this.Any(entry => !entry.Valid) ? Resources.InvalidHostEntries : string.Empty;  }
-        }
-
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// The add lines.
-        /// </summary>
-        /// <param name="lines">The lines.</param>
-        /// <param name="removeDefault">
-        /// if set to <c>true</c> remove default entries.
-        /// </param>
-        /// <exception cref="ArgumentNullException">
-        /// Argument cannot be null.
-        /// </exception>
-        public void AddLines(IEnumerable<string> lines, bool removeDefault = true)
-        {
-            lines.ThrowIfNull("lines");
-
-            UndoManager.Instance.SuspendUndoRedo(() =>
+            int index = 0;
+            foreach (string line in lines)
             {
-                int index = 0;
-                foreach (string line in lines)
-                {
-                    bool isDefaultLine =
-                        index < DefaultLines.Length &&
-                        line.Trim() == DefaultLines[index++].Trim();
+                bool isDefaultLine =
+                    index < DefaultLines.Length &&
+                    line.Trim() == DefaultLines[index++].Trim();
 
-                    if (!removeDefault || !isDefaultLine)
+                if (!removeDefault || !isDefaultLine)
+                {
+                    Add(new HostsEntry(line));
+                }
+            }
+        });
+    }
+
+    /// <summary>
+    /// Move items before specified item.
+    /// </summary>
+    /// <param name="entries">The entries to move.</param>
+    /// <param name="beforeEntry">Host entry to move entries before.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Argument cannot be null.
+    /// </exception>
+    public void MoveBefore(IEnumerable<HostsEntry> entries, HostsEntry beforeEntry)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        ArgumentNullException.ThrowIfNull(beforeEntry);
+
+        this.BatchUpdate(() =>
+        {
+            var copy = entries.ToList();
+            int insertIndex = IndexOf(beforeEntry) - 1;
+
+            if (insertIndex >= 0)
+            {
+                UndoManager.Instance.BatchActions(() =>
+                {
+                    Remove(copy);
+
+                    if (insertIndex > Count)
                     {
-                        this.Add(new HostsEntry(line));
+                        insertIndex = Count;
                     }
-                }
-            });
-        }
-
-        /// <summary>
-        /// Move items before specified item.
-        /// </summary>
-        /// <param name="entries">The entries to move.</param>
-        /// <param name="beforeEntry">Host entry to move entries before.</param>
-        /// <exception cref="ArgumentNullException">
-        /// Argument cannot be null.
-        /// </exception>
-        public void MoveBefore(IEnumerable<HostsEntry> entries, HostsEntry beforeEntry)
-        {
-            entries.ThrowIfNull("entries");
-            beforeEntry.ThrowIfNull("beforeEntry");
-
-            this.BatchUpdate(() =>
-            {
-                var copy = entries.ToList();
-                int insertIndex = this.IndexOf(beforeEntry) - 1;
-
-                if (insertIndex >= 0)
-                {
-                    UndoManager.Instance.BatchActions(() =>
+                    else if (insertIndex < 0)
                     {
-                        this.Remove(copy);
+                        insertIndex = 0;
+                    }
 
-                        if (insertIndex > this.Count)
-                        {
-                            insertIndex = this.Count;
-                        }
-                        else if (insertIndex < 0)
-                        {
-                            insertIndex = 0;
-                        }
-
-                        foreach (HostsEntry entry in copy)
-                        {
-                            this.Insert(insertIndex++, entry);
-                        }
-                    });
-                }
-            });
-        }
-
-        /// <summary>
-        /// Moves items after specified item.
-        /// </summary>
-        /// <param name="entries">The entries to move.</param>
-        /// <param name="afterEntry">Host entry to move entries before.</param>
-        /// <exception cref="ArgumentNullException">
-        /// Argument cannot be null.
-        /// </exception>
-        public void MoveAfter(IEnumerable<HostsEntry> entries, HostsEntry afterEntry)
-        {
-            entries.ThrowIfNull("entries");
-            afterEntry.ThrowIfNull("afterEntry");
-
-            this.BatchUpdate(() =>
-            {
-                var copy = entries.ToList();
-                int insertIndex = this.IndexOf(afterEntry) + 1;
-
-                if (insertIndex < this.Count)
-                {
-                    UndoManager.Instance.BatchActions(() =>
+                    foreach (HostsEntry entry in copy)
                     {
-                        this.Remove(copy);
+                        Insert(insertIndex++, entry);
+                    }
+                });
+            }
+        });
+    }
 
-                        if (insertIndex > this.Count)
-                        {
-                            insertIndex = this.Count;
-                        }
-                        else if (insertIndex < 0)
-                        {
-                            insertIndex = 0;
-                        }
+    /// <summary>
+    /// Moves items after specified item.
+    /// </summary>
+    /// <param name="entries">The entries to move.</param>
+    /// <param name="afterEntry">Host entry to move entries before.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Argument cannot be null.
+    /// </exception>
+    public void MoveAfter(IEnumerable<HostsEntry> entries, HostsEntry afterEntry)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        ArgumentNullException.ThrowIfNull(afterEntry);
 
-                        foreach (HostsEntry entry in copy)
-                        {
-                            this.Insert(insertIndex++, entry);
-                        }
-                    });
-                }
-            });
-        }
-
-        /// <summary>
-        /// Inserts new host entry before specified host entry.
-        /// </summary>
-        /// <param name="entry">The entry.</param>
-        /// <exception cref="ArgumentNullException">
-        /// Argument cannot be null.
-        /// </exception>
-        public void InsertBefore(HostsEntry entry, HostsEntry newEntry = null)
+        this.BatchUpdate(() =>
         {
-            entry.ThrowIfNull("entry");
+            var copy = entries.ToList();
+            int insertIndex = IndexOf(afterEntry) + 1;
 
-            int insertIndex = this.IndexOf(entry);
-            this.Insert(insertIndex, newEntry ?? new HostsEntry());
-        }
+            if (insertIndex < Count)
+            {
+                UndoManager.Instance.BatchActions(() =>
+                {
+                    Remove(copy);
 
-        /// <summary>
-        /// Inserts new host entry after specified host entry.
-        /// </summary>
-        /// <param name="entry">The entry.</param>
-        /// <exception cref="ArgumentNullException">
-        /// Argument cannot be null.
-        /// </exception>
-        public void InsertAfter(HostsEntry entry, HostsEntry newEntry = null)
+                    if (insertIndex > Count)
+                    {
+                        insertIndex = Count;
+                    }
+                    else if (insertIndex < 0)
+                    {
+                        insertIndex = 0;
+                    }
+
+                    foreach (HostsEntry entry in copy)
+                    {
+                        Insert(insertIndex++, entry);
+                    }
+                });
+            }
+        });
+    }
+
+    /// <summary>
+    /// Inserts new host entry before specified host entry.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Argument cannot be null.
+    /// </exception>
+    public void InsertBefore(HostsEntry entry, HostsEntry newEntry = null)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        int insertIndex = IndexOf(entry);
+        Insert(insertIndex, newEntry ?? new HostsEntry());
+    }
+
+    /// <summary>
+    /// Inserts new host entry after specified host entry.
+    /// </summary>
+    /// <param name="entry">The entry.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Argument cannot be null.
+    /// </exception>
+    public void InsertAfter(HostsEntry entry, HostsEntry newEntry = null)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        int insertIndex = IndexOf(entry) + 1;
+        Insert(insertIndex, newEntry ?? new HostsEntry());
+    }
+
+    /// <summary>
+    /// Inserts entries after entry.
+    /// </summary>
+    /// <param name="entry">The entry to insert before.</param>
+    /// <param name="entries">The entries to insert.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Argument cannot be null.
+    /// </exception>
+    public void Insert(HostsEntry entry, IEnumerable<HostsEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(entries);
+
+        int insertIndex = IndexOf(entry);
+
+        UndoManager.Instance.BatchActions(() =>
         {
-            entry.ThrowIfNull("entry");
+            foreach (var newEntry in entries.ToList())
+            {
+                Insert(insertIndex++, newEntry);
+            }
+        });
+    }
 
-            int insertIndex = this.IndexOf(entry) + 1;
-            this.Insert(insertIndex, newEntry ?? new HostsEntry());
-        }
+    /// <summary>
+    /// The remove.
+    /// </summary>
+    /// <param name="entries">
+    /// The event arguments.tries.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Argument cannot be null.
+    /// </exception>
+    public void Remove(IEnumerable<HostsEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
 
-        /// <summary>
-        /// Inserts entries after entry.
-        /// </summary>
-        /// <param name="entry">The entry to insert before.</param>
-        /// <param name="entries">The entries to insert.</param>
-        /// <exception cref="ArgumentNullException">
-        /// Argument cannot be null.
-        /// </exception>
-        public void Insert(HostsEntry entry, IEnumerable<HostsEntry> entries)
+        this.BatchUpdate(() =>
         {
-            entry.ThrowIfNull("entry");
-            entry.ThrowIfNull("entries");
-
-            int insertIndex = this.IndexOf(entry);
-
             UndoManager.Instance.BatchActions(() =>
             {
-                foreach (var newEntry in entries.ToList())
+                foreach (HostsEntry entry in entries.ToList())
                 {
-                    this.Insert(insertIndex++, newEntry);
+                    Remove(entry);
                 }
             });
-        }
+        });
+    }
 
-        /// <summary>
-        /// The remove.
-        /// </summary>
-        /// <param name="entries">
-        /// The event arguments.tries.
-        /// </param>
-        /// <exception cref="ArgumentNullException">
-        /// Argument cannot be null.
-        /// </exception>
-        public void Remove(IEnumerable<HostsEntry> entries)
+    /// <summary>
+    /// Adds new host entry.
+    /// </summary>
+    public void Add()
+    {
+        Add(new HostsEntry());
+    }
+
+    /// <summary>
+    /// Checks the specified hosts entries.
+    /// </summary>
+    /// <param name="entries">The entries.</param>
+    /// <param name="?">if set to <c>true</c> check items.</param>
+    public void SetEnabled(IEnumerable<HostsEntry> entries, bool isEnabled)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+
+        this.BatchUpdate(() =>
         {
-            entries.ThrowIfNull("entries");
-
-            this.BatchUpdate(() =>
+            UndoManager.Instance.BatchActions(() =>
             {
-                UndoManager.Instance.BatchActions(() =>
+                foreach (HostsEntry entry in entries)
                 {
-                    foreach (HostsEntry entry in entries.ToList())
-                    {
-                        this.Remove(entry);
-                    }
-                });
+                    entry.Enabled = isEnabled;
+                }
             });
-        }
+        });
+    }
 
-        /// <summary>
-        /// Adds new host entry.
-        /// </summary>
-        public void Add()
-        {
-            this.Add(new HostsEntry());
-        }
+    /// <inheritdoc />
+    protected override object AddNewCore()
+    {
+        return new HostsEntry(string.Empty);
+    }
 
-        /// <summary>
-        /// Checks the specified hosts entries.
-        /// </summary>
-        /// <param name="entries">The entries.</param>
-        /// <param name="?">if set to <c>true</c> check items.</param>
-        public void SetEnabled(IEnumerable<HostsEntry> entries, bool isEnabled)
-        {
-            entries.ThrowIfNull("entries");
+    /// <inheritdoc />
+    protected override void InsertItem(int index, HostsEntry item)
+    {
+        UndoManager.Instance.AddActions(
+            undoAction: () => Remove(item), 
+            redoAction: () => Insert(index, item));
 
-            this.BatchUpdate(() =>
-            {
-                UndoManager.Instance.BatchActions(() =>
-                {
-                    foreach (HostsEntry entry in entries)
-                    {
-                        entry.Enabled = isEnabled;
-                    }
-                });
-            });
-        }
+        base.InsertItem(index, item);
+    }
 
-        #endregion
+    /// <inheritdoc />
+    protected override void RemoveItem(int index)
+    {
+        var item = this[index];
 
-        #region Methods
+        UndoManager.Instance.AddActions(
+            undoAction: () => Insert(index, item),
+            redoAction: () => Remove(item));
 
-        /// <summary>
-        /// Create new object for list.
-        /// </summary>
-        /// <returns>New object for list</returns>
-        protected override object AddNewCore()
-        {
-            return new HostsEntry(string.Empty);
-        }
-
-        /// <summary>
-        /// Inserts the item.
-        /// </summary>
-        /// <param name="index">The index.</param>
-        /// <param name="item">The item.</param>
-        protected override void InsertItem(int index, HostsEntry item)
-        {
-            UndoManager.Instance.AddActions(
-                undoAction: () => this.Remove(item), 
-                redoAction: () => this.Insert(index, item));
-
-            base.InsertItem(index, item);
-        }
-
-        /// <summary>
-        /// Removes the item.
-        /// </summary>
-        /// <param name="index">The index.</param>
-        protected override void RemoveItem(int index)
-        {
-            var item = this[index];
-
-            UndoManager.Instance.AddActions(
-                undoAction: () => this.Insert(index, item),
-                redoAction: () => this.Remove(item));
-
-            base.RemoveItem(index);
-        }
-
-        #endregion
+        base.RemoveItem(index);
     }
 }

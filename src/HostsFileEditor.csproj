@@ -13,19 +13,31 @@
     <Product>Hosts File Editor</Product>
     <AssemblyVersion>1.3.0.0</AssemblyVersion>
     <ProductVersion>1.3.0.0</ProductVersion>
-    <PublishAot>true</PublishAot>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <!-- Native AOT isn't working yet with WinForms, specifically Binding is explicitly not supported throwing NotSupportedException -->
+    <!--<PublishAot>true</PublishAot>-->
     <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <SelfContained>false</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <StripSymbols>true</StripSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- Need to suppress trim warnings since WinForms with Native AOT isn't officially supported -->
     <NoWarn>NU1701;IL2026;IL3000;IL3050;IL3053</NoWarn>
     <_SuppressWinFormsTrimError>true</_SuppressWinFormsTrimError>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Reflection based JSON serialization is required for WinForms designer -->
+    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(Configuration)' == 'Debug'">true</JsonSerializerIsReflectionEnabledByDefault>
+    <CustomResourceTypesSupport>true</CustomResourceTypesSupport>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Equin.ApplicationFramework.BindingListView" Version="1.4.5222.35545" />
+    <PackageReference Include="System.Resources.ResourceManager" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="AppxManifest.xml">
@@ -36,7 +48,8 @@
     </Content>
     <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
-  <Target Name="SignAndPackageAfterPublish" AfterTargets="CopyNativeBinary">
+  <!-- Change to AfterTargets to CopyNativeBinary if using Native AOT -->
+  <Target Name="SignAndPackageAfterPublish" AfterTargets="Publish">
     <PropertyGroup>
       <CertFile Condition="'$(CertFile)'==''">HostsFileEditorTestCert.pfx</CertFile>
       <CertPassword Condition="'$(CertPassword)'==''">test</CertPassword>

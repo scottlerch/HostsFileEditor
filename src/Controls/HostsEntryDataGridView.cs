@@ -17,240 +17,165 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor.Controls
+using Equin.ApplicationFramework;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace HostsFileEditor.Controls;
+
+/// <summary>
+/// DataGridView class for HostsEntry.
+/// </summary>
+internal sealed class HostsEntryDataGridView : DataGridView
 {
-    using Equin.ApplicationFramework;
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Drawing;
-    using System.Linq;
-    using System.Windows.Forms;
+    /// <summary>
+    /// Current sort state used to determine when to remove sort.
+    /// </summary>
+    private int currentSortState = 0;
 
     /// <summary>
-    /// DataGridView class for HostsEntry.
+    /// Last sorted column.
     /// </summary>
-    internal sealed class HostsEntryDataGridView : DataGridView
+    private DataGridViewColumn lastSortedColumn = null;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HostsEntryDataGridView"/> class.
+    /// </summary>
+    public HostsEntryDataGridView()
     {
-        #region Fields and Constants
+        AllowUserToResizeRows = false;
+    }
 
-        /// <summary>
-        /// Current sort state used to determine when to remove sort.
-        /// </summary>
-        private int currentSortState = 0;
+    /// <summary>
+    /// Gets or sets the action to clear the sort of the underlying 
+    /// data source.
+    /// </summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Action ClearSort { get; set; }
 
-        /// <summary>
-        /// Last sorted column.
-        /// </summary>
-        private DataGridViewColumn lastSortedColumn = null;
-
-        #endregion
-
-        #region Constructors and Destructors
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HostsEntryDataGridView"/> class.
-        /// </summary>
-        public HostsEntryDataGridView()
+    /// <summary>
+    /// Gets the selected host entries.
+    /// </summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public IEnumerable<HostsEntry> SelectedHostEntries
+    {
+        get
         {
-            this.AllowUserToResizeRows = false;
+            return SelectedRows
+                .Cast<DataGridViewRow>()
+                .Select(row => row.DataBoundItem as ObjectView<HostsEntry>)
+                .Where(view => view != null && view.Object != null)
+                .Select(view => view.Object);
         }
 
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// Gets or sets the action to clear the sort of the underlying 
-        /// data source.
-        /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Action ClearSort
+        set
         {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Gets the selected host entries.
-        /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IEnumerable<HostsEntry> SelectedHostEntries
-        {
-            get
+            foreach (var row in Rows.Cast<DataGridViewRow>())
             {
-                return this.SelectedRows
-                    .Cast<DataGridViewRow>()
-                    .Select(row => row.DataBoundItem as ObjectView<HostsEntry>)
-                    .Where(view => view != null && view.Object != null)
-                    .Select(view => view.Object);
-            }
-
-            set
-            {
-                foreach (var row in this.Rows.Cast<DataGridViewRow>())
+                if (row.DataBoundItem != null && row.Index < RowCount)
                 {
-                    if (row.DataBoundItem != null && row.Index < this.RowCount)
+                    if (row.DataBoundItem is ObjectView<HostsEntry> hostEntryView &&
+                        value.Contains(hostEntryView.Object))
                     {
-                        var hostEntryView = row.DataBoundItem as ObjectView<HostsEntry>;
-
-                        if (hostEntryView != null &&
-                            value.Contains(hostEntryView.Object))
-                        {
-                            row.Selected = true;
-                        }
-                        else
-                        {
-                            row.Selected = false;
-                        }
+                        row.Selected = true;
+                    }
+                    else
+                    {
+                        row.Selected = false;
                     }
                 }
             }
         }
+    }
 
-        /// <summary>
-        /// Gets the current host entry.
-        /// </summary>
-        public HostsEntry CurrentHostEntry
+    /// <summary>
+    /// Gets the current host entry.
+    /// </summary>
+    public HostsEntry CurrentHostEntry => CurrentRow.DataBoundItem is ObjectView<HostsEntry> view ? view.Object : null;
+
+    /// <summary>
+    /// Gets the last selected host entry.
+    /// </summary>
+    public HostsEntry LastSelectedHostEntry =>  SelectedHostEntries.LastOrDefault();
+
+    /// <summary>
+    /// Gets the first selected host entry.
+    /// </summary>
+    public HostsEntry FirstSelectedHostEntry => SelectedHostEntries.FirstOrDefault();
+
+    /// <inheritdoc />
+    protected override void OnCurrentCellDirtyStateChanged(System.EventArgs e)
+    {
+        base.OnCurrentCellDirtyStateChanged(e);
+
+        // Immediately commit check changes
+        if (CurrentCell.GetType() == typeof(DataGridViewCheckBoxCell))
         {
-            get
-            {
-                var view = this.CurrentRow.DataBoundItem as ObjectView<HostsEntry>;
-                if (view != null)
-                {
-                    return view.Object;
-                }
-                else
-                {
-                    return null;
-                }
-            }
+            CommitEdit(DataGridViewDataErrorContexts.Commit);
         }
+    }
 
-        /// <summary>
-        /// Gets the last selected host entry.
-        /// </summary>
-        public HostsEntry LastSelectedHostEntry
+    /// <inheritdoc />
+    protected override void OnCellFormatting(DataGridViewCellFormattingEventArgs e)
+    {
+        var viewObject = Rows[e.RowIndex].DataBoundItem as ObjectView<HostsEntry>;
+        HostsEntry entry = viewObject?.Object;
+
+        if (entry != null)
         {
-            get
+            if (!entry.Enabled && entry.Valid)
             {
-                return this.SelectedHostEntries.LastOrDefault();
+                e.CellStyle.BackColor = Color.LightGray;
             }
-        }
-
-        /// <summary>
-        /// Gets the first selected host entry.
-        /// </summary>
-        public HostsEntry FirstSelectedHostEntry
-        {
-            get
+            else if (!entry.Enabled)
             {
-                return this.SelectedHostEntries.FirstOrDefault();
+                e.CellStyle.BackColor = Color.Gray;
+                e.CellStyle.ForeColor = Color.White;
             }
-        }
-
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// Raises the <see cref="E:System.Windows.Forms.DataGridView.CurrentCellDirtyStateChanged"/> event.
-        /// </summary>
-        /// <param name="e">An <see cref="T:System.EventArgs"/> that contains the event data.</param>
-        protected override void OnCurrentCellDirtyStateChanged(System.EventArgs e)
-        {
-            base.OnCurrentCellDirtyStateChanged(e);
-
-            // Immediately commit check changes
-            if (this.CurrentCell.GetType() == typeof(DataGridViewCheckBoxCell))
+            else if (!entry.Valid)
             {
-                this.CommitEdit(DataGridViewDataErrorContexts.Commit);
-            }
-        }
-
-        /// <summary>
-        /// Raises the <see cref="E:System.Windows.Forms.DataGridView.CellFormatting"/> event.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">The value of the 
-        /// <see cref="P:System.Windows.Forms.DataGridViewCellFormattingEventArgs.ColumnIndex"/> 
-        /// property of <paramref name="e"/> is greater than the number of
-        /// columns in the control minus one.-or-The value of the 
-        /// <see cref="P:System.Windows.Forms.DataGridViewCellFormattingEventArgs.RowIndex"/>
-        /// property of <paramref name="e"/> is greater than the number of
-        /// rows in the control minus one.</exception>
-        protected override void OnCellFormatting(DataGridViewCellFormattingEventArgs e)
-        {
-            var viewObject = this.Rows[e.RowIndex].DataBoundItem as ObjectView<HostsEntry>;
-            HostsEntry entry = viewObject != null ? viewObject.Object : null;
-
-            if (entry != null)
-            {
-                if (!entry.Enabled && entry.Valid)
-                {
-                    e.CellStyle.BackColor = Color.LightGray;
-                }
-                else if (!entry.Enabled)
-                {
-                    e.CellStyle.BackColor = Color.Gray;
-                    e.CellStyle.ForeColor = Color.White;
-                }
-                else if (!entry.Valid)
-                {
-                    e.CellStyle.BackColor = Color.LightPink;
-                }
-                else
-                {
-                    e.CellStyle.BackColor = Color.White;
-                }
-            }
-
-            base.OnCellFormatting(e);
-        }
-
-        /// <summary>
-        /// Raises the <see cref="E:System.Windows.Forms.DataGridView.ColumnHeaderMouseClick"/> 
-        /// event.
-        /// </summary>
-        /// <param name="e">A 
-        /// <see cref="T:System.Windows.Forms.DataGridViewCellMouseEventArgs"/> 
-        /// that contains the event data.</param>
-        /// <exception cref="T:System.ArgumentOutOfRangeException">The value of 
-        /// the <see cref="P:System.Windows.Forms.DataGridViewCellMouseEventArgs.ColumnIndex"/> 
-        /// property of <paramref name="e"/> is less than zero or greater than 
-        /// the number of columns in the control minus one.</exception>
-        protected override void OnColumnHeaderMouseClick(DataGridViewCellMouseEventArgs e)
-        {
-            base.OnColumnHeaderMouseClick(e);
-
-            if (this.SortedColumn == lastSortedColumn)
-            {
-                this.currentSortState++;
-
-                // After sorting twice (ascending then descending) clear the sort
-                if (this.currentSortState > 2)
-                {
-                    this.BeginInvoke(
-                        (MethodInvoker)delegate()
-                        {
-                            Application.DoEvents();
-                            if (this.ClearSort != null)
-                            {
-                                this.ClearSort();
-                            }
-                        });
-
-                    this.currentSortState = 0;
-                    this.lastSortedColumn = null;
-                }
+                e.CellStyle.BackColor = Color.LightPink;
             }
             else
             {
-                this.currentSortState = 1;
-                this.lastSortedColumn = this.Columns[e.ColumnIndex];
+                e.CellStyle.BackColor = Color.White;
             }
         }
 
-        #endregion
+        base.OnCellFormatting(e);
+    }
+
+    /// <inheritdoc />
+    protected override void OnColumnHeaderMouseClick(DataGridViewCellMouseEventArgs e)
+    {
+        base.OnColumnHeaderMouseClick(e);
+
+        if (SortedColumn == lastSortedColumn)
+        {
+            currentSortState++;
+
+            // After sorting twice (ascending then descending) clear the sort
+            if (currentSortState > 2)
+            {
+                BeginInvoke(
+                    (MethodInvoker)delegate()
+                    {
+                        Application.DoEvents();
+                        ClearSort?.Invoke();
+                    });
+
+                currentSortState = 0;
+                lastSortedColumn = null;
+            }
+        }
+        else
+        {
+            currentSortState = 1;
+            lastSortedColumn = Columns[e.ColumnIndex];
+        }
     }
 }

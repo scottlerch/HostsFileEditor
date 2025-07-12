@@ -17,35 +17,30 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor.Extensions
+using System;
+
+namespace HostsFileEditor.Extensions;
+
+/// <summary>
+/// Helper string extension methods.
+/// </summary>
+internal static class StringExtensions
 {
-    using System;
-
     /// <summary>
-    /// Helper string extension methods.
+    /// Strip all spaces from a string.
     /// </summary>
-    internal static class StringExtensions
+    /// <param name="value">
+    /// The value.
+    /// </param>
+    /// <returns>
+    /// String with all spaced stripped out.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">
+    /// Argument cannot be null.
+    /// </exception>
+    public static string StripSpaces(this string value)
     {
-        #region Public Methods
-
-        /// <summary>
-        /// Strip all spaces from a string.
-        /// </summary>
-        /// <param name="value">
-        /// The value.
-        /// </param>
-        /// <returns>
-        /// String with all spaced stripped out.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        /// Argument cannot be null.
-        /// </exception>
-        public static string StripSpaces(this string value)
-        {
-            value.ThrowIfNull();
-            return value.Replace(" ", string.Empty);
-        }
-
-        #endregion
+        ArgumentNullException.ThrowIfNull(value);
+        return value.Replace(" ", string.Empty);
     }
 }

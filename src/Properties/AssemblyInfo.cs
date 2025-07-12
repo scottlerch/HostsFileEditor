@@ -19,16 +19,11 @@
 
 using System.Reflection;
 using System.Resources;
-using System.Runtime.InteropServices;
 
 [assembly: AssemblyDescription(
     "Hosts File Editor makes it easy to change your hosts file as well as " +
     "archive multiple versions for easy retrieval. It also includes " +
     "features to ping IP addresses and enable/disable your hosts file " + 
     "altogether.")]
-[assembly: AssemblyCopyright("Copyright © Scott Lerch 2011")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-[assembly: ComVisible(false)]
-[assembly: Guid("b4b3456c-23e3-4db0-ae55-99dc847f7096")]
+[assembly: AssemblyCopyright("Copyright © Scott Lerch 2025")]
 [assembly: NeutralResourcesLanguage("en-US")]

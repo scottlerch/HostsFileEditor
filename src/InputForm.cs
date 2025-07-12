@@ -17,79 +17,77 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
+using System;
+using System.ComponentModel;
+using System.Windows.Forms;
+
+namespace HostsFileEditor;
+
+/// <summary>
+/// Reusable input dialog.
+/// </summary>
+public partial class InputForm : Form
 {
-    using System;
-    using System.ComponentModel;
-    using System.Windows.Forms;
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InputForm"/> class.
+    /// </summary>
+    public InputForm()
+    {
+        InitializeComponent();
+
+        buttonOk.Enabled = false;
+    }
 
     /// <summary>
-    /// Reusable input dialog.
+    /// Gets or sets the input.
     /// </summary>
-    public partial class InputForm : Form
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+    public string Input
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="InputForm"/> class.
-        /// </summary>
-        public InputForm()
-        {
-            InitializeComponent();
+        get => textBox.Text;
+        set => textBox.Text = value;
+    }
 
-            this.buttonOk.Enabled = false;
-        }
+    /// <summary>
+    /// Gets or sets the prompt.
+    /// </summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+    public string Prompt
+    {
+        get => labelPrompt.Text;
+        set => labelPrompt.Text = value;
+    }
 
-        /// <summary>
-        /// Gets or sets the input.
-        /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
-        public string Input
-        {
-            get { return this.textBox.Text; }
-            set { this.textBox.Text = value; }
-        }
+    /// <summary>
+    /// Called when OK clicked.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+    private void OnButtonOkClick(object sender, EventArgs e)
+    {
+        DialogResult = DialogResult.OK;
+        Close();
+    }
 
-        /// <summary>
-        /// Gets or sets the prompt.
-        /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
-        public string Prompt
-        {
-            get { return this.labelPrompt.Text; }
-            set { this.labelPrompt.Text = value; }
-        }
+    /// <summary>
+    /// Called when cancel clicked.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+    private void OnButtonCancelClick(object sender, EventArgs e)
+    {
+        DialogResult = DialogResult.Cancel;
+        Close();
+    }
 
-        /// <summary>
-        /// Called when OK clicked.
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void OnButtonOkClick(object sender, EventArgs e)
-        {
-            this.DialogResult = DialogResult.OK;
-            this.Close();
-        }
-
-        /// <summary>
-        /// Called when cancel clicked.
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void OnButtonCancelClick(object sender, EventArgs e)
-        {
-            this.DialogResult = DialogResult.Cancel;
-            this.Close();
-        }
-
-        /// <summary>
-        /// Called when text changed.
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-        private void OnTextChanged(object sender, EventArgs e)
-        {
-            string error;
-            this.buttonOk.Enabled = HostsArchive.Validate(this.Input, out error);
-            this.errorProvider.SetError(this.textBox, error);
-        }
+    /// <summary>
+    /// Called when text changed.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
+    private void OnTextChanged(object sender, EventArgs e)
+    {
+        buttonOk.Enabled = HostsArchive.Validate(Input, out string error);
+        errorProvider.SetError(textBox, error);
     }
 }

@@ -17,76 +17,64 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
-{
-    using System;
-    using System.Threading;
-    using System.Windows.Forms;
+using HostsFileEditor.Properties;
+using System;
+using System.Threading;
+using System.Windows.Forms;
 
-    using HostsFileEditor.Properties;
+namespace HostsFileEditor;
+
+/// <summary>
+/// The program class containing the main entry point.
+/// </summary>
+internal static class Program
+{
+    /// <summary>
+    /// The application's main form.
+    /// </summary>
+    private static Form mainForm;
 
     /// <summary>
-    /// The program class containing the main entry point.
+    /// The main entry point for the application.
     /// </summary>
-    internal static class Program
+    [STAThread]
+    private static void Main()
     {
-        #region Constants and Fields
-
-        /// <summary>
-        /// The application's main form.
-        /// </summary>
-        private static Form mainForm;
-
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        private static void Main()
+        // Ensure only one copy of the application is running at a time
+        using var program = ProgramSingleInstance.Start();
+        if (program.IsOnlyInstance)
         {
-            // Ensure only one copy of the application is running at a time
-            using (var program = ProgramSingleInstance.Start())
-            {
-                if (program.IsOnlyInstance)
-                { 
-                    Application.EnableVisualStyles();
-                    Application.SetCompatibleTextRenderingDefault(false);
-                    Application.ThreadException += OnApplicationThreadException;
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.ThreadException += OnApplicationThreadException;
 
-                    mainForm = new MainForm();
-                    Application.Run(mainForm);
-                }
-                else
-                {
-                    program.ShowFirstInstance();
-                }
-            }
+            mainForm = new MainForm();
+            Application.Run(mainForm);
         }
-
-        /// <summary>
-        /// The on application thread exception.
-        /// </summary>
-        /// <param name="sender">
-        /// The sender.
-        /// </param>
-        /// <param name="e">
-        /// The event arguments.
-        /// </param>
-        private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e)
+        else
         {
-            MessageBox.Show(
-                null, 
-                e.Exception.Message, 
-                Resources.ErrorCaption, 
-                MessageBoxButtons.OK, 
-                MessageBoxIcon.Error, 
-                MessageBoxDefaultButton.Button1, 
-                MessageBoxOptions.DefaultDesktopOnly);
+            ProgramSingleInstance.ShowFirstInstance();
         }
+    }
 
-        #endregion
+    /// <summary>
+    /// The on application thread exception.
+    /// </summary>
+    /// <param name="sender">
+    /// The sender.
+    /// </param>
+    /// <param name="e">
+    /// The event arguments.
+    /// </param>
+    private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e)
+    {
+        MessageBox.Show(
+            null, 
+            e.Exception.Message, 
+            Resources.ErrorCaption, 
+            MessageBoxButtons.OK, 
+            MessageBoxIcon.Error, 
+            MessageBoxDefaultButton.Button1, 
+            MessageBoxOptions.DefaultDesktopOnly);
     }
 }

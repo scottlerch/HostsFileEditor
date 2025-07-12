@@ -17,47 +17,42 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor.Utilities
+using System;
+using System.Linq.Expressions;
+
+namespace HostsFileEditor.Utilities;
+
+/// <summary>
+/// Helper class to perform reflection.
+/// </summary>
+internal static class Reflect
 {
-    using System;
-    using System.Linq.Expressions;
-
     /// <summary>
-    /// Helper class to perform reflection.
+    /// The get property name.
     /// </summary>
-    internal static class Reflect
+    /// <param name="property">
+    /// The property.
+    /// </param>
+    /// <typeparam name="T">
+    /// Type of object to reflect.
+    /// </typeparam>
+    /// <returns>
+    /// The property name.
+    /// </returns>
+    public static string GetPropertyName<T>(this Expression<Func<T>> property)
     {
-        #region Public Methods
+        var lambda = (LambdaExpression)property;
+        MemberExpression memberExpression;
 
-        /// <summary>
-        /// The get property name.
-        /// </summary>
-        /// <param name="property">
-        /// The property.
-        /// </param>
-        /// <typeparam name="T">
-        /// Type of object to reflect.
-        /// </typeparam>
-        /// <returns>
-        /// The property name.
-        /// </returns>
-        public static string GetPropertyName<T>(this Expression<Func<T>> property)
+        if (lambda.Body is UnaryExpression unaryExpression)
         {
-            var lambda = (LambdaExpression)property;
-            MemberExpression memberExpression;
-            if (lambda.Body is UnaryExpression)
-            {
-                var unaryExpression = (UnaryExpression)lambda.Body;
-                memberExpression = (MemberExpression)unaryExpression.Operand;
-            }
-            else
-            {
-                memberExpression = (MemberExpression)lambda.Body;
-            }
-
-            return memberExpression.Member.Name;
+            memberExpression = (MemberExpression)unaryExpression.Operand;
+        }
+        else
+        {
+            memberExpression = (MemberExpression)lambda.Body;
         }
 
-        #endregion
+        return memberExpression.Member.Name;
     }
 }

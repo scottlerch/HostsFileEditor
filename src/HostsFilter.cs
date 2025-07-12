@@ -17,111 +17,101 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
-{
-    using System;
+using Equin.ApplicationFramework;
+using System;
 
-    using Equin.ApplicationFramework;
+namespace HostsFileEditor;
+
+/// <summary>
+/// This class represents 
+/// </summary>
+internal class HostsFilter : CompositeItemFilter<HostsEntry>
+{
+    /// <summary>
+    /// The comment filter.
+    /// </summary>
+    private readonly PredicateItemFilter<HostsEntry> commentFilter;
 
     /// <summary>
-    /// This class represents 
+    /// The disabled filter.
     /// </summary>
-    internal class HostsFilter : CompositeItemFilter<HostsEntry>
+    private readonly PredicateItemFilter<HostsEntry> disabledFilter;
+
+    /// <summary>
+    /// The custom filter.
+    /// </summary>
+    private readonly PredicateItemFilter<HostsEntry> customFilter;
+
+    /// <summary>
+    /// The disabled filtered enabled setting.
+    /// </summary>
+    private bool disabled;
+
+    /// <summary>
+    /// The comments filtered enabled setting.
+    /// </summary>
+    private bool comments;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HostsFilter"/> class.
+    /// </summary>
+    /// <param name="customFilter">The custom filter.</param>
+    public HostsFilter(Predicate<HostsEntry> customFilter)
     {
-        /// <summary>
-        /// The comment filter.
-        /// </summary>
-        private PredicateItemFilter<HostsEntry> commentFilter;
+        commentFilter = new PredicateItemFilter<HostsEntry>(
+            hostEntry => !hostEntry.HasCommentOnly);
 
-        /// <summary>
-        /// The disabled filter.
-        /// </summary>
-        private PredicateItemFilter<HostsEntry> disabledFilter;
+        disabledFilter = new PredicateItemFilter<HostsEntry>(
+            hostEntry => hostEntry.Enabled || hostEntry.HasCommentOnly);
 
-        /// <summary>
-        /// The custom filter.
-        /// </summary>
-        private PredicateItemFilter<HostsEntry> customFilter;
+        this.customFilter = new PredicateItemFilter<HostsEntry>(customFilter);
 
-        /// <summary>
-        /// The disabled filtered enabled setting.
-        /// </summary>
-        private bool disabled;
+        AddFilter(this.customFilter);
+    }
 
-        /// <summary>
-        /// The comments filtered enabled setting.
-        /// </summary>
-        private bool comments;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="HostsFilter"/> class.
-        /// </summary>
-        /// <param name="customFilter">The custom filter.</param>
-        public HostsFilter(Predicate<HostsEntry> customFilter)
+    /// <summary>
+    /// Gets or sets a value indicating whether disabled are filtered.
+    /// </summary>
+    public bool Disabled
+    {
+        get => disabled;
+        set
         {
-            this.commentFilter = new PredicateItemFilter<HostsEntry>(
-                hostEntry => !hostEntry.HasCommentOnly);
-
-            this.disabledFilter = new PredicateItemFilter<HostsEntry>(
-                hostEntry => hostEntry.Enabled || hostEntry.HasCommentOnly);
-
-            this.customFilter = new PredicateItemFilter<HostsEntry>(customFilter);
-
-            this.AddFilter(this.customFilter);
-        }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether disabled are filtered.
-        /// </summary>
-        public bool Disabled
-        {
-            get
-            { 
-                return this.disabled;
-            }
-
-            set
+            if (disabled != value)
             {
-                if (this.disabled != value)
-                {
-                    this.disabled = value;
+                disabled = value;
 
-                    if (this.disabled)
-                    {
-                        this.AddFilter(this.disabledFilter);
-                    }
-                    else
-                    {
-                        this.RemoveFilter(this.disabledFilter);
-                    }
+                if (disabled)
+                {
+                    AddFilter(disabledFilter);
+                }
+                else
+                {
+                    RemoveFilter(disabledFilter);
                 }
             }
         }
+    }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether comments are filtered.
-        /// </summary>
-        public bool Comments
+    /// <summary>
+    /// Gets or sets a value indicating whether comments are filtered.
+    /// </summary>
+    public bool Comments
+    {
+        get =>  comments;
+        set
         {
-            get
+            if (comments != value)
             {
-                return this.comments;
-            }
+                comments = value;
 
-            set
-            {
-                if (this.comments != value)
+                if (comments)
                 {
-                    this.comments = value;
-
-                    if (this.comments)
-                    {
-                        this.AddFilter(this.commentFilter);
-                    }
-                    else
-                    {
-                        this.RemoveFilter(this.commentFilter);
-                    }
+                    AddFilter(commentFilter);
+                }
+                else
+                {
+                    RemoveFilter(commentFilter);
                 }
             }
         }
