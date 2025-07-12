@@ -17,127 +17,103 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor.Controls
+using System.ComponentModel;
+using System.Drawing;
+using System.Windows.Forms;
+using System.Windows.Forms.Design;
+
+namespace HostsFileEditor.Controls;
+
+/// <summary>
+/// Tool strip menu item that support simple data binding.
+/// </summary>
+[ToolStripItemDesignerAvailability(ToolStripItemDesignerAvailability.StatusStrip)]
+[ToolboxBitmap(typeof(ToolStripStatusLabel))]
+internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableComponent
 {
-    using System.ComponentModel;
-    using System.Drawing;
-    using System.Windows.Forms;
-    using System.Windows.Forms.Design;
+    /// <summary>
+    /// Binding context.
+    /// </summary>
+    private BindingContext bindingContext;
 
     /// <summary>
-    /// Tool strip menu item that support simple data binding.
+    /// Data bindings.
     /// </summary>
-    [ToolStripItemDesignerAvailability(ToolStripItemDesignerAvailability.StatusStrip)]
-    [ToolboxBitmap(typeof(ToolStripStatusLabel))]
-    internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableComponent
+    private ControlBindingsCollection dataBindings;
+
+    /// <summary>
+    /// Gets or sets the collection of currency managers for the <see cref="T:System.Windows.Forms.IBindableComponent"/>.
+    /// </summary>
+    /// <value></value>
+    /// <returns>
+    /// The collection of <see cref="T:System.Windows.Forms.BindingManagerBase"/> objects for this <see cref="T:System.Windows.Forms.IBindableComponent"/>.
+    /// </returns>
+    [Browsable(false)]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public new BindingContext BindingContext
     {
-        #region Constants and Fields
-
-        /// <summary>
-        /// Binding context.
-        /// </summary>
-        private BindingContext bindingContext;
-
-        /// <summary>
-        /// Data bindings.
-        /// </summary>
-        private ControlBindingsCollection dataBindings;
-
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// Gets or sets the collection of currency managers for the <see cref="T:System.Windows.Forms.IBindableComponent"/>.
-        /// </summary>
-        /// <value></value>
-        /// <returns>
-        /// The collection of <see cref="T:System.Windows.Forms.BindingManagerBase"/> objects for this <see cref="T:System.Windows.Forms.IBindableComponent"/>.
-        /// </returns>
-        [Browsable(false)]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public new BindingContext BindingContext
+        get
         {
-            get
+            if (bindingContext == null)
             {
-                if (this.bindingContext == null)
+                if (Owner != null && Owner.BindingContext != null)
                 {
-                    if (this.Owner != null && this.Owner.BindingContext != null)
-                    {
-                        this.bindingContext = this.Owner.BindingContext;
-                    }
-                    else if (this.Parent != null && this.Parent.BindingContext != null)
-                    {
-                        this.bindingContext = this.Parent.BindingContext;
-                    }
-                    else
-                    {
-                        this.bindingContext = new BindingContext();
-                    }
+                    bindingContext = Owner.BindingContext;
                 }
-
-                return this.bindingContext;
+                else if (Parent != null && Parent.BindingContext != null)
+                {
+                    bindingContext = Parent.BindingContext;
+                }
+                else
+                {
+                    bindingContext = new BindingContext();
+                }
             }
 
-            set
-            {
-                this.bindingContext = value;
-            }
+            return bindingContext;
         }
 
-        /// <summary>
-        /// Gets the collection of data-binding objects for this <see cref="T:System.Windows.Forms.IBindableComponent"/>.
-        /// </summary>
-        /// <value></value>
-        /// <returns>
-        /// The <see cref="T:System.Windows.Forms.ControlBindingsCollection"/> for this <see cref="T:System.Windows.Forms.IBindableComponent"/>.
-        /// </returns>
-        [Category("Data")]
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
-        public new ControlBindingsCollection DataBindings
+        set
         {
-            get
-            {
-                if (this.dataBindings == null)
-                {
-                    this.dataBindings = new ControlBindingsCollection(this);
-                }
-
-                return this.dataBindings;
-            }
+            bindingContext = value;
         }
+    }
 
-        #endregion
-
-        #region Methods
-
-        /// <summary>
-        /// Releases the unmanaged resources used by the 
-        /// <see cref="T:System.Windows.Forms.ToolStripControlHost"/> and 
-        /// optionally releases the managed resources.
-        /// </summary>
-        /// <param name="disposing">
-        /// true to release both managed and unmanaged 
-        /// resources; false to release only unmanaged resources.
-        /// </param>
-        protected override void Dispose(bool disposing)
+    /// <summary>
+    /// Gets the collection of data-binding objects for this <see cref="T:System.Windows.Forms.IBindableComponent"/>.
+    /// </summary>
+    /// <value></value>
+    /// <returns>
+    /// The <see cref="T:System.Windows.Forms.ControlBindingsCollection"/> for this <see cref="T:System.Windows.Forms.IBindableComponent"/>.
+    /// </returns>
+    [Category("Data")]
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+    public new ControlBindingsCollection DataBindings
+    {
+        get
         {
-            base.Dispose(disposing);
+            dataBindings ??= new ControlBindingsCollection(this);
 
-            if (disposing)
-            {
-                this.Events.Dispose();
-
-                if (this.dataBindings != null)
-                {
-                    this.dataBindings.Clear();
-                    this.dataBindings = null;
-                }
-
-                this.bindingContext = null;
-            }
+            return dataBindings;
         }
+    }
 
-        #endregion
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            Events.Dispose();
+
+            if (dataBindings != null)
+            {
+                dataBindings.Clear();
+                dataBindings = null;
+            }
+
+            bindingContext = null;
+        }
     }
 }

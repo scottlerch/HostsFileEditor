@@ -6,7 +6,7 @@
          IgnorableNamespaces="uap mp rescap">
   <Identity Name="ScottLerch.HostsFileEditor"
             Publisher="CN=Scott Lerch"
-            Version="1.0.0.0"
+            Version="1.3.0.0"
             ProcessorArchitecture="x64" />
   <Properties>
     <DisplayName>Hosts File Editor</DisplayName>
@@ -16,6 +16,10 @@
   </Properties>
   <Dependencies>
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+    <PackageDependency
+      Name="Microsoft.NET.CoreRuntime.9.0"
+      Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+      MinVersion="9.0.0.0" />
   </Dependencies>
   <Resources>
     <Resource Language="en-us"/>

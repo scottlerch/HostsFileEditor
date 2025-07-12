@@ -17,35 +17,15 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor
+namespace HostsFileEditor;
+
+/// <summary>
+/// Program information.
+/// </summary>
+static public class ProgramInfo
 {
-    using System;
-    using System.Reflection;
-    using System.Runtime.InteropServices;
-
     /// <summary>
-    /// Program information.
+    /// Gets the assembly GUID.
     /// </summary>
-    static public class ProgramInfo
-    {
-        /// <summary>
-        /// Gets the assembly GUID.
-        /// </summary>
-        static public string AssemblyGuid
-        {
-            get
-            {
-                object[] attributes = Assembly
-                    .GetEntryAssembly()
-                    .GetCustomAttributes(typeof(GuidAttribute), false);
-
-                if (attributes.Length == 0)
-                {
-                    return String.Empty;
-                }
-
-                return ((GuidAttribute)attributes[0]).Value;
-            }
-        }
-    } 
-}
+    static public string AssemblyGuid => "b4b3456c-23e3-4db0-ae55-99dc847f7096";
+} 

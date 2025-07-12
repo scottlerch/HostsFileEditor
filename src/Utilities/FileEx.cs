@@ -17,87 +17,84 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-namespace HostsFileEditor.Utilities
+using HostsFileEditor.Extensions;
+using System;
+using System.IO;
+
+namespace HostsFileEditor.Utilities;
+
+/// <summary>
+/// File helper methods.
+/// </summary>
+public static class FileEx
 {
-    using System;
-    using System.IO;
-    using HostsFileEditor.Extensions;
+    /// <summary>
+    /// Disables the attributes specified on the file if the file exists.
+    /// </summary>
+    /// <param name="filePath">The file path.</param>
+    /// <param name="attributes">The attributes.</param>
+    /// <returns>Disposable interface to reset attributes.</returns>
+    public static IDisposable DisableAttributes(string filePath, FileAttributes attributes)
+    {
+        return new AttributeDisabler(filePath, attributes);
+    }
 
     /// <summary>
-    /// File helper methods.
+    /// Private class used to reset attributes with Disposable pattern.
     /// </summary>
-    public static class FileEx
+    private class AttributeDisabler : IDisposable
     {
         /// <summary>
-        /// Disables the attributes specified on the file if the file exists.
+        /// Determines if attributes are disabled.
         /// </summary>
-        /// <param name="filePath">The file path.</param>
-        /// <param name="attributes">The attributes.</param>
-        /// <returns>Disposable interface to reset attributes.</returns>
-        public static IDisposable DisableAttributes(string filePath, FileAttributes attributes)
-        {
-            return new AttributeDisabler(filePath, attributes);
-        }
+        private readonly bool areAttributesDisabled;
 
         /// <summary>
-        /// Private class used to reset attributes with Disposable pattern.
+        /// Original file attributes.
         /// </summary>
-        private class AttributeDisabler : IDisposable
+        private readonly FileAttributes originalAttributes;
+
+        /// <summary>
+        /// Attributes to disable.
+        /// </summary>
+        private readonly FileAttributes disableAttributes;
+
+        /// <summary>
+        /// The file path.
+        /// </summary>
+        private readonly string filePath;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AttributeDisabler"/> class.
+        /// </summary>
+        /// <param name="filePath">The file path.</param>
+        /// <param name="disableAttributes">The disable attributes.</param>
+        public AttributeDisabler(string filePath, FileAttributes disableAttributes)
         {
-            /// <summary>
-            /// Determines if attributes are disabled.
-            /// </summary>
-            private bool areAttributesDisabled;
+            ArgumentNullException.ThrowIfNull(filePath);
 
-            /// <summary>
-            /// Original file attributes.
-            /// </summary>
-            private FileAttributes originalAttributes;
+            this.filePath = filePath;
+            this.disableAttributes = disableAttributes;
 
-            /// <summary>
-            /// Attributes to disable.
-            /// </summary>
-            private FileAttributes disableAttributes;
-
-            /// <summary>
-            /// The file path.
-            /// </summary>
-            private string filePath;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="AttributeDisabler"/> class.
-            /// </summary>
-            /// <param name="filePath">The file path.</param>
-            /// <param name="disableAttributes">The disable attributes.</param>
-            public AttributeDisabler(string filePath, FileAttributes disableAttributes)
+            if (File.Exists(filePath))
             {
-                filePath.ThrowIfNull("filePath");
-
-                this.filePath = filePath;
-                this.disableAttributes = disableAttributes;
-
-                if (File.Exists(filePath))
+                originalAttributes = File.GetAttributes(filePath);
+                areAttributesDisabled = originalAttributes.HasFlag(disableAttributes);
+                
+                if (areAttributesDisabled)
                 {
-                    this.originalAttributes = File.GetAttributes(filePath);
-                    this.areAttributesDisabled = this.originalAttributes.HasFlag(disableAttributes);
-                    
-                    if (this.areAttributesDisabled)
-                    {
-                        File.SetAttributes(filePath, ~this.disableAttributes & this.originalAttributes);
-                    }
+                    File.SetAttributes(filePath, ~this.disableAttributes & originalAttributes);
                 }
             }
+        }
 
-            /// <summary>
-            /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-            /// </summary>
-            public void Dispose()
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            // Reset attributes if it was read-only
+            if (areAttributesDisabled && File.Exists(filePath))
             {
-                // Reset attributes if it was read-only
-                if (this.areAttributesDisabled && File.Exists(this.filePath))
-                {
-                    File.SetAttributes(this.filePath, this.originalAttributes);
-                }
+                File.SetAttributes(filePath, originalAttributes);
             }
         }
     }
