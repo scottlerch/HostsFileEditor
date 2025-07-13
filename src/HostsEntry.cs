@@ -17,19 +17,13 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Xml.Linq;
 
 namespace HostsFileEditor;
 
@@ -155,7 +149,7 @@ internal partial class HostsEntry
     /// <summary>
     /// Object used to ping IP address for validation.
     /// </summary>
-    private Ping ping;
+    private Ping? ping;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HostsEntry"/> class.
@@ -261,7 +255,7 @@ internal partial class HostsEntry
     /// <summary>
     /// The property changed.
     /// </summary>
-    public event PropertyChangedEventHandler PropertyChanged = delegate { };
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
     /// Gets or sets a value indicating whether auto ping IP addresses
@@ -416,7 +410,7 @@ internal partial class HostsEntry
     /// <param name="columnName">Name of property.</param>
     /// <returns>The error message for the property. The default is an
     /// empty string ("").</returns>
-    public string this[string propertyName] => errors.TryGetValue(propertyName, out string value) ? value : string.Empty; 
+    public string this[string propertyName] => errors.TryGetValue(propertyName, out string? value) ? value : string.Empty; 
 
     /// <summary>
     /// Returns a <see cref="string"/> that represents this instance.
@@ -444,8 +438,8 @@ internal partial class HostsEntry
     /// </summary>
     public void Ping()
     {
-        ping.SendAsyncCancel();
-        ping.SendAsync(ipAddress, SynchronizationContext.Current);
+        ping?.SendAsyncCancel();
+        ping?.SendAsync(ipAddress, SynchronizationContext.Current);
     }
 
     /// <inheritdoc />
@@ -464,6 +458,33 @@ internal partial class HostsEntry
     }
 
     /// <summary>
+    /// Called when ping completed.
+    /// </summary>
+    /// <param name="sender">The sender.</param>
+    /// <param name="e">The 
+    /// <see cref="System.Net.NetworkInformation.PingCompletedEventArgs"/> 
+    /// instance containing the event data.</param>
+    private void OnPingCompleted(object? sender, PingCompletedEventArgs e)
+    {
+        if (!e.Cancelled && e.Reply != null)
+        {
+            if (e.Reply.Status != IPStatus.Success)
+            {
+                SynchronizationContext? syncContext = e.UserState as SynchronizationContext;
+                syncContext?.Post(
+                    state =>
+                    {
+                        errors[Reflect.GetPropertyName(() => IpAddress)] =
+                            string.Format(Resources.PingFailed, e.Reply.Status.ToString());
+
+                        OnPropertyChanged(Reflect.GetPropertyName(() => IpAddress));
+                    }, 
+                    null);
+            }
+        }
+    }
+
+    /// <summary>
     /// Raise PropertyChanged event.
     /// </summary>
     /// <param name="name">
@@ -471,7 +492,7 @@ internal partial class HostsEntry
     /// </param>
     private void OnPropertyChanged(string name)
     {
-        PropertyChanged(this, new PropertyChangedEventArgs(name));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     /// <summary>
@@ -576,7 +597,7 @@ internal partial class HostsEntry
         }
         else
         {
-            ipAddressValid = IPAddress.TryParse(IpAddress, out IPAddress dummy);
+            ipAddressValid = IPAddress.TryParse(IpAddress, out IPAddress? dummy);
 
             if (!ipAddressValid)
             {
@@ -594,33 +615,6 @@ internal partial class HostsEntry
         }
 
         valid = ipAddressValid && hostnamesValid;
-    }
-
-    /// <summary>
-    /// Called when ping completed.
-    /// </summary>
-    /// <param name="sender">The sender.</param>
-    /// <param name="e">The 
-    /// <see cref="System.Net.NetworkInformation.PingCompletedEventArgs"/> 
-    /// instance containing the event data.</param>
-    private void OnPingCompleted(object sender, PingCompletedEventArgs e)
-    {
-        if (!e.Cancelled)
-        {
-            if (e.Reply.Status != IPStatus.Success)
-            {
-                SynchronizationContext syncContext = e.UserState as SynchronizationContext;
-                syncContext.Post(
-                    state =>
-                    {
-                        errors[Reflect.GetPropertyName(() => IpAddress)] =
-                            string.Format(Resources.PingFailed, e.Reply.Status.ToString());
-
-                        OnPropertyChanged(Reflect.GetPropertyName(() => IpAddress));
-                    }, 
-                    null);
-            }
-        }
     }
 
     [GeneratedRegex(@"[ ]{2,}")]

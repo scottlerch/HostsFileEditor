@@ -17,10 +17,6 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-using HostsFileEditor.Extensions;
-using System;
-using System.IO;
-
 namespace HostsFileEditor.Utilities;
 
 /// <summary>

@@ -21,11 +21,7 @@ using Equin.ApplicationFramework;
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Windows.Forms;
 
 namespace HostsFileEditor;
 
@@ -37,22 +33,22 @@ internal partial class MainForm : Form
     /// <summary>
     /// The filter.
     /// </summary>
-    private HostsFilter filter;
+    private HostsFilter? filter;
 
     /// <summary>
     /// The host entries view.
     /// </summary>
-    private BindingListView<HostsEntry> hostEntriesView;
+    private BindingListView<HostsEntry>? hostEntriesView;
 
     /// <summary>
     /// The hosts archive view.
     /// </summary>
-    private BindingListView<HostsArchive> hostsArchiveView;
+    private BindingListView<HostsArchive>? hostsArchiveView;
 
     /// <summary>
     /// The clipboard host entries.
     /// </summary>
-    private IEnumerable<HostsEntry> clipboardEntries;
+    private IEnumerable<HostsEntry>? clipboardEntries;
 
     /// <summary>
     /// Determines if user is currently adding a new row.  Used for ugly
@@ -159,7 +155,7 @@ internal partial class MainForm : Form
             {
                 if (cell.ValueType == typeof(string))
                 {
-                    builder.Append(cell.Value.ToString());
+                    builder.Append(cell.Value?.ToString());
                 }
             }
             
@@ -209,7 +205,7 @@ internal partial class MainForm : Form
             {
                 if (cell.ValueType == typeof(string))
                 {
-                    builder.Append(cell.Value.ToString());
+                    builder.Append(cell.Value?.ToString());
                     cell.Value = string.Empty;
                 }
             }
@@ -266,11 +262,15 @@ internal partial class MainForm : Form
                 HostsFile.Instance.Entries.InsertAfter(entry, new HostsEntry(entry));
             }
         }
-        else if (dataGridViewHostsEntries.CurrentRow.DataBoundItem != null)
+        else if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            HostsFile.Instance.Entries.InsertAfter(
-                dataGridViewHostsEntries.CurrentHostEntry,
-                new HostsEntry(dataGridViewHostsEntries.CurrentHostEntry));
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            if (currentEntry != null)
+            {
+                HostsFile.Instance.Entries.InsertAfter(
+                    currentEntry,
+                    new HostsEntry(currentEntry));
+            }
         }
     }
 
@@ -330,12 +330,15 @@ internal partial class MainForm : Form
     {
         bool checkState = (sender as dynamic).Checked;
 
-        filter.Comments = !checkState;
+        if (filter != null)
+        {
+            filter.Comments = !checkState;
+        }
 
         menuFilterComments.Checked = !checkState;
         buttonFilterComment.Checked = !checkState;
 
-        hostEntriesView.Refresh();
+        hostEntriesView?.Refresh();
     }
 
     /// <summary>
@@ -351,12 +354,15 @@ internal partial class MainForm : Form
     {
         bool checkState = (sender as dynamic).Checked;
 
-        filter.Disabled = !checkState;
+        if (filter != null)
+        {
+            filter.Disabled = !checkState;
+        }
 
         menuFilterDisabled.Checked = !checkState;
         buttonFilterDisabled.Checked = !checkState;
 
-        hostEntriesView.Refresh();
+        hostEntriesView?.Refresh();
     }
 
     /// <summary>
@@ -370,7 +376,7 @@ internal partial class MainForm : Form
     /// </param>
     private void OnFilterTextChanged(object sender, EventArgs e)
     {
-        hostEntriesView.Refresh();
+        hostEntriesView?.Refresh();
     }
 
     /// <summary>
@@ -618,21 +624,23 @@ internal partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
+            var firstSelected = dataGridViewHostsEntries.FirstSelectedHostEntry;
 
-            HostsFile.Instance.Entries.MoveAfter(
-                dataGridViewHostsEntries.SelectedHostEntries,
-                dataGridViewHostsEntries.FirstSelectedHostEntry);
+            if (firstSelected != null)
+            {
+                HostsFile.Instance.Entries.MoveAfter(
+                    dataGridViewHostsEntries.SelectedHostEntries,
+                    firstSelected);
 
-            dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+            }
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            var selectedEntries = new List<HostsEntry>(
-                [dataGridViewHostsEntries.CurrentHostEntry]);
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var selectedEntries = new List<HostsEntry>([currentEntry]);
 
-            HostsFile.Instance.Entries.MoveAfter(
-                [dataGridViewHostsEntries.CurrentHostEntry],
-                dataGridViewHostsEntries.CurrentHostEntry);
+            HostsFile.Instance.Entries.MoveAfter([currentEntry], currentEntry);
 
             dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
         }
@@ -652,21 +660,23 @@ internal partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
+            var lastSelected = dataGridViewHostsEntries.LastSelectedHostEntry;
 
-            HostsFile.Instance.Entries.MoveBefore(
-                 dataGridViewHostsEntries.SelectedHostEntries,
-                 dataGridViewHostsEntries.LastSelectedHostEntry);
+            if (lastSelected != null)
+            {
+                HostsFile.Instance.Entries.MoveBefore(
+                     dataGridViewHostsEntries.SelectedHostEntries,
+                     lastSelected);
 
-            dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+            }
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            var selectedEntries = new List<HostsEntry>(
-                [dataGridViewHostsEntries.CurrentHostEntry]);
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var selectedEntries = new List<HostsEntry>([currentEntry]);
 
-            HostsFile.Instance.Entries.MoveBefore(
-                [dataGridViewHostsEntries.CurrentHostEntry],
-                dataGridViewHostsEntries.CurrentHostEntry);
+            HostsFile.Instance.Entries.MoveBefore([currentEntry], currentEntry);
 
             dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
         }
@@ -715,9 +725,11 @@ internal partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0 && 
             clipboardEntries != null)
         {
-            HostsFile.Instance.Entries.Insert(
-                dataGridViewHostsEntries.CurrentHostEntry, 
-                clipboardEntries);
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            if (currentEntry != null)
+            {
+                HostsFile.Instance.Entries.Insert(currentEntry, clipboardEntries);
+            }
 
             clipboardEntries = null;
         }
@@ -768,10 +780,13 @@ internal partial class MainForm : Form
     /// instance containing the event data.</param>
     private void OnInsertAboveClick(object sender, EventArgs e)
     {
-        if (dataGridViewHostsEntries.CurrentRow.DataBoundItem != null)
+        if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            HostsFile.Instance.Entries.InsertBefore(
-                dataGridViewHostsEntries.CurrentHostEntry);
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            if (currentEntry != null)
+            {
+                HostsFile.Instance.Entries.InsertBefore(currentEntry);
+            }
         }
         else
         {
@@ -788,10 +803,13 @@ internal partial class MainForm : Form
     /// containing the event data.</param>
     private void OnInsertBelowClick(object sender, EventArgs e)
     {
-        if (dataGridViewHostsEntries.CurrentRow.DataBoundItem != null)
+        if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            HostsFile.Instance.Entries.InsertAfter(
-                dataGridViewHostsEntries.CurrentHostEntry);
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            if (currentEntry != null)
+            {
+                HostsFile.Instance.Entries.InsertAfter(currentEntry);
+            }
         }
         else
         {
@@ -1002,7 +1020,7 @@ internal partial class MainForm : Form
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
     private void OnRemoveSortClick(object sender, EventArgs e)
     {
-        hostEntriesView.RemoveSort();
+        hostEntriesView?.RemoveSort();
     }
 
     /// <summary>
@@ -1022,9 +1040,13 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            HostsFile.Instance.Entries.SetEnabled(
-                [dataGridViewHostsEntries.CurrentHostEntry],
-                isEnabled: true);
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            if (currentEntry != null)
+            {
+                HostsFile.Instance.Entries.SetEnabled(
+                    [currentEntry],
+                    isEnabled: true);
+            }
         }
     }
 
@@ -1045,9 +1067,13 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            HostsFile.Instance.Entries.SetEnabled(
-                [dataGridViewHostsEntries.CurrentHostEntry],
-                isEnabled: false);
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            if (currentEntry != null)
+            {
+                HostsFile.Instance.Entries.SetEnabled(
+                    [currentEntry],
+                    isEnabled: false);
+            }
         }
     }
 

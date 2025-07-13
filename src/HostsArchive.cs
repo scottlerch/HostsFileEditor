@@ -17,11 +17,7 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
-using System;
-using System.IO;
-using System.Linq;
 
 namespace HostsFileEditor;
 
@@ -33,7 +29,7 @@ internal class HostsArchive
     /// <summary>
     /// The full file path.
     /// </summary>
-    private string filePath;
+    private string filePath = string.Empty;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HostsArchive"/> class.
@@ -80,7 +76,7 @@ internal class HostsArchive
     {
         get => FilePath
             .Split(Path.DirectorySeparatorChar)
-            .LastOrDefault();
+            .LastOrDefault() ?? string.Empty;
     }
 
     /// <summary>

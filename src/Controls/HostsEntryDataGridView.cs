@@ -18,12 +18,7 @@
 // </copyright>
 
 using Equin.ApplicationFramework;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
 
 namespace HostsFileEditor.Controls;
 
@@ -40,7 +35,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// <summary>
     /// Last sorted column.
     /// </summary>
-    private DataGridViewColumn lastSortedColumn = null;
+    private DataGridViewColumn? lastSortedColumn = null;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HostsEntryDataGridView"/> class.
@@ -48,6 +43,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
     public HostsEntryDataGridView()
     {
         AllowUserToResizeRows = false;
+        ClearSort = () => { }; // Initialize with empty action
     }
 
     /// <summary>
@@ -68,8 +64,8 @@ internal sealed class HostsEntryDataGridView : DataGridView
             return SelectedRows
                 .Cast<DataGridViewRow>()
                 .Select(row => row.DataBoundItem as ObjectView<HostsEntry>)
-                .Where(view => view != null && view.Object != null)
-                .Select(view => view.Object);
+                .Where(view => view?.Object != null)
+                .Select(view => view!.Object);
         }
 
         set
@@ -95,17 +91,17 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// <summary>
     /// Gets the current host entry.
     /// </summary>
-    public HostsEntry CurrentHostEntry => CurrentRow.DataBoundItem is ObjectView<HostsEntry> view ? view.Object : null;
+    public HostsEntry? CurrentHostEntry => CurrentRow?.DataBoundItem is ObjectView<HostsEntry> view ? view.Object : null;
 
     /// <summary>
     /// Gets the last selected host entry.
     /// </summary>
-    public HostsEntry LastSelectedHostEntry =>  SelectedHostEntries.LastOrDefault();
+    public HostsEntry? LastSelectedHostEntry => SelectedHostEntries.LastOrDefault();
 
     /// <summary>
     /// Gets the first selected host entry.
     /// </summary>
-    public HostsEntry FirstSelectedHostEntry => SelectedHostEntries.FirstOrDefault();
+    public HostsEntry? FirstSelectedHostEntry => SelectedHostEntries.FirstOrDefault();
 
     /// <inheritdoc />
     protected override void OnCurrentCellDirtyStateChanged(System.EventArgs e)
@@ -113,7 +109,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
         base.OnCurrentCellDirtyStateChanged(e);
 
         // Immediately commit check changes
-        if (CurrentCell.GetType() == typeof(DataGridViewCheckBoxCell))
+        if (CurrentCell?.GetType() == typeof(DataGridViewCheckBoxCell))
         {
             CommitEdit(DataGridViewDataErrorContexts.Commit);
         }
@@ -123,7 +119,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
     protected override void OnCellFormatting(DataGridViewCellFormattingEventArgs e)
     {
         var viewObject = Rows[e.RowIndex].DataBoundItem as ObjectView<HostsEntry>;
-        HostsEntry entry = viewObject?.Object;
+        HostsEntry? entry = viewObject?.Object;
 
         if (entry != null)
         {

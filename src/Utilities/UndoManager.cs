@@ -17,9 +17,6 @@
 // with HostsFileEditor. If not, see http://www.gnu.org/licenses/.
 // </copyright>
 
-using System;
-using System.Collections.Generic;
-
 namespace HostsFileEditor.Utilities;
 
 /// <summary>
@@ -40,14 +37,12 @@ public class UndoManager
     /// <summary>
     /// Singleton instance.
     /// </summary>
-    private static readonly Lazy<UndoManager> instance = 
-        new(() => new UndoManager());
+    private static readonly Lazy<UndoManager> instance = new(() => new UndoManager());
 
     /// <summary>
     /// Undo actions history.
     /// </summary>
-    private readonly LinkedList<LinkedList<Action>> undoActions = 
-        new();
+    private readonly LinkedList<LinkedList<Action>> undoActions = new();
 
     /// <summary>
     /// Current position in undo history.
@@ -57,8 +52,7 @@ public class UndoManager
     /// <summary>
     /// Redo actions history.
     /// </summary>
-    private readonly LinkedList<LinkedList<Action>> redoActions = 
-        new();
+    private readonly LinkedList<LinkedList<Action>> redoActions = new();
 
     /// <summary>
     /// Current position in redo history.
@@ -90,16 +84,17 @@ public class UndoManager
     /// </summary>
     private UndoManager()
     {
-        ClearHistory();
+        // Have one dummy entry in the beginning of the lists so
+        // there is always a node to insert after
+
+        undoActionsPosition = undoActions.AddLast(new LinkedList<Action>());
+        redoActionsPosition = redoActions.AddLast(new LinkedList<Action>());
     }
 
     /// <summary>
     /// Gets the instance.
     /// </summary>
-    public static UndoManager Instance 
-    { 
-        get { return instance.Value; } 
-    }
+    public static UndoManager Instance  => instance.Value;
 
     /// <summary>
     /// Batches the actions into a single undo/redo command.
@@ -114,10 +109,10 @@ public class UndoManager
             batchingActions = true;
 
             undoActions.AddAfter(undoActionsPosition, new LinkedList<Action>());
-            undoActionsPosition = undoActionsPosition.Next;
+            undoActionsPosition = undoActionsPosition.Next!;
 
             redoActions.AddAfter(redoActionsPosition, new LinkedList<Action>());
-            redoActionsPosition = redoActionsPosition.Next;
+            redoActionsPosition = redoActionsPosition.Next!;
         }
 
         try
@@ -133,7 +128,7 @@ public class UndoManager
                 // If no actions added to batch just removed empty data structures
                 if (undoActionsPosition.Value.Count == 0)
                 {
-                    var previous = undoActionsPosition.Previous;
+                    var previous = undoActionsPosition.Previous!;
 
                     undoActions.Remove(undoActionsPosition);
                     undoActionsPosition = previous;
@@ -141,7 +136,7 @@ public class UndoManager
 
                 if (redoActionsPosition.Value.Count == 0)
                 {
-                    var previous = redoActionsPosition.Previous;
+                    var previous = redoActionsPosition.Previous!;
 
                     redoActions.Remove(redoActionsPosition);
                     redoActionsPosition = previous;
@@ -173,7 +168,7 @@ public class UndoManager
                         undoActionsPosition, 
                         new LinkedList<Action>([undoAction]));
 
-                    undoActionsPosition = undoActionsPosition.Next;
+                    undoActionsPosition = undoActionsPosition.Next!;
                 }
             }
 
@@ -189,7 +184,7 @@ public class UndoManager
                         redoActionsPosition, 
                         new LinkedList<Action>([redoAction]));
 
-                    redoActionsPosition = redoActionsPosition.Next;
+                    redoActionsPosition = redoActionsPosition.Next!;
                 }
             }
 
@@ -206,8 +201,8 @@ public class UndoManager
         {
             var actions = undoActionsPosition.Value;
 
-            undoActionsPosition = undoActionsPosition.Previous;
-            redoActionsPosition = redoActionsPosition.Previous;
+            undoActionsPosition = undoActionsPosition.Previous!;
+            redoActionsPosition = redoActionsPosition.Previous!;
 
             suspendAddActions = true;
 
@@ -227,8 +222,8 @@ public class UndoManager
     {
         if (redoActionsPosition != redoActions.Last)
         {
-            undoActionsPosition = undoActionsPosition.Next;
-            redoActionsPosition = redoActionsPosition.Next;
+            undoActionsPosition = undoActionsPosition.Next!;
+            redoActionsPosition = redoActionsPosition.Next!;
 
             var actions = redoActionsPosition.Value;
 
@@ -252,12 +247,10 @@ public class UndoManager
         // there is always a node to insert after
 
         undoActions.Clear();
-        undoActions.AddLast(new LinkedList<Action>());
-        undoActionsPosition = undoActions.First;
+        undoActionsPosition = undoActions.AddLast(new LinkedList<Action>());
 
         redoActions.Clear();
-        redoActions.AddLast(new LinkedList<Action>());
-        redoActionsPosition = redoActions.First;
+        redoActionsPosition = redoActions.AddLast(new LinkedList<Action>());
     }
 
     /// <summary>
@@ -323,7 +316,7 @@ public class UndoManager
     {
         if (redoActions.Count > MaximumHistorySize)
         {
-            var first = redoActions.First;
+            var first = redoActions.First!;
             redoActions.RemoveFirst();
             redoActions.RemoveFirst();
             redoActions.AddFirst(first);
@@ -331,7 +324,7 @@ public class UndoManager
 
         if (undoActions.Count > MaximumHistorySize)
         {
-            var first = undoActions.First;
+            var first = undoActions.First!;
             undoActions.RemoveFirst();
             undoActions.RemoveFirst();
             undoActions.AddFirst(first);

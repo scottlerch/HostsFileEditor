@@ -18,7 +18,6 @@
 // </copyright>
 
 using Equin.ApplicationFramework;
-using System.Windows.Forms;
 
 namespace HostsFileEditor.Controls;
 
@@ -43,16 +42,16 @@ internal sealed class HostsArchiveDataGridView : DataGridView
     /// <summary>
     /// Gets the current hosts archive.
     /// </summary>
-    public HostsArchive CurrentHostsArchive
+    public HostsArchive? CurrentHostsArchive
     {
         get
         {
-            HostsArchive archive = null;
+            HostsArchive? archive = null;
 
             if (CurrentRow != null)
             {
                 var view = CurrentRow.DataBoundItem as ObjectView<HostsArchive>;
-                archive = view.Object;
+                archive = view?.Object;
             }
 
             return archive;
