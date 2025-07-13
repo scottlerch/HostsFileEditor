@@ -252,9 +252,14 @@ internal class HostsFile : INotifyPropertyChanged
     {
         FileInfo info = new(saveFilePath);
 
+        if (string.IsNullOrWhiteSpace(info.DirectoryName))
+        {
+            throw new ArgumentException("Invalid file path.", nameof(saveFilePath));
+        }
+
         if (!Directory.Exists(info.DirectoryName))
         {
-            Directory.CreateDirectory(info.DirectoryName!);
+            Directory.CreateDirectory(info.DirectoryName);
         }
 
         using (FileEx.DisableAttributes(saveFilePath, FileAttributes.ReadOnly))

@@ -33,17 +33,17 @@ internal partial class MainForm : Form
     /// <summary>
     /// The filter.
     /// </summary>
-    private HostsFilter filter = null!;
+    private HostsFilter? filter;
 
     /// <summary>
     /// The host entries view.
     /// </summary>
-    private BindingListView<HostsEntry> hostEntriesView = null!;
+    private BindingListView<HostsEntry>? hostEntriesView;
 
     /// <summary>
     /// The hosts archive view.
     /// </summary>
-    private BindingListView<HostsArchive> hostsArchiveView = null!;
+    private BindingListView<HostsArchive>? hostsArchiveView;
 
     /// <summary>
     /// The clipboard host entries.
@@ -330,12 +330,15 @@ internal partial class MainForm : Form
     {
         bool checkState = (sender as dynamic).Checked;
 
-        filter.Comments = !checkState;
+        if (filter != null)
+        {
+            filter.Comments = !checkState;
+        }
 
         menuFilterComments.Checked = !checkState;
         buttonFilterComment.Checked = !checkState;
 
-        hostEntriesView.Refresh();
+        hostEntriesView?.Refresh();
     }
 
     /// <summary>
@@ -351,12 +354,15 @@ internal partial class MainForm : Form
     {
         bool checkState = (sender as dynamic).Checked;
 
-        filter.Disabled = !checkState;
+        if (filter != null)
+        {
+            filter.Disabled = !checkState;
+        }
 
         menuFilterDisabled.Checked = !checkState;
         buttonFilterDisabled.Checked = !checkState;
 
-        hostEntriesView.Refresh();
+        hostEntriesView?.Refresh();
     }
 
     /// <summary>
@@ -370,7 +376,7 @@ internal partial class MainForm : Form
     /// </param>
     private void OnFilterTextChanged(object sender, EventArgs e)
     {
-        hostEntriesView.Refresh();
+        hostEntriesView?.Refresh();
     }
 
     /// <summary>
@@ -1014,7 +1020,7 @@ internal partial class MainForm : Form
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
     private void OnRemoveSortClick(object sender, EventArgs e)
     {
-        hostEntriesView.RemoveSort();
+        hostEntriesView?.RemoveSort();
     }
 
     /// <summary>

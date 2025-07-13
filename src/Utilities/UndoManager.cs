@@ -37,30 +37,27 @@ public class UndoManager
     /// <summary>
     /// Singleton instance.
     /// </summary>
-    private static readonly Lazy<UndoManager> instance = 
-        new(() => new UndoManager());
+    private static readonly Lazy<UndoManager> instance = new(() => new UndoManager());
 
     /// <summary>
     /// Undo actions history.
     /// </summary>
-    private readonly LinkedList<LinkedList<Action>> undoActions = 
-        new();
+    private readonly LinkedList<LinkedList<Action>> undoActions = new();
 
     /// <summary>
     /// Current position in undo history.
     /// </summary>
-    private LinkedListNode<LinkedList<Action>> undoActionsPosition = null!;
+    private LinkedListNode<LinkedList<Action>> undoActionsPosition;
 
     /// <summary>
     /// Redo actions history.
     /// </summary>
-    private readonly LinkedList<LinkedList<Action>> redoActions = 
-        new();
+    private readonly LinkedList<LinkedList<Action>> redoActions = new();
 
     /// <summary>
     /// Current position in redo history.
     /// </summary>
-    private LinkedListNode<LinkedList<Action>> redoActionsPosition = null!;
+    private LinkedListNode<LinkedList<Action>> redoActionsPosition;
 
     /// <summary>
     /// Undo in progress.
@@ -87,16 +84,17 @@ public class UndoManager
     /// </summary>
     private UndoManager()
     {
-        ClearHistory();
+        // Have one dummy entry in the beginning of the lists so
+        // there is always a node to insert after
+
+        undoActionsPosition = undoActions.AddLast(new LinkedList<Action>());
+        redoActionsPosition = redoActions.AddLast(new LinkedList<Action>());
     }
 
     /// <summary>
     /// Gets the instance.
     /// </summary>
-    public static UndoManager Instance 
-    { 
-        get { return instance.Value; } 
-    }
+    public static UndoManager Instance  => instance.Value;
 
     /// <summary>
     /// Batches the actions into a single undo/redo command.
@@ -249,12 +247,10 @@ public class UndoManager
         // there is always a node to insert after
 
         undoActions.Clear();
-        undoActions.AddLast(new LinkedList<Action>());
-        undoActionsPosition = undoActions.First!;
+        undoActionsPosition = undoActions.AddLast(new LinkedList<Action>());
 
         redoActions.Clear();
-        redoActions.AddLast(new LinkedList<Action>());
-        redoActionsPosition = redoActions.First!;
+        redoActionsPosition = redoActions.AddLast(new LinkedList<Action>());
     }
 
     /// <summary>
