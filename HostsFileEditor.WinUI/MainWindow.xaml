@@ -13,29 +13,83 @@
             <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
             <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
             <AppBarSeparator/>
-            <AppBarButton Icon="Add" Label="Insert" Click="OnInsertBelowClick"/>
-            <!-- Up -->
+            <AppBarButton Icon="Add" Label="Insert Below" Click="OnInsertBelowClick"/>
+            <AppBarButton Label="Insert Above" Click="OnInsertAboveClick">
+                <AppBarButton.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarSeparator/>
+            <!-- Move Up/Down -->
             <AppBarButton Label="Up" Click="OnMoveUpClick">
                 <AppBarButton.Icon>
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
                 </AppBarButton.Icon>
             </AppBarButton>
-            <!-- Down -->
             <AppBarButton Label="Down" Click="OnMoveDownClick">
                 <AppBarButton.Icon>
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;"/>
                 </AppBarButton.Icon>
             </AppBarButton>
             <AppBarSeparator/>
+            <!-- Clipboard and duplicate -->
+            <AppBarButton Icon="Copy" Label="Copy" Click="OnCopyClick"/>
+            <AppBarButton Icon="Cut" Label="Cut" Click="OnCutClick"/>
+            <AppBarButton Icon="Paste" Label="Paste" Click="OnPasteClick"/>
+            <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
+                <AppBarButton.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarSeparator/>
+            <!-- Enable/Disable selected -->
+            <AppBarButton Label="Check" Click="OnCheckClick">
+                <AppBarButton.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarButton Label="Uncheck" Click="OnUncheckClick">
+                <AppBarButton.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE738;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
             <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
-            <AppBarToggleButton x:Name="DisableHostsToggle" Label="Disable Hosts" Click="OnDisableHostsClick"/>
+            <AppBarSeparator/>
+            <!-- Filters -->
+            <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick"/>
+            <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick"/>
+            <AppBarSeparator/>
+            <!-- Hosts toggles -->
+            <AppBarToggleButton Label="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick"/>
+            <AppBarToggleButton Label="Ping IPs" IsChecked="{x:Bind IsPingIPs, Mode=OneWay}" Click="OnPingIPsClick"/>
+            <AppBarToggleButton Label="Remove Default Text" IsChecked="{x:Bind IsRemoveDefaultText, Mode=OneWay}" Click="OnRemoveDefaultTextClick"/>
+            <AppBarSeparator/>
             <AppBarButton Label="Restore Default" Click="OnRestoreClick"/>
+            <AppBarButton Label="Refresh" Click="OnRefreshClick"/>
+            <AppBarSeparator/>
+            <!-- Archive controls -->
+            <AppBarButton Label="Archive" Click="OnArchiveClick">
+                <AppBarButton.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick"/>
+            <AppBarButton Label="Load Archive" Click="OnArchiveLoadClick"/>
+            <AppBarButton Label="Delete Archive" Click="OnArchiveDeleteClick"/>
+            <AppBarSeparator/>
+            <!-- Undo/Redo and open editor -->
+            <AppBarButton Icon="Undo" Label="Undo" Click="OnUndoClick"/>
+            <AppBarButton Icon="Redo" Label="Redo" Click="OnRedoClick"/>
             <AppBarButton Label="Open Text Editor" Click="OnOpenTextEditorClick"/>
         </CommandBar>
         <Grid Grid.Row="1" RowDefinitions="Auto, *">
             <TextBox x:Name="FilterTextBox" PlaceholderText="Filter..." Margin="8" TextChanged="OnFilterTextChanged"/>
-            <Grid Grid.Row="1" ColumnDefinitions="2*, *">
-                <ListView x:Name="EntriesList" SelectionMode="Extended" Margin="8" ItemsSource="{x:Bind Entries, Mode=OneWay}">
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="{x:Bind ArchivesColumnWidth, Mode=OneWay}"/>
+                </Grid.ColumnDefinitions>
+                <ListView x:Name="EntriesList" Grid.Column="0" SelectionMode="Extended" Margin="8" ItemsSource="{x:Bind Entries, Mode=OneWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid ColumnDefinitions="Auto,Auto,*,*" Padding="4">
