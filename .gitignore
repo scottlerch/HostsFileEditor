@@ -18,3 +18,5 @@
 /HostsFileEditor/obj
 /HostsFileEditor.WinUI/bin
 /HostsFileEditor.WinUI/obj
+/HostsFileEditor.Core/bin/Debug
+/HostsFileEditor.Core/obj
