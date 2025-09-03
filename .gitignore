@@ -14,3 +14,9 @@
 /src/ScottLerch.pfx
 /.vs
 *.nupkg
+/winui/obj
+/winui/bin
+/HostsFileEditor/bin
+/HostsFileEditor/obj
+/HostsFileEditor.WinUI/bin/x64/Debug/net8.0-windows10.0.19041.0
+/HostsFileEditor.WinUI/obj
