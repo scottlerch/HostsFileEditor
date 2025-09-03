@@ -131,12 +131,12 @@
                             <Border Padding="8" CornerRadius="4" BorderThickness="0,0,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="Transparent">
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="Transparent">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto" MinWidth="0"/>
                                         <ColumnDefinition Width="160" MinWidth="140" MaxWidth="220"/>
                                         <ColumnDefinition Width="300" MinWidth="220" MaxWidth="520"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                    <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{Binding Enabled, Mode=TwoWay}"/>
                                     <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
                                     <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
                                     <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" HorizontalAlignment="Stretch"/>
