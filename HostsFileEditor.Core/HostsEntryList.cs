@@ -33,10 +33,10 @@ public class HostsEntryList : BindingList<HostsEntry>
 
         UndoManager.Instance.SuspendUndoRedo(() =>
         {
-            int index = 0;
-            foreach (string line in lines)
+            var index = 0;
+            foreach (var line in lines)
             {
-                bool isDefaultLine =
+                var isDefaultLine =
                     index < DefaultLines.Length &&
                     line.Trim() == DefaultLines[index++].Trim();
 
@@ -56,7 +56,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         this.BatchUpdate(() =>
         {
             var copy = entries.ToList();
-            int insertIndex = IndexOf(beforeEntry) - 1;
+            var insertIndex = IndexOf(beforeEntry) - 1;
 
             if (insertIndex >= 0)
             {
@@ -90,7 +90,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         this.BatchUpdate(() =>
         {
             var copy = entries.ToList();
-            int insertIndex = IndexOf(afterEntry) + 1;
+            var insertIndex = IndexOf(afterEntry) + 1;
 
             if (insertIndex < Count)
             {
@@ -120,7 +120,7 @@ public class HostsEntryList : BindingList<HostsEntry>
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        int insertIndex = IndexOf(entry);
+        var insertIndex = IndexOf(entry);
         Insert(insertIndex, newEntry ?? new HostsEntry());
     }
 
@@ -128,7 +128,7 @@ public class HostsEntryList : BindingList<HostsEntry>
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        int insertIndex = IndexOf(entry) + 1;
+        var insertIndex = IndexOf(entry) + 1;
         Insert(insertIndex, newEntry ?? new HostsEntry());
     }
 
@@ -137,11 +137,11 @@ public class HostsEntryList : BindingList<HostsEntry>
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(entries);
 
-        int insertIndex = IndexOf(entry);
+        var insertIndex = IndexOf(entry);
 
         UndoManager.Instance.BatchActions(() =>
         {
-            foreach (var newEntry in entries.ToList())
+            foreach (HostsEntry? newEntry in entries.ToList())
             {
                 Insert(insertIndex++, newEntry);
             }
@@ -164,10 +164,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         });
     }
 
-    public void Add()
-    {
-        Add(new HostsEntry());
-    }
+    public void Add() => Add(new HostsEntry());
 
     public void SetEnabled(IEnumerable<HostsEntry> entries, bool isEnabled)
     {
@@ -185,10 +182,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         });
     }
 
-    protected override object AddNewCore()
-    {
-        return new HostsEntry(string.Empty);
-    }
+    protected override object AddNewCore() => new HostsEntry(string.Empty);
 
     protected override void InsertItem(int index, HostsEntry item)
     {
@@ -201,7 +195,7 @@ public class HostsEntryList : BindingList<HostsEntry>
 
     protected override void RemoveItem(int index)
     {
-        var item = this[index];
+        HostsEntry item = this[index];
 
         UndoManager.Instance.AddActions(
             undoAction: () => Insert(index, item),

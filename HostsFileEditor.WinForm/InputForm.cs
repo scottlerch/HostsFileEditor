@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 namespace HostsFileEditor;
 
@@ -66,7 +66,7 @@ public partial class InputForm : Form
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
     private void OnTextChanged(object sender, EventArgs e)
     {
-        buttonOk.Enabled = HostsArchive.Validate(Input, out string error);
+        buttonOk.Enabled = HostsArchive.Validate(Input, out var error);
         errorProvider.SetError(textBox, error);
     }
 }

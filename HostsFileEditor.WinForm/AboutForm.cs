@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace HostsFileEditor;
@@ -33,7 +33,7 @@ partial class AboutForm : Form
 
             if (attributes.Length > 0)
             {
-                AssemblyTitleAttribute titleAttribute = (AssemblyTitleAttribute)attributes[0];
+                var titleAttribute = (AssemblyTitleAttribute)attributes[0];
                 if (titleAttribute.Title != "")
                 {
                     return titleAttribute.Title;
@@ -63,12 +63,7 @@ partial class AboutForm : Form
         {
             var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyProductAttribute), false);
 
-            if (attributes.Length == 0)
-            {
-                return "";
-            }
-
-            return ((AssemblyProductAttribute)attributes[0]).Product;
+            return attributes.Length == 0 ? "" : ((AssemblyProductAttribute)attributes[0]).Product;
         }
     }
 
@@ -81,12 +76,7 @@ partial class AboutForm : Form
         {
             var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
 
-            if (attributes.Length == 0)
-            {
-                return "";
-            }
-
-            return ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
+            return attributes.Length == 0 ? "" : ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
         }
     }
 
@@ -99,17 +89,9 @@ partial class AboutForm : Form
         {
             var attributes = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
 
-            if (attributes.Length == 0)
-            {
-                return "";
-            }
-
-            return ((AssemblyCompanyAttribute)attributes[0]).Company;
+            return attributes.Length == 0 ? "" : ((AssemblyCompanyAttribute)attributes[0]).Company;
         }
     }
 
-    private void OnLinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-    {
-        Process.Start(githubLink.Text);
-    }
+    private void OnLinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => Process.Start(githubLink.Text);
 }

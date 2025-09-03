@@ -2,10 +2,7 @@ namespace HostsFileEditor.Utilities;
 
 public static class FileEx
 {
-    public static IDisposable DisableAttributes(string filePath, FileAttributes attributes)
-    {
-        return new AttributeDisabler(filePath, attributes);
-    }
+    public static IDisposable DisableAttributes(string filePath, FileAttributes attributes) => new AttributeDisabler(filePath, attributes);
 
     private class AttributeDisabler : IDisposable
     {

@@ -33,29 +33,14 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
     {
         get
         {
-            if (bindingContext == null)
-            {
-                if (Owner?.BindingContext != null)
-                {
-                    bindingContext = Owner.BindingContext;
-                }
-                else if (Parent?.BindingContext != null)
-                {
-                    bindingContext = Parent.BindingContext;
-                }
-                else
-                {
-                    bindingContext = new BindingContext();
-                }
-            }
+            bindingContext ??= Owner?.BindingContext != null
+                    ? Owner.BindingContext
+                    : Parent?.BindingContext != null ? Parent.BindingContext : new BindingContext();
 
             return bindingContext;
         }
 
-        set
-        {
-            bindingContext = value;
-        }
+        set => bindingContext = value;
     }
 
     /// <summary>

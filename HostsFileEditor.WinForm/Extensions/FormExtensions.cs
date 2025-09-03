@@ -1,4 +1,4 @@
-﻿namespace HostsFileEditor.Extensions;
+namespace HostsFileEditor.Extensions;
 
 /// <summary>
 /// Helper Form extension methods.

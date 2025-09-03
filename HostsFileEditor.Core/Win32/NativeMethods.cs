@@ -15,7 +15,7 @@ public static partial class NativeMethods
 
     public static int RegisterWindowMessage(string format, params object[] args)
     {
-        string message = string.Format(format, args);
+        var message = string.Format(format, args);
         return RegisterWindowMessage(message);
     }
 

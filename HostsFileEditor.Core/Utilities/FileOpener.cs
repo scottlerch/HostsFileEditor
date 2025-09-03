@@ -7,7 +7,7 @@ public class FileOpener
 {
     public static void OpenTextFile(string path)
     {
-        if (!TryGetRegisteredApplication(".txt", out string? application) || application == null)
+        if (!TryGetRegisteredApplication(".txt", out var application) || application == null)
         {
             application = "notepad.exe";
         }
@@ -43,7 +43,7 @@ public class FileOpener
 
     private static string? GetClassesRootKeyDefaultValue(string keyPath)
     {
-        using var key = Registry.ClassesRoot.OpenSubKey(keyPath);
+        using RegistryKey? key = Registry.ClassesRoot.OpenSubKey(keyPath);
         return key?.GetValue(null)?.ToString();
     }
 }

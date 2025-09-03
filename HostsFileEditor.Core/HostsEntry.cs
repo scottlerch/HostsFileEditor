@@ -127,7 +127,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
 
     public static bool AutoPingIPAddress { get; set; }
 
-    public string Error => string.Join(Environment.NewLine, errors.Values.ToArray());
+    public string Error => string.Join(Environment.NewLine, [.. errors.Values]);
 
     public string Comment
     {
@@ -199,19 +199,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         {
             if (unparsedTextInvalid)
             {
-                if (HasCommentOnly)
-                {
-                    unparsedText = $"# {comment}";
-                }
-                else
-                {
-                    unparsedText = string.Format(
+                unparsedText = HasCommentOnly
+                    ? $"# {comment}"
+                    : string.Format(
                         "{0}{1} {2}{3}",
                         !Enabled ? "# " : string.Empty,
                         IpAddress,
                         HostNames,
                         Comment.Trim() != string.Empty ? " # " + Comment : string.Empty);
-                }
 
                 if (!valid)
                 {
@@ -237,7 +232,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         set => Update(ref valid, value, () => Valid);
     }
 
-    public string this[string propertyName] => errors.TryGetValue(propertyName, out string? value) ? value : string.Empty;
+    public string this[string propertyName] => errors.TryGetValue(propertyName, out var value) ? value : string.Empty;
 
     public override string ToString() => $"{IpAddress} {HostNames} {Comment}";
 
@@ -273,7 +268,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         {
             if (e.Reply.Status != IPStatus.Success)
             {
-                SynchronizationContext? syncContext = e.UserState as SynchronizationContext;
+                var syncContext = e.UserState as SynchronizationContext;
                 syncContext?.Post(
                     state =>
                     {
@@ -287,15 +282,9 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         }
     }
 
-    private void OnPropertyChanged(string name)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    }
+    private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    private void Update<T>(ref T backing, T value, Expression<Func<T>> property)
-    {
-        Update(ref backing, value, property, delegate { });
-    }
+    private void Update<T>(ref T backing, T value, Expression<Func<T>> property) => Update(ref backing, value, property, delegate { });
 
     private void Update<T>(ref T backing, T value, Expression<Func<T>> property, Action performValidation)
     {
@@ -305,7 +294,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
 
             unparsedTextInvalid = true;
 
-            bool prevValid = valid;
+            var prevValid = valid;
             performValidation();
 
             OnPropertyChanged(property.GetPropertyName());
@@ -331,14 +320,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         {
             hostnamesValid = HostNameRegex().IsMatch(hostnames);
 
-            if (!hostnamesValid)
-            {
-                errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = Resources.InvalidHostnames;
-            }
-            else
-            {
-                errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = string.Empty;
-            }
+            errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = !hostnamesValid ? Resources.InvalidHostnames : string.Empty;
         }
 
         valid = ipAddressValid && hostnamesValid;

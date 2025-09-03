@@ -35,7 +35,7 @@ internal class ToolStripSpringTextBox : ToolStripTextBox
         // Declare a variable to store the total available width as 
         // it is calculated, starting with the display width of the 
         // owning ToolStrip.
-        int width = Owner.DisplayRectangle.Width;
+        var width = Owner.DisplayRectangle.Width;
 
         // Subtract the width of the overflow button if it is displayed. 
         if (Owner.OverflowButton.Visible)
@@ -46,7 +46,7 @@ internal class ToolStripSpringTextBox : ToolStripTextBox
 
         // Declare a variable to maintain a count of ToolStripSpringTextBox 
         // items currently displayed in the owning ToolStrip. 
-        int springBoxCount = 0;
+        var springBoxCount = 0;
 
         foreach (ToolStripItem item in Owner.Items)
         {

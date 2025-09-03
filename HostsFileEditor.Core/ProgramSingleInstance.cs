@@ -33,13 +33,13 @@ public sealed class ProgramSingleInstance : IDisposable
     private ProgramSingleInstance()
     {
         IsOnlyInstance = false;
-        string mutexName = $"Local\\{ProgramInfo.AssemblyGuid}";
+        var mutexName = $"Local\\{ProgramInfo.AssemblyGuid}";
 
         // if you want your app to be limited to a single instance
         // across ALL SESSIONS (multiple users & terminal services), then use the following line instead:
         // string mutexName = $"Global\\{ProgramInfo.AssemblyGuid}";
 
-        mutex = new Mutex(true, mutexName, out bool onlyInstance);
+        mutex = new Mutex(true, mutexName, out var onlyInstance);
         IsOnlyInstance = onlyInstance;
     }
 
@@ -47,10 +47,7 @@ public sealed class ProgramSingleInstance : IDisposable
     /// Starts this instance.
     /// </summary>
     /// <returns>True if successful.</returns>
-    public static ProgramSingleInstance Start()
-    {
-        return new ProgramSingleInstance();
-    }
+    public static ProgramSingleInstance Start() => new();
 
     /// <summary>
     /// Shows the first instance.

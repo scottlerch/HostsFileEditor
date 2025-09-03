@@ -113,7 +113,7 @@ internal partial class MainForm : Form
         // to editing control
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
         {
-            var keys = menuCopy.ShortcutKeys;
+            Keys keys = menuCopy.ShortcutKeys;
             menuCopy.ShortcutKeys = Keys.None;
             menuContextCopy.ShortcutKeys = Keys.None;
             SendKeys.SendWait("^(C)");
@@ -159,7 +159,7 @@ internal partial class MainForm : Form
         // to editing control
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
         {
-            var keys = menuCut.ShortcutKeys;
+            Keys keys = menuCut.ShortcutKeys;
             menuCut.ShortcutKeys = Keys.None;
             menuContextCut.ShortcutKeys = Keys.None;
             SendKeys.SendWait("^(X)");
@@ -238,14 +238,14 @@ internal partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
-            foreach (var entry in dataGridViewHostsEntries.SelectedHostEntries)
+            foreach (HostsEntry entry in dataGridViewHostsEntries.SelectedHostEntries)
             {
                 HostsFile.Instance.Entries.InsertAfter(entry, new HostsEntry(entry));
             }
         }
         else if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            HostsEntry? currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.InsertAfter(
@@ -293,10 +293,7 @@ internal partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
-    private void OnEditClick(object sender, EventArgs e)
-    {
-        this.ShowOrActivate();
-    }
+    private void OnEditClick(object sender, EventArgs e) => this.ShowOrActivate();
 
     /// <summary>
     /// Occurs when filter comment clicked.
@@ -355,10 +352,7 @@ internal partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
-    private void OnFilterTextChanged(object sender, EventArgs e)
-    {
-        hostEntriesView?.Refresh();
-    }
+    private void OnFilterTextChanged(object sender, EventArgs e) => hostEntriesView?.Refresh();
 
     /// <summary>
     /// Occurs when form loads.
@@ -547,10 +541,7 @@ internal partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
-    private void OnRestoreClick(object sender, EventArgs e)
-    {
-        HostsFile.Instance.RestoreDefault();
-    }
+    private void OnRestoreClick(object sender, EventArgs e) => HostsFile.Instance.RestoreDefault();
 
     /// <summary>
     /// Occurs when save as clicked.
@@ -605,7 +596,7 @@ internal partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            var firstSelected = dataGridViewHostsEntries.FirstSelectedHostEntry;
+            HostsEntry? firstSelected = dataGridViewHostsEntries.FirstSelectedHostEntry;
 
             if (firstSelected != null)
             {
@@ -618,7 +609,7 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            HostsEntry currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             var selectedEntries = new List<HostsEntry>([currentEntry]);
 
             HostsFile.Instance.Entries.MoveAfter([currentEntry], currentEntry);
@@ -641,7 +632,7 @@ internal partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            var lastSelected = dataGridViewHostsEntries.LastSelectedHostEntry;
+            HostsEntry? lastSelected = dataGridViewHostsEntries.LastSelectedHostEntry;
 
             if (lastSelected != null)
             {
@@ -654,7 +645,7 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            HostsEntry currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             var selectedEntries = new List<HostsEntry>([currentEntry]);
 
             HostsFile.Instance.Entries.MoveBefore([currentEntry], currentEntry);
@@ -672,10 +663,7 @@ internal partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
-    private void OnNotifyIconDoubleClick(object sender, EventArgs e)
-    {
-        this.ShowOrActivate();
-    }
+    private void OnNotifyIconDoubleClick(object sender, EventArgs e) => this.ShowOrActivate();
 
     /// <summary>
     /// Occurs when paste clicked.
@@ -692,7 +680,7 @@ internal partial class MainForm : Form
         // to editing control
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
         {
-            var keys = menuPaste.ShortcutKeys;
+            Keys keys = menuPaste.ShortcutKeys;
             menuPaste.ShortcutKeys = Keys.None;
             menuContextPaste.ShortcutKeys = Keys.None;
             SendKeys.SendWait("^(V)");
@@ -706,7 +694,7 @@ internal partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0 &&
             clipboardEntries != null)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            HostsEntry? currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.Insert(currentEntry, clipboardEntries);
@@ -737,10 +725,7 @@ internal partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
-    private void OnVisibleChanged(object sender, EventArgs e)
-    {
-        ShowInTaskbar = Visible;
-    }
+    private void OnVisibleChanged(object sender, EventArgs e) => ShowInTaskbar = Visible;
 
     /// <summary>
     /// Updates the notify icon.
@@ -763,7 +748,7 @@ internal partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            HostsEntry? currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.InsertBefore(currentEntry);
@@ -786,7 +771,7 @@ internal partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            HostsEntry? currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.InsertAfter(currentEntry);
@@ -841,10 +826,7 @@ internal partial class MainForm : Form
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="System.EventArgs"/> instance 
     /// containing the event data.</param>
-    private void OnUndoClick(object sender, EventArgs e)
-    {
-        UndoManager.Instance.Undo();
-    }
+    private void OnUndoClick(object sender, EventArgs e) => UndoManager.Instance.Undo();
 
     /// <summary>
     /// Called when redo clicked.
@@ -852,10 +834,7 @@ internal partial class MainForm : Form
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="System.EventArgs"/> instance 
     /// containing the event data.</param>
-    private void OnRedoClick(object sender, EventArgs e)
-    {
-        UndoManager.Instance.Redo();
-    }
+    private void OnRedoClick(object sender, EventArgs e) => UndoManager.Instance.Redo();
 
     /// <summary>
     /// Called when archive delete clicked.
@@ -865,7 +844,7 @@ internal partial class MainForm : Form
     /// containing the event data.</param>
     private void OnArchiveDeleteClick(object sender, EventArgs e)
     {
-        var archive = dataGridViewArchive.CurrentHostsArchive;
+        HostsArchive? archive = dataGridViewArchive.CurrentHostsArchive;
 
         if (archive != null)
         {
@@ -881,7 +860,7 @@ internal partial class MainForm : Form
     /// containing the event data.</param>
     private void OnArchiveLoadClick(object sender, EventArgs e)
     {
-        var archive = dataGridViewArchive.CurrentHostsArchive;
+        HostsArchive? archive = dataGridViewArchive.CurrentHostsArchive;
 
         if (archive != null)
         {
@@ -924,7 +903,7 @@ internal partial class MainForm : Form
     /// </summary>
     private void LoadSettings()
     {
-        var settings = Settings.Default;
+        Settings settings = Settings.Default;
 
         HostsEntry.AutoPingIPAddress = settings.AutoPingIPAddresses;
         HostsFile.RemoveDefaultText = settings.RemoveDefaultText;
@@ -999,10 +978,7 @@ internal partial class MainForm : Form
     /// </summary>
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-    private void OnRemoveSortClick(object sender, EventArgs e)
-    {
-        hostEntriesView?.RemoveSort();
-    }
+    private void OnRemoveSortClick(object sender, EventArgs e) => hostEntriesView?.RemoveSort();
 
     /// <summary>
     /// Called when check clicked.
@@ -1021,7 +997,7 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            HostsEntry currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.SetEnabled(
@@ -1048,7 +1024,7 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            HostsEntry currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.SetEnabled(
@@ -1063,18 +1039,12 @@ internal partial class MainForm : Form
     /// </summary>
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-    private void OnAboutClick(object sender, EventArgs e)
-    {
-        (new AboutForm()).ShowDialog(this);
-    }
+    private void OnAboutClick(object sender, EventArgs e) => (new AboutForm()).ShowDialog(this);
 
     /// <summary>
     /// Called when open text editor clicked.
     /// </summary>
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-    private void OnOpenTextEditorClick(object sender, EventArgs e)
-    {
-        FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
-    }
+    private void OnOpenTextEditorClick(object sender, EventArgs e) => FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
 }

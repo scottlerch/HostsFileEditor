@@ -51,19 +51,12 @@ internal sealed class HostsEntryDataGridView : DataGridView
 
         set
         {
-            foreach (var row in Rows.Cast<DataGridViewRow>())
+            foreach (DataGridViewRow row in Rows.Cast<DataGridViewRow>())
             {
                 if (row.DataBoundItem != null && row.Index < RowCount)
                 {
-                    if (row.DataBoundItem is ObjectView<HostsEntry> hostEntryView &&
-                        value.Contains(hostEntryView.Object))
-                    {
-                        row.Selected = true;
-                    }
-                    else
-                    {
-                        row.Selected = false;
-                    }
+                    row.Selected = row.DataBoundItem is ObjectView<HostsEntry> hostEntryView &&
+                        value.Contains(hostEntryView.Object);
                 }
             }
         }
@@ -113,13 +106,9 @@ internal sealed class HostsEntryDataGridView : DataGridView
                 e.CellStyle.BackColor = Color.Gray;
                 e.CellStyle.ForeColor = Color.White;
             }
-            else if (!entry.Valid)
-            {
-                e.CellStyle.BackColor = Color.LightPink;
-            }
             else
             {
-                e.CellStyle.BackColor = Color.White;
+                e.CellStyle.BackColor = !entry.Valid ? Color.LightPink : Color.White;
             }
         }
 

@@ -5,10 +5,12 @@
     <UseWinUI>true</UseWinUI>
     <AssemblyName>HostsFileEditor.WinUI</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
     <Platforms>x86;x64;arm64</Platforms>
     <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
     <UseWindowsForms>false</UseWindowsForms>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <RuntimeIdentifier Condition="'$(WindowsAppSDKSelfContained)'=='true' and '$(RuntimeIdentifier)'=='' and '$(OS)'=='Windows_NT'">win-x64</RuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />

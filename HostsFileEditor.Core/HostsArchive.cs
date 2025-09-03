@@ -34,7 +34,7 @@ public class HostsArchive
 
     public static bool Validate(string filePath, out string error)
     {
-        bool isValid = false;
+        var isValid = false;
 
         error = string.Empty;
 

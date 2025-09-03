@@ -1,8 +1,9 @@
-namespace HostsFileEditor;
 
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Utilities;
 using System.ComponentModel;
+
+namespace HostsFileEditor;
 
 public class HostsArchiveList : BindingList<HostsArchive>
 {

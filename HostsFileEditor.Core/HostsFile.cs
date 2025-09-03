@@ -28,14 +28,7 @@ public class HostsFile : INotifyPropertyChanged
         {
             UndoManager.Instance.ClearHistory();
 
-            if (IsEnabled)
-            {
-                return new HostsFile(DefaultHostFilePath);
-            }
-            else
-            {
-                return new HostsFile(DefaultDisabledHostFilePath);
-            }
+            return IsEnabled ? new HostsFile(DefaultHostFilePath) : new HostsFile(DefaultDisabledHostFilePath);
         });
 
     private readonly string filePath;
@@ -166,10 +159,7 @@ public class HostsFile : INotifyPropertyChanged
         NativeMethods.FlushDns();
     }
 
-    protected void OnPropertyChanged<T>(Expression<Func<T>> property)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property.GetPropertyName()));
-    }
+    protected void OnPropertyChanged<T>(Expression<Func<T>> property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property.GetPropertyName()));
 
     private void OnHostsEntriesListChanged(object? sender, ListChangedEventArgs e)
     {

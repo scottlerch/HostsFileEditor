@@ -8,20 +8,24 @@ namespace HostsFileEditor;
 
 public sealed partial class MainWindow : Window
 {
-    internal ObservableCollection<HostsEntry> Entries { get; } = new();
+    internal ObservableCollection<HostsEntry> Entries { get; } = [];
 
-    internal ObservableCollection<HostsArchive> Archives { get; } = new();
+    internal ObservableCollection<HostsArchive> Archives { get; } = [];
 
     public MainWindow()
     {
         this.InitializeComponent();
 
         // Bind to current HostsFile
-        foreach (var e in HostsFile.Instance.Entries)
+        foreach (HostsEntry e in HostsFile.Instance.Entries)
+        {
             Entries.Add(e);
+        }
 
-        foreach (var a in HostsArchiveList.Instance)
+        foreach (HostsArchive a in HostsArchiveList.Instance)
+        {
             Archives.Add(a);
+        }
 
         DisableHostsToggle.IsChecked = !HostsFile.IsEnabled;
     }
@@ -33,7 +37,7 @@ public sealed partial class MainWindow : Window
         var picker = new FileOpenPicker();
         InitializeWithWindow.Initialize(picker, GetHwnd());
         picker.FileTypeFilter.Add("*.*");
-        var file = await picker.PickSingleFileAsync();
+        Windows.Storage.StorageFile file = await picker.PickSingleFileAsync();
         if (file != null)
         {
             HostsFile.Instance.Import(file.Path);
@@ -45,19 +49,16 @@ public sealed partial class MainWindow : Window
     {
         var picker = new FileSavePicker();
         InitializeWithWindow.Initialize(picker, GetHwnd());
-        picker.FileTypeChoices.Add("Hosts", new List<string> { ".txt", ".hosts" });
+        picker.FileTypeChoices.Add("Hosts", [".txt", ".hosts"]);
         picker.SuggestedFileName = "hosts";
-        var file = await picker.PickSaveFileAsync();
+        Windows.Storage.StorageFile file = await picker.PickSaveFileAsync();
         if (file != null)
         {
             HostsFile.Instance.SaveAs(file.Path);
         }
     }
 
-    private void OnSaveClick(object sender, RoutedEventArgs e)
-    {
-        HostsFile.Instance.Save();
-    }
+    private void OnSaveClick(object sender, RoutedEventArgs e) => HostsFile.Instance.Save();
 
     private void OnInsertBelowClick(object sender, RoutedEventArgs e)
     {
@@ -92,7 +93,10 @@ public sealed partial class MainWindow : Window
         if (items.Count > 0)
         {
             HostsFile.Instance.Entries.Remove(items);
-            foreach (var i in items) Entries.Remove(i);
+            foreach (var i in items)
+            {
+                Entries.Remove(i);
+            }
         }
     }
 
@@ -100,9 +104,13 @@ public sealed partial class MainWindow : Window
     {
         var isChecked = DisableHostsToggle.IsChecked == true;
         if (isChecked)
+        {
             HostsFile.DisableHostsFile();
+        }
         else
+        {
             HostsFile.EnableHostsFile();
+        }
 
         DisableHostsToggle.IsChecked = !HostsFile.IsEnabled;
     }
@@ -113,15 +121,9 @@ public sealed partial class MainWindow : Window
         RefreshEntries();
     }
 
-    private void OnOpenTextEditorClick(object sender, RoutedEventArgs e)
-    {
-        Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
-    }
+    private void OnOpenTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
 
-    private void OnFilterTextChanged(object sender, TextChangedEventArgs e)
-    {
-        RefreshEntries();
-    }
+    private void OnFilterTextChanged(object sender, TextChangedEventArgs e) => RefreshEntries();
 
     private void RefreshEntries(bool preserveSelection = false)
     {
@@ -129,16 +131,20 @@ public sealed partial class MainWindow : Window
         var sel = preserveSelection ? EntriesList.SelectedItems.Cast<HostsEntry>().ToHashSet() : new();
 
         Entries.Clear();
-        foreach (var e in HostsFile.Instance.Entries)
+        foreach (HostsEntry e in HostsFile.Instance.Entries)
         {
             if (string.IsNullOrEmpty(text) || e.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
+            {
                 Entries.Add(e);
+            }
         }
 
         if (preserveSelection)
         {
-            foreach (var e in Entries.Where(x => sel.Contains(x)))
+            foreach (HostsEntry e in Entries.Where(x => sel.Contains(x)))
+            {
                 EntriesList.SelectedItems.Add(e);
+            }
         }
     }
 }
