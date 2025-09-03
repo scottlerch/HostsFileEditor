@@ -1,5 +1,4 @@
 <Solution>
-  <Project Path="src/HostsFileEditor.csproj" />
   <Folder Name="/Solution Files/">
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
@@ -8,4 +7,8 @@
     <File Path="Readme.md" />
     <File Path="_config.yml" />
   </Folder>
+  <Project Path="HostsFileEditor.WinUI/HostsFileEditor.WinUI.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="HostsFileEditor/HostsFileEditor.csproj" />
 </Solution>
