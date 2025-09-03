@@ -7,10 +7,8 @@
     <StartupObject>HostsFileEditor.Program</StartupObject>
     <ApplicationIcon>HostsFileEditor.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AssemblyTitle>Hosts File Editor</AssemblyTitle>
     <AssemblyName>HostsFileEditor</AssemblyName>
-    <RootNamespace>HostsFileEditor</RootNamespace>
     <ProductName>Hosts File Editor</ProductName>
     <Product>Hosts File Editor</Product>
     <AssemblyVersion>1.3.0.0</AssemblyVersion>
@@ -27,15 +25,9 @@
     <!-- Need to suppress trim warnings since WinForms with Native AOT isn't officially supported -->
     <NoWarn>NU1701;IL2026;IL3000;IL3050;IL3053</NoWarn>
     <_SuppressWinFormsTrimError>true</_SuppressWinFormsTrimError>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <AnalysisLevel>latest</AnalysisLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Reflection based JSON serialization is required for WinForms designer -->
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(Configuration)' == 'Debug'">true</JsonSerializerIsReflectionEnabledByDefault>
     <CustomResourceTypesSupport>true</CustomResourceTypesSupport>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />

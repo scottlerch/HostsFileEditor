@@ -1,4 +1,4 @@
-﻿using HostsFileEditor.Properties;
+using HostsFileEditor.Properties;
 
 namespace HostsFileEditor;
 
@@ -47,12 +47,12 @@ internal static class Program
     private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e)
     {
         MessageBox.Show(
-            null, 
-            e.Exception.Message, 
-            Resources.ErrorCaption, 
-            MessageBoxButtons.OK, 
-            MessageBoxIcon.Error, 
-            MessageBoxDefaultButton.Button1, 
+            null,
+            e.Exception.Message,
+            Resources.ErrorCaption,
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Error,
+            MessageBoxDefaultButton.Button1,
             MessageBoxOptions.DefaultDesktopOnly);
     }
 }

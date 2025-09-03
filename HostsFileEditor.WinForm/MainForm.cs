@@ -1,4 +1,4 @@
-﻿using Equin.ApplicationFramework;
+using Equin.ApplicationFramework;
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
@@ -73,7 +73,7 @@ internal partial class MainForm : Form
         }
 
         base.WndProc(ref message);
-    } 
+    }
 
     /// <summary>
     /// Called when archive clicked.
@@ -131,7 +131,7 @@ internal partial class MainForm : Form
             StringBuilder builder = new();
 
             foreach (
-                DataGridViewCell cell in 
+                DataGridViewCell cell in
                 dataGridViewHostsEntries.SelectedCells)
             {
                 if (cell.ValueType == typeof(string))
@@ -139,7 +139,7 @@ internal partial class MainForm : Form
                     builder.Append(cell.Value?.ToString());
                 }
             }
-            
+
             Clipboard.SetText(builder.ToString());
         }
     }
@@ -181,7 +181,7 @@ internal partial class MainForm : Form
             StringBuilder builder = new();
 
             foreach (
-                DataGridViewCell cell in 
+                DataGridViewCell cell in
                 dataGridViewHostsEntries.SelectedCells)
             {
                 if (cell.ValueType == typeof(string))
@@ -214,7 +214,7 @@ internal partial class MainForm : Form
         else
         {
             foreach (
-                DataGridViewCell cell in 
+                DataGridViewCell cell in
                 dataGridViewHostsEntries.SelectedCells)
             {
                 if (cell.ValueType == typeof(string))
@@ -703,7 +703,7 @@ internal partial class MainForm : Form
 
         dataGridViewHostsEntries.CancelEdit();
 
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0 && 
+        if (dataGridViewHostsEntries.SelectedRows.Count > 0 &&
             clipboardEntries != null)
         {
             var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
@@ -717,7 +717,7 @@ internal partial class MainForm : Form
         else
         {
             foreach (
-                DataGridViewCell cell in 
+                DataGridViewCell cell in
                 dataGridViewHostsEntries.SelectedCells)
             {
                 if (cell.ValueType == typeof(string))
@@ -749,7 +749,7 @@ internal partial class MainForm : Form
     {
         notifyIcon.Icon =
             HostsFile.IsEnabled ?
-            Resources.HostsFileEditor : 
+            Resources.HostsFileEditor :
             Resources.HostsFileEditorDisabled;
     }
 
@@ -808,8 +808,8 @@ internal partial class MainForm : Form
     {
         DialogResult result = MessageBox.Show(
             this,
-            Resources.LoseChangesQuestion, 
-            Resources.LoseChangesDialogCaption, 
+            Resources.LoseChangesQuestion,
+            Resources.LoseChangesDialogCaption,
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question,
             MessageBoxDefaultButton.Button1);
@@ -912,10 +912,10 @@ internal partial class MainForm : Form
     /// instance containing the event data.</param>
     private void OnRemoveDefaultTextClick(object sender, EventArgs e)
     {
-        menuRemoveDefaultText.Checked = 
+        menuRemoveDefaultText.Checked =
             !menuRemoveDefaultText.Checked;
 
-        HostsFile.RemoveDefaultText = 
+        HostsFile.RemoveDefaultText =
             menuRemoveDefaultText.Checked;
     }
 

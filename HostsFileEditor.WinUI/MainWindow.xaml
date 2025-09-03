@@ -7,57 +7,54 @@
     xmlns:local="using:HostsFileEditor"
     mc:Ignorable="d"
     Title="Hosts File Editor">
-  <Grid RowDefinitions="Auto, *">
-    <CommandBar DefaultLabelPosition="Right">
-      <AppBarButton Icon="OpenFile" Label="Import" Click="OnImportClick"/>
-      <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
-      <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
-      <AppBarSeparator/>
-      <AppBarButton Icon="Add" Label="Insert" Click="OnInsertBelowClick"/>
-      <!-- Up -->
-      <AppBarButton Label="Up" Click="OnMoveUpClick">
-        <AppBarButton.Icon>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
-        </AppBarButton.Icon>
-      </AppBarButton>
-      <!-- Down -->
-      <AppBarButton Label="Down" Click="OnMoveDownClick">
-        <AppBarButton.Icon>
-          <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;"/>
-        </AppBarButton.Icon>
-      </AppBarButton>
-      <AppBarSeparator/>
-      <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
-      <AppBarToggleButton x:Name="DisableHostsToggle" Label="Disable Hosts" Click="OnDisableHostsClick"/>
-      <AppBarButton Label="Restore Default" Click="OnRestoreClick"/>
-      <AppBarButton Label="Open Text Editor" Click="OnOpenTextEditorClick"/>
-    </CommandBar>
-
-    <Grid Grid.Row="1" RowDefinitions="Auto, *">
-      <TextBox x:Name="FilterTextBox" PlaceholderText="Filter..." Margin="8" TextChanged="OnFilterTextChanged"/>
-
-      <Grid Grid.Row="1" ColumnDefinitions="2*, *">
-        <ListView x:Name="EntriesList" SelectionMode="Extended" Margin="8" ItemsSource="{x:Bind Entries, Mode=OneWay}">
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <Grid ColumnDefinitions="Auto,Auto,*,*" Padding="4">
-                <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center"/>
-                <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="8,0"/>
-                <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
-                <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
-              </Grid>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-
-        <ListView x:Name="ArchiveList" Grid.Column="1" Margin="8" ItemsSource="{x:Bind Archives, Mode=OneWay}">
-          <ListView.ItemTemplate>
-            <DataTemplate>
-              <TextBlock Text="{Binding FileName}"/>
-            </DataTemplate>
-          </ListView.ItemTemplate>
-        </ListView>
-      </Grid>
+    <Grid RowDefinitions="Auto, *">
+        <CommandBar DefaultLabelPosition="Right">
+            <AppBarButton Icon="OpenFile" Label="Import" Click="OnImportClick"/>
+            <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
+            <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
+            <AppBarSeparator/>
+            <AppBarButton Icon="Add" Label="Insert" Click="OnInsertBelowClick"/>
+            <!-- Up -->
+            <AppBarButton Label="Up" Click="OnMoveUpClick">
+                <AppBarButton.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <!-- Down -->
+            <AppBarButton Label="Down" Click="OnMoveDownClick">
+                <AppBarButton.Icon>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;"/>
+                </AppBarButton.Icon>
+            </AppBarButton>
+            <AppBarSeparator/>
+            <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
+            <AppBarToggleButton x:Name="DisableHostsToggle" Label="Disable Hosts" Click="OnDisableHostsClick"/>
+            <AppBarButton Label="Restore Default" Click="OnRestoreClick"/>
+            <AppBarButton Label="Open Text Editor" Click="OnOpenTextEditorClick"/>
+        </CommandBar>
+        <Grid Grid.Row="1" RowDefinitions="Auto, *">
+            <TextBox x:Name="FilterTextBox" PlaceholderText="Filter..." Margin="8" TextChanged="OnFilterTextChanged"/>
+            <Grid Grid.Row="1" ColumnDefinitions="2*, *">
+                <ListView x:Name="EntriesList" SelectionMode="Extended" Margin="8" ItemsSource="{x:Bind Entries, Mode=OneWay}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid ColumnDefinitions="Auto,Auto,*,*" Padding="4">
+                                <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="8,0"/>
+                                <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
+                                <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+                <ListView x:Name="ArchiveList" Grid.Column="1" Margin="8" ItemsSource="{x:Bind Archives, Mode=OneWay}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding FileName}"/>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+        </Grid>
     </Grid>
-  </Grid>
 </Window>

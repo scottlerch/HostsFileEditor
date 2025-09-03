@@ -1,4 +1,4 @@
-﻿using HostsFileEditor.Win32;
+using HostsFileEditor.Win32;
 using System.Diagnostics;
 
 namespace HostsFileEditor;
@@ -14,7 +14,7 @@ public sealed class ProgramSingleInstance : IDisposable
     /// </summary>
     public static readonly int WM_SHOWFIRSTINSTANCE =
         NativeMethods.RegisterWindowMessage(
-            "WM_SHOWFIRSTINSTANCE|{0}", 
+            "WM_SHOWFIRSTINSTANCE|{0}",
             ProgramInfo.AssemblyGuid);
 
     /// <summary>
@@ -59,7 +59,7 @@ public sealed class ProgramSingleInstance : IDisposable
     {
         // HACK: the second process won't return from SendMessage
         // so kill process after a few seconds
-        Task.Factory.StartNew(async () => 
+        Task.Factory.StartNew(async () =>
         {
             await Task.Delay(5000);
             Process.GetCurrentProcess().Kill();

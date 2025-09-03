@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/Solution Files/">
+    <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="CNAME" />
+    <File Path="Directory.Build.props" />
     <File Path="License.md" />
     <File Path="Readme.md" />
     <File Path="_config.yml" />

@@ -1,4 +1,4 @@
-﻿using Equin.ApplicationFramework;
+using Equin.ApplicationFramework;
 
 namespace HostsFileEditor;
 
@@ -78,7 +78,7 @@ internal class HostsFilter : CompositeItemFilter<HostsEntry>
     /// </summary>
     public bool Comments
     {
-        get =>  comments;
+        get => comments;
         set
         {
             if (comments != value)

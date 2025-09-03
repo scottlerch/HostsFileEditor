@@ -1,9 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Collections.Generic;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
@@ -12,6 +9,7 @@ namespace HostsFileEditor;
 public sealed partial class MainWindow : Window
 {
     internal ObservableCollection<HostsEntry> Entries { get; } = new();
+
     internal ObservableCollection<HostsArchive> Archives { get; } = new();
 
     public MainWindow()
