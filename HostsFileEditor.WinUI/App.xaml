@@ -4,5 +4,38 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:HostsFileEditor">
     <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Load WinUI 3 default control/theme resources (Fluent tokens, brushes, styles) -->
+                <XamlControlsResources />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Implicit TextBox style: rounded corners, flat border -->
+            <Style TargetType="TextBox">
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="BorderThickness" Value="1"/>
+            </Style>
+
+            <!-- Remap TextBox template brushes to Fluent greys (Settings-like). -->
+            <!-- These keys are consumed by the TextBox default template. -->
+            <StaticResource x:Key="TextControlBackground" ResourceKey="ControlFillColorSecondaryBrush"/>
+            <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="ControlFillColorTertiaryBrush"/>
+            <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="ControlFillColorInputActiveBrush"/>
+            <StaticResource x:Key="TextControlBackgroundDisabled" ResourceKey="ControlFillColorDisabledBrush"/>
+
+            <StaticResource x:Key="TextControlBorderBrush" ResourceKey="ControlStrokeColorSecondaryBrush"/>
+            <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="ControlStrokeColorSecondaryBrush"/>
+            <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="ControlStrokeColorDefaultBrush"/>
+            <StaticResource x:Key="TextControlBorderBrushDisabled" ResourceKey="ControlStrokeColorDefaultBrush"/>
+
+            <StaticResource x:Key="TextControlForeground" ResourceKey="TextFillColorPrimaryBrush"/>
+            <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="TextFillColorPrimaryBrush"/>
+            <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="TextFillColorPrimaryBrush"/>
+            <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="TextFillColorDisabledBrush"/>
+            <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="TextFillColorSecondaryBrush"/>
+
+            <!-- Remove bevel/elevation line if used by the template -->
+            <SolidColorBrush x:Key="ControlElevationBorderBrush" Opacity="0"/>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

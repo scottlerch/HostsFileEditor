@@ -1,15 +1,14 @@
+using Microsoft.UI;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
-using Windows.Storage.Pickers;
-using WinRT.Interop;
-using System.Linq;
 using System.ComponentModel;
-using Microsoft.UI;
-using Microsoft.UI.Windowing;
+using Windows.Storage.Pickers;
 using WinRT;
+using WinRT.Interop;
 
 namespace HostsFileEditor;
 
