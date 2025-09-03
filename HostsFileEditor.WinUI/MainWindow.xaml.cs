@@ -1,3 +1,5 @@
+using Microsoft.UI.Composition;
+using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Collections.ObjectModel;
@@ -5,6 +7,9 @@ using Windows.Storage.Pickers;
 using WinRT.Interop;
 using System.Linq;
 using System.ComponentModel;
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
+using WinRT;
 
 namespace HostsFileEditor;
 
@@ -32,9 +37,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public bool IsArchiveVisible { get; private set; }
 
+    private MicaController? _micaController;
+    private SystemBackdropConfiguration? _backdropConfiguration;
+    private Grid? _titleBarHost;
+
     public MainWindow()
     {
         InitializeComponent();
+
+        // Set up custom title bar like Windows 11 Settings
+        TrySetAppWindowTitleBar();
+        TryEnableMicaBackdrop();
 
         // Bind to current HostsFile
         foreach (var e in HostsFile.Instance.Entries)
@@ -55,6 +68,80 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         HostsEntry.AutoPingIPAddress = IsPingIPs;
         HostsFile.RemoveDefaultText = IsRemoveDefaultText;
         ArchivesColumnWidth = IsArchiveVisible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+    }
+
+    private void TrySetAppWindowTitleBar()
+    {
+        var hwnd = GetHwnd();
+        var windowId = Win32Interop.GetWindowIdFromWindow(hwnd);
+        var appWindow = AppWindow.GetFromWindowId(windowId);
+
+        // Extend content and use custom title bar element from XAML
+        this.ExtendsContentIntoTitleBar = true;
+        if (Content is FrameworkElement root && root.FindName("AppTitleBar") is Grid fe)
+        {
+            _titleBarHost = fe;
+            this.SetTitleBar(fe);
+        }
+        if (appWindow is not null)
+        {
+            appWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+            appWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+
+            // Keep content clear of the caption buttons area
+            appWindow.Changed += (_, __) => UpdateTitleBarPadding(appWindow);
+            SizeChanged += (_, __) => UpdateTitleBarPadding(appWindow);
+            UpdateTitleBarPadding(appWindow);
+        }
+    }
+
+    private void UpdateTitleBarPadding(AppWindow appWindow)
+    {
+        if (_titleBarHost is null)
+            return;
+
+        // Insets provided by the system for areas occupied by caption buttons and drag region.
+        var leftInset = appWindow.TitleBar.LeftInset;
+        var rightInset = appWindow.TitleBar.RightInset;
+
+        // Keep some horizontal breathing room and avoid overlap with caption buttons.
+        var baseLeft = 12d;
+        var baseRight = 12d;
+        _titleBarHost.Padding = new Thickness(baseLeft + leftInset, 0, baseRight + rightInset, 0);
+    }
+
+    private bool TryEnableMicaBackdrop()
+    {
+        if (!MicaController.IsSupported())
+        {
+            return false;
+        }
+
+        _backdropConfiguration = new SystemBackdropConfiguration
+        {
+            IsInputActive = true,
+            Theme = SystemBackdropTheme.Default
+        };
+
+        _micaController = new MicaController { Kind = MicaKind.BaseAlt };
+        _micaController.AddSystemBackdropTarget(this.As<ICompositionSupportsSystemBackdrop>());
+        _micaController.SetSystemBackdropConfiguration(_backdropConfiguration);
+
+        this.Activated += (s, e) =>
+        {
+            if (_backdropConfiguration is not null)
+            {
+                _backdropConfiguration.IsInputActive = e.WindowActivationState != WindowActivationState.Deactivated;
+            }
+        };
+        this.Closed += (s, e) =>
+        {
+            _micaController?.Dispose();
+            _micaController = null;
+            _backdropConfiguration = null;
+        };
+
+        return true;
     }
 
     private IntPtr GetHwnd() => WindowNative.GetWindowHandle(this);

@@ -7,8 +7,24 @@
     xmlns:local="using:HostsFileEditor"
     mc:Ignorable="d"
     Title="Hosts File Editor">
-    <Grid RowDefinitions="Auto, *">
-        <CommandBar DefaultLabelPosition="Right">
+    <Grid RowDefinitions="Auto,Auto,*">
+        <!-- Custom title bar area to resemble Windows 11 Settings -->
+        <Grid x:Name="AppTitleBar" Height="48" Padding="12,0" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8D7;" />
+                <TextBlock Text="Hosts File Editor" FontSize="20" FontWeight="SemiBold"/>
+            </StackPanel>
+            <!-- Quick filter like Settings search -->
+            <TextBox x:Name="FilterTextBox" Grid.Column="1" PlaceholderText="Filter hosts..." Margin="12,0" VerticalAlignment="Center" TextChanged="OnFilterTextChanged"/>
+        </Grid>
+
+        <!-- Command bar -->
+        <CommandBar Grid.Row="1" DefaultLabelPosition="Right">
             <AppBarButton Icon="OpenFile" Label="Import" Click="OnImportClick"/>
             <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
             <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
@@ -82,33 +98,78 @@
             <AppBarButton Icon="Redo" Label="Redo" Click="OnRedoClick"/>
             <AppBarButton Label="Open Text Editor" Click="OnOpenTextEditorClick"/>
         </CommandBar>
-        <Grid Grid.Row="1" RowDefinitions="Auto, *">
-            <TextBox x:Name="FilterTextBox" PlaceholderText="Filter..." Margin="8" TextChanged="OnFilterTextChanged"/>
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*"/>
-                    <ColumnDefinition Width="{x:Bind ArchivesColumnWidth, Mode=OneWay}"/>
-                </Grid.ColumnDefinitions>
-                <ListView x:Name="EntriesList" Grid.Column="0" SelectionMode="Extended" Margin="8" ItemsSource="{x:Bind Entries, Mode=OneWay}">
+
+        <!-- Content area -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="{x:Bind ArchivesColumnWidth, Mode=OneWay}"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Host entries table area -->
+            <Grid Grid.Column="0" Margin="8" RowDefinitions="Auto,*">
+                <!-- Column headers -->
+                <Border Background="#0D000000" Padding="8" CornerRadius="4" HorizontalAlignment="Stretch">
+                    <Grid HorizontalAlignment="Stretch">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="160" MinWidth="140" MaxWidth="220"/>
+                            <ColumnDefinition Width="300" MinWidth="220" MaxWidth="520"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <CheckBox IsEnabled="False" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="IP Address" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Column="2" Text="Host Names" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Column="3" Text="Comment" FontWeight="SemiBold"/>
+                    </Grid>
+                </Border>
+                <!-- Rows -->
+                <ListView x:Name="EntriesList"
+                          Grid.Row="1"
+                          Margin="0,8,0,0"
+                          SelectionMode="Extended"
+                          HorizontalContentAlignment="Stretch"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.HorizontalScrollMode="Disabled"
+                          ItemsSource="{x:Bind Entries, Mode=OneWay}">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Grid ColumnDefinitions="Auto,Auto,*,*" Padding="4">
-                                <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center"/>
-                                <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="8,0"/>
-                                <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
-                                <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-                <ListView x:Name="ArchiveList" Grid.Column="1" Margin="8" ItemsSource="{x:Bind Archives, Mode=OneWay}">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding FileName}"/>
+                            <Border Padding="8" CornerRadius="4" BorderThickness="0,0,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch">
+                                <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="160" MinWidth="140" MaxWidth="220"/>
+                                        <ColumnDefinition Width="300" MinWidth="220" MaxWidth="520"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
+                                    <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
+                                    <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" HorizontalAlignment="Stretch"/>
+                                </Grid>
+                            </Border>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
             </Grid>
+
+            <!-- Archives list -->
+            <ListView x:Name="ArchiveList" Grid.Column="1" Margin="8" ItemsSource="{x:Bind Archives, Mode=OneWay}">
+                <ListView.Header>
+                    <TextBlock Text="Archives" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                </ListView.Header>
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding FileName}"/>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
         </Grid>
     </Grid>
 </Window>
