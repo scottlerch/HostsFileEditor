@@ -14,44 +14,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.3.0" />
     <PackageReference Include="System.Resources.Extensions" Version="9.0.8" />
   </ItemGroup>
-
   <ItemGroup>
-    <!-- Link core logic files from existing project -->
-    <Compile Include="..\HostsFileEditor\HostsFile.cs" Link="Core\HostsFile.cs" />
-    <Compile Include="..\HostsFileEditor\HostsEntry.cs" Link="Core\HostsEntry.cs" />
-    <Compile Include="..\HostsFileEditor\HostsEntryList.cs" Link="Core\HostsEntryList.cs" />
-    <Compile Include="..\HostsFileEditor\HostsArchive.cs" Link="Core\HostsArchive.cs" />
-    <Compile Include="..\HostsFileEditor\HostsArchiveList.cs" Link="Core\HostsArchiveList.cs" />
-    <Compile Include="..\HostsFileEditor\Utilities\UndoManager.cs" Link="Core\Utilities\UndoManager.cs" />
-    <Compile Include="..\HostsFileEditor\Utilities\FileEx.cs" Link="Core\Utilities\FileEx.cs" />
-    <Compile Include="..\HostsFileEditor\Utilities\FileOpener.cs" Link="Core\Utilities\FileOpener.cs" />
-    <Compile Include="..\HostsFileEditor\Utilities\Reflect.cs" Link="Core\Utilities\Reflect.cs" />
-    <Compile Include="..\HostsFileEditor\Extensions\StringExtensions.cs" Link="Core\Extensions\StringExtensions.cs" />
-    <Compile Include="..\HostsFileEditor\Extensions\BindingListExtensions.cs" Link="Core\Extensions\BindingListExtensions.cs" />
-    <Compile Include="..\HostsFileEditor\Win32\NativeMethods.cs" Link="Core\Win32\NativeMethods.cs" />
-    <Compile Include="..\HostsFileEditor\ProgramInfo.cs" Link="Core\ProgramInfo.cs" />
+    <ProjectReference Include="..\HostsFileEditor.Core\HostsFileEditor.Core.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <!-- Resources (link existing .resx/.resx.cs) -->
-    <Compile Include="..\HostsFileEditor\Properties\Resources.Designer.cs" Link="Properties\Resources.Designer.cs">
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <EmbeddedResource Include="..\HostsFileEditor\Properties\Resources.resx" Link="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <!-- Hosts resource file referenced by Resources.resx is already embedded there -->
-  </ItemGroup>
-
   <ItemGroup>
     <None Include="app.manifest" />
   </ItemGroup>

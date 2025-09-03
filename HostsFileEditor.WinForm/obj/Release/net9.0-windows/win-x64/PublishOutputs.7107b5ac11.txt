@@ -1,0 +1,8 @@
+D:\Sources\HostsFileEditor\HostsFileEditor.WinForm\bin\Release\net9.0-windows\win-x64\publish\HostsFileEditor.pdb
+D:\Sources\HostsFileEditor\HostsFileEditor.WinForm\bin\Release\net9.0-windows\win-x64\publish\AppxManifest.xml
+D:\Sources\HostsFileEditor\HostsFileEditor.WinForm\bin\Release\net9.0-windows\win-x64\publish\Assets\HostsFileEditor.png
+D:\Sources\HostsFileEditor\HostsFileEditor.WinForm\bin\Release\net9.0-windows\win-x64\publish\Assets\Square150x150Logo.png
+D:\Sources\HostsFileEditor\HostsFileEditor.WinForm\bin\Release\net9.0-windows\win-x64\publish\Assets\Square44x44Logo.png
+D:\Sources\HostsFileEditor\HostsFileEditor.WinForm\bin\Release\net9.0-windows\win-x64\publish\HostsFileEditor.dll.config
+D:\Sources\HostsFileEditor\HostsFileEditor.WinForm\bin\Release\net9.0-windows\win-x64\publish\HostsFileEditor.Core.pdb
+D:\Sources\HostsFileEditor\HostsFileEditor.WinForm\bin\Release\net9.0-windows\win-x64\publish\HostsFileEditor.exe

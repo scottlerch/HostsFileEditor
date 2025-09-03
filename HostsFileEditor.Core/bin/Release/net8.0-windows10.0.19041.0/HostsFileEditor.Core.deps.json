@@ -1,0 +1,113 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "HostsFileEditor.Core/1.0.0": {
+        "dependencies": {
+          "System.Resources.Extensions": "9.0.8",
+          "runtimepack.Microsoft.Windows.SDK.NET.Ref": "10.0.19041.57"
+        },
+        "runtime": {
+          "HostsFileEditor.Core.dll": {}
+        }
+      },
+      "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.19041.57": {
+        "runtime": {
+          "Microsoft.Windows.SDK.NET.dll": {
+            "assemblyVersion": "10.0.19041.38",
+            "fileVersion": "10.0.19041.55"
+          },
+          "WinRT.Runtime.dll": {
+            "assemblyVersion": "2.2.0.0",
+            "fileVersion": "2.2.0.48161"
+          }
+        }
+      },
+      "System.Collections.Immutable/9.0.8": {
+        "runtime": {
+          "lib/net8.0/System.Collections.Immutable.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.825.36511"
+          }
+        }
+      },
+      "System.Formats.Nrbf/9.0.8": {
+        "dependencies": {
+          "System.Reflection.Metadata": "9.0.8"
+        },
+        "runtime": {
+          "lib/net8.0/System.Formats.Nrbf.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.825.36511"
+          }
+        }
+      },
+      "System.Reflection.Metadata/9.0.8": {
+        "dependencies": {
+          "System.Collections.Immutable": "9.0.8"
+        },
+        "runtime": {
+          "lib/net8.0/System.Reflection.Metadata.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.825.36511"
+          }
+        }
+      },
+      "System.Resources.Extensions/9.0.8": {
+        "dependencies": {
+          "System.Formats.Nrbf": "9.0.8"
+        },
+        "runtime": {
+          "lib/net8.0/System.Resources.Extensions.dll": {
+            "assemblyVersion": "9.0.0.0",
+            "fileVersion": "9.0.825.36511"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "HostsFileEditor.Core/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "runtimepack.Microsoft.Windows.SDK.NET.Ref/10.0.19041.57": {
+      "type": "runtimepack",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "System.Collections.Immutable/9.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Eje6exD7AGKPg5SIkmjyWTBq0KK6SpfTBfdFUmpGG07mNbYimFJ+jyVnILcs0ikFOXoYTBpBOxKYgAk2hhjYOw==",
+      "path": "system.collections.immutable/9.0.8",
+      "hashPath": "system.collections.immutable.9.0.8.nupkg.sha512"
+    },
+    "System.Formats.Nrbf/9.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ai9OA2GySuSzTqK8GprKTBT3NJmLpFJ1ES0JnJGkDYMqsnG5x1M8hI1CoZYAazy/8jj5QBxWP/plMfQyllQeLg==",
+      "path": "system.formats.nrbf/9.0.8",
+      "hashPath": "system.formats.nrbf.9.0.8.nupkg.sha512"
+    },
+    "System.Reflection.Metadata/9.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oJQezcASFomKvSp+06pzvSFRTnzdUJtiO19peAdZ9RwiqZinBV56u7zW5fEGf2/VrQFL3qZSV7UapgG31XRWQA==",
+      "path": "system.reflection.metadata/9.0.8",
+      "hashPath": "system.reflection.metadata.9.0.8.nupkg.sha512"
+    },
+    "System.Resources.Extensions/9.0.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-0yK6leHXHlt6G2GoQGxtJvqaFPtJr/HFsIGFito+V2ukFvmW9AL6R7O9KE+W6/ghowQ0d80tzbaBAU5mtbZDtw==",
+      "path": "system.resources.extensions/9.0.8",
+      "hashPath": "system.resources.extensions.9.0.8.nupkg.sha512"
+    }
+  }
+}

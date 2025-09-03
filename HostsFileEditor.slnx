@@ -7,8 +7,9 @@
     <File Path="Readme.md" />
     <File Path="_config.yml" />
   </Folder>
+  <Project Path="HostsFileEditor.Core/HostsFileEditor.Core.csproj" />
+  <Project Path="HostsFileEditor.WinForm/HostsFileEditor.WinForm.csproj" />
   <Project Path="HostsFileEditor.WinUI/HostsFileEditor.WinUI.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="HostsFileEditor/HostsFileEditor.csproj" />
 </Solution>
