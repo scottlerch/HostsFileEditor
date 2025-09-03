@@ -26,122 +26,122 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
     private const string MatchHostnames = @"([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*";
     private const string MatchIpAddress = @"[^\s]+";
 
-    private static readonly Regex MatchValidHostEntry = ValidHostsRegex();
+    private static readonly Regex _matchValidHostEntry = ValidHostsRegex();
 
-    private readonly Dictionary<string, string> errors = [];
+    private readonly Dictionary<string, string> _errors = [];
 
-    private string comment;
-    private bool enabled;
-    private string hostnames;
-    private string ipAddress;
-    private string unparsedText;
-    private bool unparsedTextInvalid;
-    private bool valid;
-    private bool ipAddressValid;
-    private bool hostnamesValid;
-    private Ping? ping;
+    private string _comment;
+    private bool _enabled;
+    private string _hostnames;
+    private string _ipAddress;
+    private string _unparsedText;
+    private bool _unparsedTextInvalid;
+    private bool _valid;
+    private bool _ipAddressValid;
+    private bool _hostnamesValid;
+    private Ping? _ping;
 
     public HostsEntry()
     {
-        valid = false;
-        enabled = false;
-        comment = string.Empty;
-        hostnames = string.Empty;
-        ipAddress = string.Empty;
-        unparsedText = string.Empty;
+        _valid = false;
+        _enabled = false;
+        _comment = string.Empty;
+        _hostnames = string.Empty;
+        _ipAddress = string.Empty;
+        _unparsedText = string.Empty;
 
-        ping = new Ping();
-        ping.PingCompleted += OnPingCompleted;
+        _ping = new Ping();
+        _ping.PingCompleted += OnPingCompleted;
     }
 
     public HostsEntry(string unparsedTextLine) : this()
     {
-        unparsedText = unparsedTextLine;
+        _unparsedText = unparsedTextLine;
 
-        Match match = MatchValidHostEntry.Match(unparsedText);
+        var match = _matchValidHostEntry.Match(_unparsedText);
 
-        valid = match.Success;
+        _valid = match.Success;
 
         if (match.Success)
         {
             if (match.Groups[Blank].Success)
             {
-                valid = false;
-                hostnamesValid = false;
-                ipAddressValid = false;
-                enabled = false;
+                _valid = false;
+                _hostnamesValid = false;
+                _ipAddressValid = false;
+                _enabled = false;
             }
             else if (match.Groups[LineComment].Success)
             {
-                comment = match.Groups[LineComment].Value;
-                enabled = false;
-                valid = false;
-                hostnamesValid = false;
-                ipAddressValid = false;
+                _comment = match.Groups[LineComment].Value;
+                _enabled = false;
+                _valid = false;
+                _hostnamesValid = false;
+                _ipAddressValid = false;
             }
             else
             {
-                enabled = !match.Groups[Disabled].Success;
-                hostnames = match.Groups[Hostname].Value;
-                ipAddress = match.Groups[Address].Value;
-                comment = match.Groups[AfterComment].Value;
+                _enabled = !match.Groups[Disabled].Success;
+                _hostnames = match.Groups[Hostname].Value;
+                _ipAddress = match.Groups[Address].Value;
+                _comment = match.Groups[AfterComment].Value;
 
-                hostnames = TwoSpaceMatchRegex().Replace(HostNames, " ");
+                _hostnames = TwoSpaceMatchRegex().Replace(HostNames, " ");
 
                 ValidateIpAddress();
                 ValidateHostnames();
 
-                if (!valid)
+                if (!_valid)
                 {
-                    enabled = false;
-                    hostnames = string.Empty;
-                    ipAddress = string.Empty;
-                    errors.Clear();
-                    comment = unparsedText.TrimStart(' ', '\t', '#');
-                    unparsedTextInvalid = false;
+                    _enabled = false;
+                    _hostnames = string.Empty;
+                    _ipAddress = string.Empty;
+                    _errors.Clear();
+                    _comment = _unparsedText.TrimStart(' ', '\t', '#');
+                    _unparsedTextInvalid = false;
                 }
             }
 
-            if (comment.Length > 0 && comment[0] == ' ')
+            if (_comment.Length > 0 && _comment[0] == ' ')
             {
-                comment = comment[1..];
+                _comment = _comment[1..];
             }
         }
     }
 
     public HostsEntry(HostsEntry entry)
     {
-        comment = entry.comment;
-        enabled = entry.enabled;
-        hostnames = entry.hostnames;
-        ipAddress = entry.ipAddress;
-        unparsedText = entry.unparsedText;
-        unparsedTextInvalid = entry.unparsedTextInvalid;
-        valid = entry.valid;
-        hostnamesValid = entry.hostnamesValid;
-        ipAddressValid = entry.ipAddressValid;
-        errors = new Dictionary<string, string>(entry.errors);
+        _comment = entry._comment;
+        _enabled = entry._enabled;
+        _hostnames = entry._hostnames;
+        _ipAddress = entry._ipAddress;
+        _unparsedText = entry._unparsedText;
+        _unparsedTextInvalid = entry._unparsedTextInvalid;
+        _valid = entry._valid;
+        _hostnamesValid = entry._hostnamesValid;
+        _ipAddressValid = entry._ipAddressValid;
+        _errors = new Dictionary<string, string>(entry._errors);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public static bool AutoPingIPAddress { get; set; }
 
-    public string Error => string.Join(Environment.NewLine, [.. errors.Values]);
+    public string Error => string.Join(Environment.NewLine, [.. _errors.Values]);
 
     public string Comment
     {
-        get => comment;
+        get => _comment;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            var local = comment;
+            var local = _comment;
             UndoManager.Instance.AddActions(
                 undoAction: () => Comment = local,
                 redoAction: () => Comment = value);
 
-            Update(ref comment, value, () => Comment);
+            Update(ref _comment, value, () => Comment);
         }
     }
 
@@ -149,47 +149,47 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
 
     public bool Enabled
     {
-        get => enabled;
+        get => _enabled;
         set
         {
-            var local = enabled;
+            var local = _enabled;
             UndoManager.Instance.AddActions(
                 undoAction: () => Enabled = local,
                 redoAction: () => Enabled = value);
 
-            Update(ref enabled, value, () => Enabled);
+            Update(ref _enabled, value, () => Enabled);
         }
     }
 
     public string HostNames
     {
-        get => hostnames;
+        get => _hostnames;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            var local = hostnames;
+            var local = _hostnames;
             UndoManager.Instance.AddActions(
                 undoAction: () => HostNames = local,
                 redoAction: () => HostNames = value.Trim());
 
-            Update(ref hostnames, value.Trim(), () => HostNames, ValidateHostnames);
+            Update(ref _hostnames, value.Trim(), () => HostNames, ValidateHostnames);
         }
     }
 
     public string IpAddress
     {
-        get => ipAddress;
+        get => _ipAddress;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            var local = ipAddress;
+            var local = _ipAddress;
             UndoManager.Instance.AddActions(
                 undoAction: () => IpAddress = local,
                 redoAction: () => IpAddress = value.Trim());
 
-            Update(ref ipAddress, value.Trim(), () => IpAddress, ValidateIpAddress);
+            Update(ref _ipAddress, value.Trim(), () => IpAddress, ValidateIpAddress);
         }
     }
 
@@ -197,10 +197,10 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
     {
         get
         {
-            if (unparsedTextInvalid)
+            if (_unparsedTextInvalid)
             {
-                unparsedText = HasCommentOnly
-                    ? $"# {comment}"
+                _unparsedText = HasCommentOnly
+                    ? $"# {_comment}"
                     : string.Format(
                         "{0}{1} {2}{3}",
                         !Enabled ? "# " : string.Empty,
@@ -208,31 +208,31 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
                         HostNames,
                         Comment.Trim() != string.Empty ? " # " + Comment : string.Empty);
 
-                if (!valid)
+                if (!_valid)
                 {
-                    unparsedText = "#" + unparsedText;
+                    _unparsedText = "#" + _unparsedText;
                 }
 
-                unparsedTextInvalid = false;
+                _unparsedTextInvalid = false;
             }
 
-            return unparsedText;
+            return _unparsedText;
         }
 
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            Update(ref unparsedText, value, () => UnparsedText);
+            Update(ref _unparsedText, value, () => UnparsedText);
         }
     }
 
     public bool Valid
     {
-        get => valid;
-        set => Update(ref valid, value, () => Valid);
+        get => _valid;
+        set => Update(ref _valid, value, () => Valid);
     }
 
-    public string this[string propertyName] => errors.TryGetValue(propertyName, out var value) ? value : string.Empty;
+    public string this[string propertyName] => _errors.TryGetValue(propertyName, out var value) ? value : string.Empty;
 
     public override string ToString() => $"{IpAddress} {HostNames} {Comment}";
 
@@ -244,20 +244,20 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
 
     public void Ping()
     {
-        ping?.SendAsyncCancel();
-        ping?.SendAsync(ipAddress, SynchronizationContext.Current);
+        _ping?.SendAsyncCancel();
+        _ping?.SendAsync(_ipAddress, SynchronizationContext.Current);
     }
 
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)
         {
-            if (ping != null)
+            if (_ping != null)
             {
-                ping.PingCompleted -= OnPingCompleted;
-                ping.SendAsyncCancel();
-                ping.Dispose();
-                ping = null;
+                _ping.PingCompleted -= OnPingCompleted;
+                _ping.SendAsyncCancel();
+                _ping.Dispose();
+                _ping = null;
             }
         }
     }
@@ -272,7 +272,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
                 syncContext?.Post(
                     state =>
                     {
-                        errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] =
+                        _errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] =
                             string.Format(Resources.PingFailed, e.Reply.Status.ToString());
 
                         OnPropertyChanged(Utilities.Reflect.GetPropertyName(() => IpAddress));
@@ -292,14 +292,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         {
             backing = value;
 
-            unparsedTextInvalid = true;
+            _unparsedTextInvalid = true;
 
-            var prevValid = valid;
+            var prevValid = _valid;
             performValidation();
 
             OnPropertyChanged(property.GetPropertyName());
 
-            if (prevValid != valid)
+            if (prevValid != _valid)
             {
                 OnPropertyChanged(Utilities.Reflect.GetPropertyName(() => Valid));
                 OnPropertyChanged(Utilities.Reflect.GetPropertyName(() => IpAddress));
@@ -311,39 +311,39 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
 
     private void ValidateHostnames()
     {
-        if (string.IsNullOrWhiteSpace(hostnames) && !enabled)
+        if (string.IsNullOrWhiteSpace(_hostnames) && !_enabled)
         {
-            errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = string.Empty;
-            hostnamesValid = true;
+            _errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = string.Empty;
+            _hostnamesValid = true;
         }
         else
         {
-            hostnamesValid = HostNameRegex().IsMatch(hostnames);
+            _hostnamesValid = HostNameRegex().IsMatch(_hostnames);
 
-            errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = !hostnamesValid ? Resources.InvalidHostnames : string.Empty;
+            _errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = !_hostnamesValid ? Resources.InvalidHostnames : string.Empty;
         }
 
-        valid = ipAddressValid && hostnamesValid;
+        _valid = _ipAddressValid && _hostnamesValid;
     }
 
     private void ValidateIpAddress()
     {
-        if (string.IsNullOrWhiteSpace(ipAddress) && !enabled)
+        if (string.IsNullOrWhiteSpace(_ipAddress) && !_enabled)
         {
-            errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = string.Empty;
-            valid = false;
+            _errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = string.Empty;
+            _valid = false;
         }
         else
         {
-            ipAddressValid = IPAddress.TryParse(IpAddress, out IPAddress? dummy);
+            _ipAddressValid = IPAddress.TryParse(IpAddress, out var dummy);
 
-            if (!ipAddressValid)
+            if (!_ipAddressValid)
             {
-                errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = Resources.InvalidIPAddress;
+                _errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = Resources.InvalidIPAddress;
             }
             else
             {
-                errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = string.Empty;
+                _errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = string.Empty;
 
                 if (AutoPingIPAddress)
                 {
@@ -352,7 +352,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
             }
         }
 
-        valid = ipAddressValid && hostnamesValid;
+        _valid = _ipAddressValid && _hostnamesValid;
     }
 
     [GeneratedRegex(@"[ ]{2,}")]

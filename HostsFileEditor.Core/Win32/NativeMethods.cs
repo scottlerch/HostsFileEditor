@@ -5,7 +5,7 @@ namespace HostsFileEditor.Win32;
 
 public static partial class NativeMethods
 {
-    public const int HWND_BROADCAST = 0xffff;
+    public const int HwndBroadcast = 0xffff;
 
     [LibraryImport("user32", EntryPoint = "RegisterWindowMessageW", StringMarshalling = StringMarshalling.Utf16)]
     public static partial int RegisterWindowMessage(string message);

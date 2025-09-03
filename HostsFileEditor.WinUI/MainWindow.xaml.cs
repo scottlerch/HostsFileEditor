@@ -14,15 +14,15 @@ public sealed partial class MainWindow : Window
 
     public MainWindow()
     {
-        this.InitializeComponent();
+        InitializeComponent();
 
         // Bind to current HostsFile
-        foreach (HostsEntry e in HostsFile.Instance.Entries)
+        foreach (var e in HostsFile.Instance.Entries)
         {
             Entries.Add(e);
         }
 
-        foreach (HostsArchive a in HostsArchiveList.Instance)
+        foreach (var a in HostsArchiveList.Instance)
         {
             Archives.Add(a);
         }
@@ -37,7 +37,7 @@ public sealed partial class MainWindow : Window
         var picker = new FileOpenPicker();
         InitializeWithWindow.Initialize(picker, GetHwnd());
         picker.FileTypeFilter.Add("*.*");
-        Windows.Storage.StorageFile file = await picker.PickSingleFileAsync();
+        var file = await picker.PickSingleFileAsync();
         if (file != null)
         {
             HostsFile.Instance.Import(file.Path);
@@ -51,7 +51,7 @@ public sealed partial class MainWindow : Window
         InitializeWithWindow.Initialize(picker, GetHwnd());
         picker.FileTypeChoices.Add("Hosts", [".txt", ".hosts"]);
         picker.SuggestedFileName = "hosts";
-        Windows.Storage.StorageFile file = await picker.PickSaveFileAsync();
+        var file = await picker.PickSaveFileAsync();
         if (file != null)
         {
             HostsFile.Instance.SaveAs(file.Path);
@@ -128,10 +128,10 @@ public sealed partial class MainWindow : Window
     private void RefreshEntries(bool preserveSelection = false)
     {
         var text = FilterTextBox.Text?.Trim() ?? string.Empty;
-        var sel = preserveSelection ? EntriesList.SelectedItems.Cast<HostsEntry>().ToHashSet() : new();
+        var sel = preserveSelection ? EntriesList.SelectedItems.Cast<HostsEntry>().ToHashSet() : [];
 
         Entries.Clear();
-        foreach (HostsEntry e in HostsFile.Instance.Entries)
+        foreach (var e in HostsFile.Instance.Entries)
         {
             if (string.IsNullOrEmpty(text) || e.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
             {
@@ -141,7 +141,7 @@ public sealed partial class MainWindow : Window
 
         if (preserveSelection)
         {
-            foreach (HostsEntry e in Entries.Where(x => sel.Contains(x)))
+            foreach (var e in Entries.Where(sel.Contains))
             {
                 EntriesList.SelectedItems.Add(e);
             }

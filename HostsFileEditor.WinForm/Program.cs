@@ -10,7 +10,7 @@ internal static class Program
     /// <summary>
     /// The application's main form.
     /// </summary>
-    private static Form? mainForm;
+    private static Form? _mainForm;
 
     /// <summary>
     /// The main entry point for the application.
@@ -26,8 +26,8 @@ internal static class Program
             Application.SetCompatibleTextRenderingDefault(false);
             Application.ThreadException += OnApplicationThreadException;
 
-            mainForm = new MainForm();
-            Application.Run(mainForm);
+            _mainForm = new MainForm();
+            Application.Run(_mainForm);
         }
         else
         {

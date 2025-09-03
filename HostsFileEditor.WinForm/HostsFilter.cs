@@ -10,27 +10,27 @@ internal class HostsFilter : CompositeItemFilter<HostsEntry>
     /// <summary>
     /// The comment filter.
     /// </summary>
-    private readonly PredicateItemFilter<HostsEntry> commentFilter;
+    private readonly PredicateItemFilter<HostsEntry> _commentFilter;
 
     /// <summary>
     /// The disabled filter.
     /// </summary>
-    private readonly PredicateItemFilter<HostsEntry> disabledFilter;
+    private readonly PredicateItemFilter<HostsEntry> _disabledFilter;
 
     /// <summary>
     /// The custom filter.
     /// </summary>
-    private readonly PredicateItemFilter<HostsEntry> customFilter;
+    private readonly PredicateItemFilter<HostsEntry> _customFilter;
 
     /// <summary>
     /// The disabled filtered enabled setting.
     /// </summary>
-    private bool disabled;
+    private bool _disabled;
 
     /// <summary>
     /// The comments filtered enabled setting.
     /// </summary>
-    private bool comments;
+    private bool _comments;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HostsFilter"/> class.
@@ -38,15 +38,15 @@ internal class HostsFilter : CompositeItemFilter<HostsEntry>
     /// <param name="customFilter">The custom filter.</param>
     public HostsFilter(Predicate<HostsEntry> customFilter)
     {
-        commentFilter = new PredicateItemFilter<HostsEntry>(
+        _commentFilter = new PredicateItemFilter<HostsEntry>(
             hostEntry => !hostEntry.HasCommentOnly);
 
-        disabledFilter = new PredicateItemFilter<HostsEntry>(
+        _disabledFilter = new PredicateItemFilter<HostsEntry>(
             hostEntry => hostEntry.Enabled || hostEntry.HasCommentOnly);
 
-        this.customFilter = new PredicateItemFilter<HostsEntry>(customFilter);
+        _customFilter = new PredicateItemFilter<HostsEntry>(customFilter);
 
-        AddFilter(this.customFilter);
+        AddFilter(_customFilter);
     }
 
     /// <summary>
@@ -54,20 +54,20 @@ internal class HostsFilter : CompositeItemFilter<HostsEntry>
     /// </summary>
     public bool Disabled
     {
-        get => disabled;
+        get => _disabled;
         set
         {
-            if (disabled != value)
+            if (_disabled != value)
             {
-                disabled = value;
+                _disabled = value;
 
-                if (disabled)
+                if (_disabled)
                 {
-                    AddFilter(disabledFilter);
+                    AddFilter(_disabledFilter);
                 }
                 else
                 {
-                    RemoveFilter(disabledFilter);
+                    RemoveFilter(_disabledFilter);
                 }
             }
         }
@@ -78,20 +78,20 @@ internal class HostsFilter : CompositeItemFilter<HostsEntry>
     /// </summary>
     public bool Comments
     {
-        get => comments;
+        get => _comments;
         set
         {
-            if (comments != value)
+            if (_comments != value)
             {
-                comments = value;
+                _comments = value;
 
-                if (comments)
+                if (_comments)
                 {
-                    AddFilter(commentFilter);
+                    AddFilter(_commentFilter);
                 }
                 else
                 {
-                    RemoveFilter(commentFilter);
+                    RemoveFilter(_commentFilter);
                 }
             }
         }

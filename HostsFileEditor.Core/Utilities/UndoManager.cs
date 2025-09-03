@@ -4,45 +4,45 @@ public class UndoManager
 {
     private const int MaximumHistorySize = 1000;
 
-    private static readonly Lazy<UndoManager> instance = new(() => new UndoManager());
+    private static readonly Lazy<UndoManager> _instance = new(() => new UndoManager());
 
-    private readonly LinkedList<LinkedList<Action>> undoActions = new();
+    private readonly LinkedList<LinkedList<Action>> _undoActions = new();
 
-    private LinkedListNode<LinkedList<Action>> undoActionsPosition;
+    private LinkedListNode<LinkedList<Action>> _undoActionsPosition;
 
-    private readonly LinkedList<LinkedList<Action>> redoActions = new();
+    private readonly LinkedList<LinkedList<Action>> _redoActions = new();
 
-    private LinkedListNode<LinkedList<Action>> redoActionsPosition;
+    private LinkedListNode<LinkedList<Action>> _redoActionsPosition;
 
-    private bool undoInProgress;
+    private bool _undoInProgress;
 
-    private bool redoInProgress;
+    private bool _redoInProgress;
 
-    private bool batchingActions;
+    private bool _batchingActions;
 
-    private bool suspendAddActions;
+    private bool _suspendAddActions;
 
     private UndoManager()
     {
-        undoActionsPosition = undoActions.AddLast(new LinkedList<Action>());
-        redoActionsPosition = redoActions.AddLast(new LinkedList<Action>());
+        _undoActionsPosition = _undoActions.AddLast(new LinkedList<Action>());
+        _redoActionsPosition = _redoActions.AddLast(new LinkedList<Action>());
     }
 
-    public static UndoManager Instance => instance.Value;
+    public static UndoManager Instance => _instance.Value;
 
     public void BatchActions(Action action)
     {
-        var reentered = batchingActions;
+        var reentered = _batchingActions;
 
         if (!reentered)
         {
-            batchingActions = true;
+            _batchingActions = true;
 
-            undoActions.AddAfter(undoActionsPosition, new LinkedList<Action>());
-            undoActionsPosition = undoActionsPosition.Next!;
+            _undoActions.AddAfter(_undoActionsPosition, new LinkedList<Action>());
+            _undoActionsPosition = _undoActionsPosition.Next!;
 
-            redoActions.AddAfter(redoActionsPosition, new LinkedList<Action>());
-            redoActionsPosition = redoActionsPosition.Next!;
+            _redoActions.AddAfter(_redoActionsPosition, new LinkedList<Action>());
+            _redoActionsPosition = _redoActionsPosition.Next!;
         }
 
         try
@@ -53,22 +53,22 @@ public class UndoManager
         {
             if (!reentered)
             {
-                batchingActions = false;
+                _batchingActions = false;
 
-                if (undoActionsPosition.Value.Count == 0)
+                if (_undoActionsPosition.Value.Count == 0)
                 {
-                    LinkedListNode<LinkedList<Action>> previous = undoActionsPosition.Previous!;
+                    var previous = _undoActionsPosition.Previous!;
 
-                    undoActions.Remove(undoActionsPosition);
-                    undoActionsPosition = previous;
+                    _undoActions.Remove(_undoActionsPosition);
+                    _undoActionsPosition = previous;
                 }
 
-                if (redoActionsPosition.Value.Count == 0)
+                if (_redoActionsPosition.Value.Count == 0)
                 {
-                    LinkedListNode<LinkedList<Action>> previous = redoActionsPosition.Previous!;
+                    var previous = _redoActionsPosition.Previous!;
 
-                    redoActions.Remove(redoActionsPosition);
-                    redoActionsPosition = previous;
+                    _redoActions.Remove(_redoActionsPosition);
+                    _redoActionsPosition = previous;
                 }
 
                 EnforceCapacity();
@@ -78,37 +78,37 @@ public class UndoManager
 
     public void AddActions(Action undoAction, Action redoAction)
     {
-        if (!suspendAddActions)
+        if (!_suspendAddActions)
         {
-            if (!undoInProgress)
+            if (!_undoInProgress)
             {
-                if (batchingActions)
+                if (_batchingActions)
                 {
-                    undoActionsPosition.Value.AddFirst(undoAction);
+                    _undoActionsPosition.Value.AddFirst(undoAction);
                 }
                 else
                 {
-                    undoActions.AddAfter(
-                        undoActionsPosition,
+                    _undoActions.AddAfter(
+                        _undoActionsPosition,
                         new LinkedList<Action>([undoAction]));
 
-                    undoActionsPosition = undoActionsPosition.Next!;
+                    _undoActionsPosition = _undoActionsPosition.Next!;
                 }
             }
 
-            if (!redoInProgress)
+            if (!_redoInProgress)
             {
-                if (batchingActions)
+                if (_batchingActions)
                 {
-                    redoActionsPosition.Value.AddLast(redoAction);
+                    _redoActionsPosition.Value.AddLast(redoAction);
                 }
                 else
                 {
-                    redoActions.AddAfter(
-                        redoActionsPosition,
+                    _redoActions.AddAfter(
+                        _redoActionsPosition,
                         new LinkedList<Action>([redoAction]));
 
-                    redoActionsPosition = redoActionsPosition.Next!;
+                    _redoActionsPosition = _redoActionsPosition.Next!;
                 }
             }
 
@@ -118,56 +118,56 @@ public class UndoManager
 
     public void Undo()
     {
-        if (undoActionsPosition != undoActions.First)
+        if (_undoActionsPosition != _undoActions.First)
         {
-            LinkedList<Action> actions = undoActionsPosition.Value;
+            var actions = _undoActionsPosition.Value;
 
-            undoActionsPosition = undoActionsPosition.Previous!;
-            redoActionsPosition = redoActionsPosition.Previous!;
+            _undoActionsPosition = _undoActionsPosition.Previous!;
+            _redoActionsPosition = _redoActionsPosition.Previous!;
 
-            suspendAddActions = true;
+            _suspendAddActions = true;
 
-            foreach (Action action in actions)
+            foreach (var action in actions)
             {
                 action();
             }
 
-            suspendAddActions = false;
+            _suspendAddActions = false;
         }
     }
 
     public void Redo()
     {
-        if (redoActionsPosition != redoActions.Last)
+        if (_redoActionsPosition != _redoActions.Last)
         {
-            undoActionsPosition = undoActionsPosition.Next!;
-            redoActionsPosition = redoActionsPosition.Next!;
+            _undoActionsPosition = _undoActionsPosition.Next!;
+            _redoActionsPosition = _redoActionsPosition.Next!;
 
-            LinkedList<Action> actions = redoActionsPosition.Value;
+            var actions = _redoActionsPosition.Value;
 
-            suspendAddActions = true;
+            _suspendAddActions = true;
 
-            foreach (Action action in actions)
+            foreach (var action in actions)
             {
                 action();
             }
 
-            suspendAddActions = false;
+            _suspendAddActions = false;
         }
     }
 
     public void ClearHistory()
     {
-        undoActions.Clear();
-        undoActionsPosition = undoActions.AddLast(new LinkedList<Action>());
+        _undoActions.Clear();
+        _undoActionsPosition = _undoActions.AddLast(new LinkedList<Action>());
 
-        redoActions.Clear();
-        redoActionsPosition = redoActions.AddLast(new LinkedList<Action>());
+        _redoActions.Clear();
+        _redoActionsPosition = _redoActions.AddLast(new LinkedList<Action>());
     }
 
     public void SuspendUndo(Action action)
     {
-        undoInProgress = true;
+        _undoInProgress = true;
 
         try
         {
@@ -175,13 +175,13 @@ public class UndoManager
         }
         finally
         {
-            undoInProgress = false;
+            _undoInProgress = false;
         }
     }
 
     public void SuspendRedo(Action action)
     {
-        redoInProgress = true;
+        _redoInProgress = true;
 
         try
         {
@@ -189,14 +189,14 @@ public class UndoManager
         }
         finally
         {
-            redoInProgress = false;
+            _redoInProgress = false;
         }
     }
 
     public void SuspendUndoRedo(Action action)
     {
-        undoInProgress = true;
-        redoInProgress = true;
+        _undoInProgress = true;
+        _redoInProgress = true;
 
         try
         {
@@ -204,27 +204,27 @@ public class UndoManager
         }
         finally
         {
-            undoInProgress = false;
-            redoInProgress = false;
+            _undoInProgress = false;
+            _redoInProgress = false;
         }
     }
 
     private void EnforceCapacity()
     {
-        if (redoActions.Count > MaximumHistorySize)
+        if (_redoActions.Count > MaximumHistorySize)
         {
-            LinkedListNode<LinkedList<Action>> first = redoActions.First!;
-            redoActions.RemoveFirst();
-            redoActions.RemoveFirst();
-            redoActions.AddFirst(first);
+            var first = _redoActions.First!;
+            _redoActions.RemoveFirst();
+            _redoActions.RemoveFirst();
+            _redoActions.AddFirst(first);
         }
 
-        if (undoActions.Count > MaximumHistorySize)
+        if (_undoActions.Count > MaximumHistorySize)
         {
-            LinkedListNode<LinkedList<Action>> first = undoActions.First!;
-            undoActions.RemoveFirst();
-            undoActions.RemoveFirst();
-            undoActions.AddFirst(first);
+            var first = _undoActions.First!;
+            _undoActions.RemoveFirst();
+            _undoActions.RemoveFirst();
+            _undoActions.AddFirst(first);
         }
     }
 }

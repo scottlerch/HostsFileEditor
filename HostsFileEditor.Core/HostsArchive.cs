@@ -4,7 +4,7 @@ namespace HostsFileEditor;
 
 public class HostsArchive
 {
-    private string filePath = string.Empty;
+    private string _filePath = string.Empty;
 
     public HostsArchive()
     {
@@ -20,11 +20,11 @@ public class HostsArchive
 
     public string FilePath
     {
-        get => filePath;
+        get => _filePath;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            filePath = value;
+            _filePath = value;
         }
     }
 

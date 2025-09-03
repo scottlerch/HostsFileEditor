@@ -73,7 +73,7 @@ public class HostsEntryList : BindingList<HostsEntry>
                         insertIndex = 0;
                     }
 
-                    foreach (HostsEntry entry in copy)
+                    foreach (var entry in copy)
                     {
                         Insert(insertIndex++, entry);
                     }
@@ -107,7 +107,7 @@ public class HostsEntryList : BindingList<HostsEntry>
                         insertIndex = 0;
                     }
 
-                    foreach (HostsEntry entry in copy)
+                    foreach (var entry in copy)
                     {
                         Insert(insertIndex++, entry);
                     }
@@ -141,7 +141,7 @@ public class HostsEntryList : BindingList<HostsEntry>
 
         UndoManager.Instance.BatchActions(() =>
         {
-            foreach (HostsEntry? newEntry in entries.ToList())
+            foreach (var newEntry in entries.ToList())
             {
                 Insert(insertIndex++, newEntry);
             }
@@ -156,7 +156,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         {
             UndoManager.Instance.BatchActions(() =>
             {
-                foreach (HostsEntry entry in entries.ToList())
+                foreach (var entry in entries.ToList())
                 {
                     Remove(entry);
                 }
@@ -174,7 +174,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         {
             UndoManager.Instance.BatchActions(() =>
             {
-                foreach (HostsEntry entry in entries)
+                foreach (var entry in entries)
                 {
                     entry.Enabled = isEnabled;
                 }
@@ -195,7 +195,7 @@ public class HostsEntryList : BindingList<HostsEntry>
 
     protected override void RemoveItem(int index)
     {
-        HostsEntry item = this[index];
+        var item = this[index];
 
         UndoManager.Instance.AddActions(
             undoAction: () => Insert(index, item),

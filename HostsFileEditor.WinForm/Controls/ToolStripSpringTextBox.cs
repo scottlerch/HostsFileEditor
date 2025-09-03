@@ -87,7 +87,7 @@ internal class ToolStripSpringTextBox : ToolStripTextBox
 
         // Retrieve the preferred size from the base class, but change the
         // width to the calculated width. 
-        Size size = base.GetPreferredSize(constrainingSize);
+        var size = base.GetPreferredSize(constrainingSize);
         size.Width = width;
 
         return size;

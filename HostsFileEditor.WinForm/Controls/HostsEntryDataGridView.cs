@@ -11,12 +11,12 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// <summary>
     /// Current sort state used to determine when to remove sort.
     /// </summary>
-    private int currentSortState = 0;
+    private int _currentSortState = 0;
 
     /// <summary>
     /// Last sorted column.
     /// </summary>
-    private DataGridViewColumn? lastSortedColumn = null;
+    private DataGridViewColumn? _lastSortedColumn = null;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HostsEntryDataGridView"/> class.
@@ -51,7 +51,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
 
         set
         {
-            foreach (DataGridViewRow row in Rows.Cast<DataGridViewRow>())
+            foreach (var row in Rows.Cast<DataGridViewRow>())
             {
                 if (row.DataBoundItem != null && row.Index < RowCount)
                 {
@@ -93,7 +93,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
     protected override void OnCellFormatting(DataGridViewCellFormattingEventArgs e)
     {
         var viewObject = Rows[e.RowIndex].DataBoundItem as ObjectView<HostsEntry>;
-        HostsEntry? entry = viewObject?.Object;
+        var entry = viewObject?.Object;
 
         if (entry != null)
         {
@@ -120,12 +120,12 @@ internal sealed class HostsEntryDataGridView : DataGridView
     {
         base.OnColumnHeaderMouseClick(e);
 
-        if (SortedColumn == lastSortedColumn)
+        if (SortedColumn == _lastSortedColumn)
         {
-            currentSortState++;
+            _currentSortState++;
 
             // After sorting twice (ascending then descending) clear the sort
-            if (currentSortState > 2)
+            if (_currentSortState > 2)
             {
                 BeginInvoke(
                     (MethodInvoker)delegate ()
@@ -134,14 +134,14 @@ internal sealed class HostsEntryDataGridView : DataGridView
                         ClearSort?.Invoke();
                     });
 
-                currentSortState = 0;
-                lastSortedColumn = null;
+                _currentSortState = 0;
+                _lastSortedColumn = null;
             }
         }
         else
         {
-            currentSortState = 1;
-            lastSortedColumn = Columns[e.ColumnIndex];
+            _currentSortState = 1;
+            _lastSortedColumn = Columns[e.ColumnIndex];
         }
     }
 }

@@ -12,7 +12,7 @@ public sealed class ProgramSingleInstance : IDisposable
     /// <summary>
     /// Message to tell first instance to show itself.
     /// </summary>
-    public static readonly int WM_SHOWFIRSTINSTANCE =
+    public static readonly int WmShowFirstInstance =
         NativeMethods.RegisterWindowMessage(
             "WM_SHOWFIRSTINSTANCE|{0}",
             ProgramInfo.AssemblyGuid);
@@ -20,7 +20,7 @@ public sealed class ProgramSingleInstance : IDisposable
     /// <summary>
     /// The program mutex.
     /// </summary>
-    private Mutex? mutex;
+    private Mutex? _mutex;
 
     /// <summary>
     /// Gets a value indicating whether this instance is only instance.
@@ -39,7 +39,7 @@ public sealed class ProgramSingleInstance : IDisposable
         // across ALL SESSIONS (multiple users & terminal services), then use the following line instead:
         // string mutexName = $"Global\\{ProgramInfo.AssemblyGuid}";
 
-        mutex = new Mutex(true, mutexName, out var onlyInstance);
+        _mutex = new Mutex(true, mutexName, out var onlyInstance);
         IsOnlyInstance = onlyInstance;
     }
 
@@ -66,8 +66,8 @@ public sealed class ProgramSingleInstance : IDisposable
         // first instance can still receive the message even
         // if it's minimized to tray bar
         NativeMethods.SendMessage(
-            (IntPtr)NativeMethods.HWND_BROADCAST,
-            WM_SHOWFIRSTINSTANCE,
+            (IntPtr)NativeMethods.HwndBroadcast,
+            WmShowFirstInstance,
             IntPtr.Zero,
             IntPtr.Zero);
     }
@@ -77,15 +77,15 @@ public sealed class ProgramSingleInstance : IDisposable
     /// </summary>
     public void Dispose()
     {
-        if (mutex != null)
+        if (_mutex != null)
         {
             if (IsOnlyInstance)
             {
-                mutex.ReleaseMutex();
+                _mutex.ReleaseMutex();
             }
 
-            mutex.Dispose();
-            mutex = null;
+            _mutex.Dispose();
+            _mutex = null;
         }
     }
 }

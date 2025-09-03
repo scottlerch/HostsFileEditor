@@ -23,7 +23,7 @@ public class HostsFile : INotifyPropertyChanged
     public static readonly string DefaultDisabledHostFilePath =
         DefaultHostFilePath + ".disabled";
 
-    private static readonly Lazy<HostsFile> instance =
+    private static readonly Lazy<HostsFile> _instance =
         new(() =>
         {
             UndoManager.Instance.ClearHistory();
@@ -31,11 +31,11 @@ public class HostsFile : INotifyPropertyChanged
             return IsEnabled ? new HostsFile(DefaultHostFilePath) : new HostsFile(DefaultDisabledHostFilePath);
         });
 
-    private readonly string filePath;
+    private readonly string _filePath;
 
     private HostsFile(string filePath)
     {
-        this.filePath = filePath;
+        _filePath = filePath;
 
         if (!File.Exists(filePath))
         {
@@ -56,7 +56,7 @@ public class HostsFile : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public static HostsFile Instance => instance.Value;
+    public static HostsFile Instance => _instance.Value;
 
     public static bool IsEnabled => File.Exists(DefaultHostFilePath);
 
@@ -88,7 +88,7 @@ public class HostsFile : INotifyPropertyChanged
 
     public void Import(string importFilePath)
     {
-        if (filePath != importFilePath)
+        if (_filePath != importFilePath)
         {
             Entries.BatchUpdate(() =>
             {
@@ -120,7 +120,7 @@ public class HostsFile : INotifyPropertyChanged
 
     public void Save()
     {
-        SaveAs(filePath);
+        SaveAs(_filePath);
         NativeMethods.FlushDns();
     }
 
@@ -153,7 +153,7 @@ public class HostsFile : INotifyPropertyChanged
         Entries.BatchUpdate(() =>
         {
             Entries.Clear();
-            Entries.AddLines(File.ReadAllLines(filePath), removeDefault);
+            Entries.AddLines(File.ReadAllLines(_filePath), removeDefault);
         });
 
         NativeMethods.FlushDns();

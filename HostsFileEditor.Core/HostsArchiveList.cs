@@ -1,4 +1,3 @@
-
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Utilities;
 using System.ComponentModel;
@@ -10,7 +9,7 @@ public class HostsArchiveList : BindingList<HostsArchive>
     public static readonly string ArchiveDirectory =
         Path.Combine(HostsFile.DefaultHostFileDirectory, "archive");
 
-    private static readonly Lazy<HostsArchiveList> instance =
+    private static readonly Lazy<HostsArchiveList> _instance =
         new(() => new HostsArchiveList());
 
     private HostsArchiveList()
@@ -18,7 +17,7 @@ public class HostsArchiveList : BindingList<HostsArchive>
         Refresh();
     }
 
-    public static HostsArchiveList Instance => instance.Value;
+    public static HostsArchiveList Instance => _instance.Value;
 
     public void Delete(HostsArchive archive)
     {

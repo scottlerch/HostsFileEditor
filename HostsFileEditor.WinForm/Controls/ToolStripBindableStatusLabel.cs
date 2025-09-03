@@ -13,12 +13,12 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
     /// <summary>
     /// Binding context.
     /// </summary>
-    private BindingContext? bindingContext;
+    private BindingContext? _bindingContext;
 
     /// <summary>
     /// Data bindings.
     /// </summary>
-    private ControlBindingsCollection? dataBindings;
+    private ControlBindingsCollection? _dataBindings;
 
     /// <summary>
     /// Gets or sets the collection of currency managers for the <see cref="T:System.Windows.Forms.IBindableComponent"/>.
@@ -33,14 +33,14 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
     {
         get
         {
-            bindingContext ??= Owner?.BindingContext != null
+            _bindingContext ??= Owner?.BindingContext != null
                     ? Owner.BindingContext
                     : Parent?.BindingContext != null ? Parent.BindingContext : new BindingContext();
 
-            return bindingContext;
+            return _bindingContext;
         }
 
-        set => bindingContext = value;
+        set => _bindingContext = value;
     }
 
     /// <summary>
@@ -56,9 +56,9 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
     {
         get
         {
-            dataBindings ??= new ControlBindingsCollection(this);
+            _dataBindings ??= new ControlBindingsCollection(this);
 
-            return dataBindings;
+            return _dataBindings;
         }
     }
 
@@ -71,13 +71,13 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
         {
             Events.Dispose();
 
-            if (dataBindings != null)
+            if (_dataBindings != null)
             {
-                dataBindings.Clear();
-                dataBindings = null;
+                _dataBindings.Clear();
+                _dataBindings = null;
             }
 
-            bindingContext = null;
+            _bindingContext = null;
         }
     }
 }

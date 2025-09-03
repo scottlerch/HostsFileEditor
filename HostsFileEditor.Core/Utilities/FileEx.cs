@@ -6,35 +6,35 @@ public static class FileEx
 
     private class AttributeDisabler : IDisposable
     {
-        private readonly bool areAttributesDisabled;
-        private readonly FileAttributes originalAttributes;
-        private readonly FileAttributes disableAttributes;
-        private readonly string filePath;
+        private readonly bool _areAttributesDisabled;
+        private readonly FileAttributes _originalAttributes;
+        private readonly FileAttributes _disableAttributes;
+        private readonly string _filePath;
 
         public AttributeDisabler(string filePath, FileAttributes disableAttributes)
         {
             ArgumentNullException.ThrowIfNull(filePath);
 
-            this.filePath = filePath;
-            this.disableAttributes = disableAttributes;
+            _filePath = filePath;
+            _disableAttributes = disableAttributes;
 
             if (File.Exists(filePath))
             {
-                originalAttributes = File.GetAttributes(filePath);
-                areAttributesDisabled = originalAttributes.HasFlag(disableAttributes);
+                _originalAttributes = File.GetAttributes(filePath);
+                _areAttributesDisabled = _originalAttributes.HasFlag(disableAttributes);
 
-                if (areAttributesDisabled)
+                if (_areAttributesDisabled)
                 {
-                    File.SetAttributes(filePath, ~this.disableAttributes & originalAttributes);
+                    File.SetAttributes(filePath, ~_disableAttributes & _originalAttributes);
                 }
             }
         }
 
         public void Dispose()
         {
-            if (areAttributesDisabled && File.Exists(filePath))
+            if (_areAttributesDisabled && File.Exists(_filePath))
             {
-                File.SetAttributes(filePath, originalAttributes);
+                File.SetAttributes(_filePath, _originalAttributes);
             }
         }
     }

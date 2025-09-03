@@ -43,7 +43,7 @@ public class FileOpener
 
     private static string? GetClassesRootKeyDefaultValue(string keyPath)
     {
-        using RegistryKey? key = Registry.ClassesRoot.OpenSubKey(keyPath);
+        using var key = Registry.ClassesRoot.OpenSubKey(keyPath);
         return key?.GetValue(null)?.ToString();
     }
 }

@@ -14,34 +14,34 @@ internal partial class MainForm : Form
     /// <summary>
     /// The filter.
     /// </summary>
-    private HostsFilter? filter;
+    private HostsFilter? _filter;
 
     /// <summary>
     /// The host entries view.
     /// </summary>
-    private BindingListView<HostsEntry>? hostEntriesView;
+    private BindingListView<HostsEntry>? _hostEntriesView;
 
     /// <summary>
     /// The hosts archive view.
     /// </summary>
-    private BindingListView<HostsArchive>? hostsArchiveView;
+    private BindingListView<HostsArchive>? _hostsArchiveView;
 
     /// <summary>
     /// The clipboard host entries.
     /// </summary>
-    private IEnumerable<HostsEntry>? clipboardEntries;
+    private IEnumerable<HostsEntry>? _clipboardEntries;
 
     /// <summary>
     /// Determines if user is currently adding a new row.  Used for ugly
     /// hacks setup in load event.
     /// </summary>
-    private bool addingNew;
+    private bool _addingNew;
 
     /// <summary>
     /// Ignore adding new in progress. Used for ugly hacks setup in load 
     /// event.
     /// </summary>
-    private bool ignoreAddingNew;
+    private bool _ignoreAddingNew;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainForm"/> class.
@@ -62,7 +62,7 @@ internal partial class MainForm : Form
     /// <inheritdoc />
     protected override void WndProc(ref Message message)
     {
-        if (message.Msg == ProgramSingleInstance.WM_SHOWFIRSTINSTANCE)
+        if (message.Msg == ProgramSingleInstance.WmShowFirstInstance)
         {
             if (WindowState == FormWindowState.Minimized)
             {
@@ -90,7 +90,7 @@ internal partial class MainForm : Form
         inputDialog.Text = Text;
         inputDialog.Prompt = Resources.InputArchivePrompt;
 
-        DialogResult result = inputDialog.ShowDialog(this);
+        var result = inputDialog.ShowDialog(this);
 
         if (result == DialogResult.OK)
         {
@@ -113,7 +113,7 @@ internal partial class MainForm : Form
         // to editing control
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
         {
-            Keys keys = menuCopy.ShortcutKeys;
+            var keys = menuCopy.ShortcutKeys;
             menuCopy.ShortcutKeys = Keys.None;
             menuContextCopy.ShortcutKeys = Keys.None;
             SendKeys.SendWait("^(C)");
@@ -124,7 +124,7 @@ internal partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
-            clipboardEntries = [.. dataGridViewHostsEntries.SelectedHostEntries.Select(entry => new HostsEntry(entry))];
+            _clipboardEntries = [.. dataGridViewHostsEntries.SelectedHostEntries.Select(entry => new HostsEntry(entry))];
         }
         else
         {
@@ -159,7 +159,7 @@ internal partial class MainForm : Form
         // to editing control
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
         {
-            Keys keys = menuCut.ShortcutKeys;
+            var keys = menuCut.ShortcutKeys;
             menuCut.ShortcutKeys = Keys.None;
             menuContextCut.ShortcutKeys = Keys.None;
             SendKeys.SendWait("^(X)");
@@ -172,9 +172,9 @@ internal partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
-            clipboardEntries = [.. dataGridViewHostsEntries.SelectedHostEntries];
+            _clipboardEntries = [.. dataGridViewHostsEntries.SelectedHostEntries];
 
-            HostsFile.Instance.Entries.Remove(clipboardEntries);
+            HostsFile.Instance.Entries.Remove(_clipboardEntries);
         }
         else
         {
@@ -238,14 +238,14 @@ internal partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
-            foreach (HostsEntry entry in dataGridViewHostsEntries.SelectedHostEntries)
+            foreach (var entry in dataGridViewHostsEntries.SelectedHostEntries)
             {
                 HostsFile.Instance.Entries.InsertAfter(entry, new HostsEntry(entry));
             }
         }
         else if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            HostsEntry? currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.InsertAfter(
@@ -308,15 +308,15 @@ internal partial class MainForm : Form
     {
         bool checkState = (sender as dynamic).Checked;
 
-        if (filter != null)
+        if (_filter != null)
         {
-            filter.Comments = !checkState;
+            _filter.Comments = !checkState;
         }
 
         menuFilterComments.Checked = !checkState;
         buttonFilterComment.Checked = !checkState;
 
-        hostEntriesView?.Refresh();
+        _hostEntriesView?.Refresh();
     }
 
     /// <summary>
@@ -332,15 +332,15 @@ internal partial class MainForm : Form
     {
         bool checkState = (sender as dynamic).Checked;
 
-        if (filter != null)
+        if (_filter != null)
         {
-            filter.Disabled = !checkState;
+            _filter.Disabled = !checkState;
         }
 
         menuFilterDisabled.Checked = !checkState;
         buttonFilterDisabled.Checked = !checkState;
 
-        hostEntriesView?.Refresh();
+        _hostEntriesView?.Refresh();
     }
 
     /// <summary>
@@ -352,7 +352,7 @@ internal partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
-    private void OnFilterTextChanged(object sender, EventArgs e) => hostEntriesView?.Refresh();
+    private void OnFilterTextChanged(object sender, EventArgs e) => _hostEntriesView?.Refresh();
 
     /// <summary>
     /// Occurs when form loads.
@@ -367,36 +367,36 @@ internal partial class MainForm : Form
     {
         LoadSettings();
 
-        hostsArchiveView = new BindingListView<HostsArchive>(components)
+        _hostsArchiveView = new BindingListView<HostsArchive>(components)
         {
             DataSource = HostsArchiveList.Instance
         };
 
-        bindingSourceArchive.DataSource = hostsArchiveView;
-        hostsArchiveView.Sort = Reflect.GetPropertyName(() => new HostsArchive().FileName);
+        bindingSourceArchive.DataSource = _hostsArchiveView;
+        _hostsArchiveView.Sort = Reflect.GetPropertyName(() => new HostsArchive().FileName);
 
         bindingSourceHostFile.DataSource = HostsFile.Instance;
 
-        hostEntriesView = new BindingListView<HostsEntry>(components)
+        _hostEntriesView = new BindingListView<HostsEntry>(components)
         {
             DataSource = HostsFile.Instance.Entries
         };
 
-        hostEntriesView.AddingNew += (s, args) => args.NewObject = new HostsEntry(string.Empty);
+        _hostEntriesView.AddingNew += (s, args) => args.NewObject = new HostsEntry(string.Empty);
 
         // Tell grid how to clear sort of underlying data source
         // since it doesn't know how by itself
         dataGridViewHostsEntries.ClearSort = () =>
         {
-            hostEntriesView.RemoveSort();
+            _hostEntriesView.RemoveSort();
         };
 
-        bindingSourceView.DataSource = hostEntriesView;
+        bindingSourceView.DataSource = _hostEntriesView;
 
-        filter = new HostsFilter(
+        _filter = new HostsFilter(
                 hostEntry => hostEntry.ToString().Contains(textFilter.Text));
 
-        hostEntriesView.Filter = filter;
+        _hostEntriesView.Filter = _filter;
 
         HostsFile.Instance.Entries.ResetBindings();
 
@@ -408,32 +408,32 @@ internal partial class MainForm : Form
         // HACK: Make sure a newly added row gets committed after
         // the first cell is validated so HostsEntry validation and data
         // binding behaves correctly
-        hostEntriesView.AddingNew +=
+        _hostEntriesView.AddingNew +=
             (sender1, e1) =>
             {
-                addingNew = true;
+                _addingNew = true;
             };
 
         dataGridViewHostsEntries.CellValidated +=
             (sender1, e1) =>
             {
-                if (!ignoreAddingNew && addingNew)
+                if (!_ignoreAddingNew && _addingNew)
                 {
-                    hostEntriesView.EndNew(hostEntriesView.Count - 1);
-                    addingNew = false;
+                    _hostEntriesView.EndNew(_hostEntriesView.Count - 1);
+                    _addingNew = false;
                 }
             };
 
         dataGridViewHostsEntries.CurrentCellChanged +=
             (sender1, e1) =>
             {
-                ignoreAddingNew = true;
+                _ignoreAddingNew = true;
             };
 
         dataGridViewHostsEntries.CurrentCellDirtyStateChanged +=
             (sender1, e1) =>
             {
-                ignoreAddingNew = false;
+                _ignoreAddingNew = false;
             };
     }
 
@@ -484,7 +484,7 @@ internal partial class MainForm : Form
 
         // HACK: calling focus causes cell validate to occur
         // which causes row to be committed
-        ignoreAddingNew = true;
+        _ignoreAddingNew = true;
 
         textFilter.Focus();
 
@@ -494,7 +494,7 @@ internal partial class MainForm : Form
             cell.Selected = false;
         }
 
-        ignoreAddingNew = false;
+        _ignoreAddingNew = false;
     }
 
     /// <summary>
@@ -508,7 +508,7 @@ internal partial class MainForm : Form
     /// </param>
     private void OnImportClick(object sender, EventArgs e)
     {
-        DialogResult result = openFileDialog.ShowDialog(this);
+        var result = openFileDialog.ShowDialog(this);
 
         if (result == DialogResult.OK)
         {
@@ -557,7 +557,7 @@ internal partial class MainForm : Form
         dataGridViewHostsEntries.CommitEdit(
             DataGridViewDataErrorContexts.Commit);
 
-        DialogResult result = saveFileDialog.ShowDialog(this);
+        var result = saveFileDialog.ShowDialog(this);
 
         if (result == DialogResult.OK)
         {
@@ -596,7 +596,7 @@ internal partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            HostsEntry? firstSelected = dataGridViewHostsEntries.FirstSelectedHostEntry;
+            var firstSelected = dataGridViewHostsEntries.FirstSelectedHostEntry;
 
             if (firstSelected != null)
             {
@@ -609,7 +609,7 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            HostsEntry currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             var selectedEntries = new List<HostsEntry>([currentEntry]);
 
             HostsFile.Instance.Entries.MoveAfter([currentEntry], currentEntry);
@@ -632,7 +632,7 @@ internal partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            HostsEntry? lastSelected = dataGridViewHostsEntries.LastSelectedHostEntry;
+            var lastSelected = dataGridViewHostsEntries.LastSelectedHostEntry;
 
             if (lastSelected != null)
             {
@@ -645,7 +645,7 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            HostsEntry currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             var selectedEntries = new List<HostsEntry>([currentEntry]);
 
             HostsFile.Instance.Entries.MoveBefore([currentEntry], currentEntry);
@@ -680,7 +680,7 @@ internal partial class MainForm : Form
         // to editing control
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
         {
-            Keys keys = menuPaste.ShortcutKeys;
+            var keys = menuPaste.ShortcutKeys;
             menuPaste.ShortcutKeys = Keys.None;
             menuContextPaste.ShortcutKeys = Keys.None;
             SendKeys.SendWait("^(V)");
@@ -692,15 +692,15 @@ internal partial class MainForm : Form
         dataGridViewHostsEntries.CancelEdit();
 
         if (dataGridViewHostsEntries.SelectedRows.Count > 0 &&
-            clipboardEntries != null)
+            _clipboardEntries != null)
         {
-            HostsEntry? currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
-                HostsFile.Instance.Entries.Insert(currentEntry, clipboardEntries);
+                HostsFile.Instance.Entries.Insert(currentEntry, _clipboardEntries);
             }
 
-            clipboardEntries = null;
+            _clipboardEntries = null;
         }
         else
         {
@@ -748,7 +748,7 @@ internal partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            HostsEntry? currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.InsertBefore(currentEntry);
@@ -771,7 +771,7 @@ internal partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
         {
-            HostsEntry? currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.InsertAfter(currentEntry);
@@ -791,7 +791,7 @@ internal partial class MainForm : Form
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
     private void OnRefreshClick(object sender, EventArgs e)
     {
-        DialogResult result = MessageBox.Show(
+        var result = MessageBox.Show(
             this,
             Resources.LoseChangesQuestion,
             Resources.LoseChangesDialogCaption,
@@ -844,7 +844,7 @@ internal partial class MainForm : Form
     /// containing the event data.</param>
     private void OnArchiveDeleteClick(object sender, EventArgs e)
     {
-        HostsArchive? archive = dataGridViewArchive.CurrentHostsArchive;
+        var archive = dataGridViewArchive.CurrentHostsArchive;
 
         if (archive != null)
         {
@@ -860,7 +860,7 @@ internal partial class MainForm : Form
     /// containing the event data.</param>
     private void OnArchiveLoadClick(object sender, EventArgs e)
     {
-        HostsArchive? archive = dataGridViewArchive.CurrentHostsArchive;
+        var archive = dataGridViewArchive.CurrentHostsArchive;
 
         if (archive != null)
         {
@@ -903,7 +903,7 @@ internal partial class MainForm : Form
     /// </summary>
     private void LoadSettings()
     {
-        Settings settings = Settings.Default;
+        var settings = Settings.Default;
 
         HostsEntry.AutoPingIPAddress = settings.AutoPingIPAddresses;
         HostsFile.RemoveDefaultText = settings.RemoveDefaultText;
@@ -930,7 +930,7 @@ internal partial class MainForm : Form
     /// </summary>
     private void SaveSettings()
     {
-        Settings settings = Settings.Default;
+        var settings = Settings.Default;
 
         settings.AutoPingIPAddresses = HostsEntry.AutoPingIPAddress;
         settings.RemoveDefaultText = HostsFile.RemoveDefaultText;
@@ -978,7 +978,7 @@ internal partial class MainForm : Form
     /// </summary>
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-    private void OnRemoveSortClick(object sender, EventArgs e) => hostEntriesView?.RemoveSort();
+    private void OnRemoveSortClick(object sender, EventArgs e) => _hostEntriesView?.RemoveSort();
 
     /// <summary>
     /// Called when check clicked.
@@ -997,7 +997,7 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            HostsEntry currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.SetEnabled(
@@ -1024,7 +1024,7 @@ internal partial class MainForm : Form
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {
-            HostsEntry currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.SetEnabled(
