@@ -33,14 +33,18 @@ public static class SharedColumnWidth
     private static void OnColumnKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not FrameworkElement fe)
+        {
             return;
+        }
 
         // Unhook previous
         fe.Loaded -= OnElementLoaded;
         fe.Unloaded -= OnElementUnloaded;
         fe.SizeChanged -= OnElementSizeChanged;
         if (fe is TextBox oldTb)
+        {
             oldTb.TextChanged -= OnTextChanged;
+        }
 
         if (e.NewValue is string key && !string.IsNullOrWhiteSpace(key))
         {
@@ -48,7 +52,10 @@ public static class SharedColumnWidth
             fe.Unloaded += OnElementUnloaded;
             fe.SizeChanged += OnElementSizeChanged;
             if (fe is TextBox tb)
+            {
                 tb.TextChanged += OnTextChanged;
+            }
+
             RegisterElement(key, fe);
             ScheduleRecalc(key, fe);
         }
@@ -60,16 +67,23 @@ public static class SharedColumnWidth
         lock (list)
         {
             if (!list.Any(wr => wr.TryGetTarget(out var existing) && ReferenceEquals(existing, fe)))
+            {
                 list.Add(new WeakReference<FrameworkElement>(fe));
+            }
+
             if (list.Count > 64)
+            {
                 list.RemoveAll(wr => !wr.TryGetTarget(out _));
+            }
         }
     }
 
     private static void OnElementLoaded(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement fe && GetColumnKey(fe) is { } key)
+        {
             ScheduleRecalc(key, fe);
+        }
     }
 
     private static void OnElementUnloaded(object sender, RoutedEventArgs e)
@@ -86,16 +100,28 @@ public static class SharedColumnWidth
 
     private static void OnTextChanged(object sender, TextChangedEventArgs e)
     {
-        if (_suppressEvents > 0) return;
+        if (_suppressEvents > 0)
+        {
+            return;
+        }
+
         if (sender is FrameworkElement fe && GetColumnKey(fe) is { } key)
+        {
             ScheduleRecalc(key, fe);
+        }
     }
 
     private static void OnElementSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (_suppressEvents > 0) return;
+        if (_suppressEvents > 0)
+        {
+            return;
+        }
+
         if (e.NewSize.Width != e.PreviousSize.Width && sender is FrameworkElement fe && GetColumnKey(fe) is { } key)
+        {
             ScheduleRecalc(key, fe);
+        }
     }
 
     private static void ScheduleRecalc(string key, FrameworkElement context)
@@ -103,7 +129,9 @@ public static class SharedColumnWidth
         lock (_pendingLock)
         {
             if (!_pendingRecalc.Add(key))
+            {
                 return; // already queued
+            }
         }
         context.DispatcherQueue.TryEnqueue(() =>
         {
@@ -111,26 +139,35 @@ public static class SharedColumnWidth
             finally
             {
                 lock (_pendingLock)
+                {
                     _pendingRecalc.Remove(key);
+                }
             }
         });
     }
 
     private static void Recalculate(string key)
     {
-        if (!_elements.TryGetValue(key, out var list)) return;
+        if (!_elements.TryGetValue(key, out var list))
+        {
+            return;
+        }
 
         List<FrameworkElement> live;
         lock (list)
         {
-            live = list.Select(wr => { wr.TryGetTarget(out var fe); return fe; })
+            live = [.. list.Select(wr => { wr.TryGetTarget(out var fe); return fe; })
                        .Where(fe => fe != null)
-                       .Cast<FrameworkElement>()
-                       .ToList();
+                       .Cast<FrameworkElement>()];
             if (live.Count != list.Count)
+            {
                 list.RemoveAll(wr => !wr.TryGetTarget(out _));
+            }
         }
-        if (live.Count == 0) return;
+        if (live.Count == 0)
+        {
+            return;
+        }
 
         Interlocked.Increment(ref _suppressEvents);
         try
@@ -147,12 +184,17 @@ public static class SharedColumnWidth
                 fe.MinWidth = originalMin; // restore before applying shared value later
             }
             var max = widths.Max();
-            if (max <= 0) return;
+            if (max <= 0)
+            {
+                return;
+            }
 
             foreach (var fe in live)
             {
                 if (fe.MinWidth != max)
+                {
                     fe.MinWidth = max;
+                }
             }
         }
         finally

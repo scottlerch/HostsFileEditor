@@ -165,11 +165,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var appWindow = AppWindow.GetFromWindowId(windowId);
 
         // Extend content and use custom title bar element from XAML
-        this.ExtendsContentIntoTitleBar = true;
+        ExtendsContentIntoTitleBar = true;
         if (Content is FrameworkElement root && root.FindName("AppTitleBar") is Grid fe)
         {
             _titleBarHost = fe;
-            this.SetTitleBar(fe);
+            SetTitleBar(fe);
         }
         if (appWindow is not null)
         {
@@ -186,7 +186,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void UpdateTitleBarPadding(AppWindow appWindow)
     {
         if (_titleBarHost is null)
+        {
             return;
+        }
 
         // Insets provided by the system for areas occupied by caption buttons and drag region.
         var leftInset = appWindow.TitleBar.LeftInset;
@@ -215,14 +217,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _micaController.AddSystemBackdropTarget(this.As<ICompositionSupportsSystemBackdrop>());
         _micaController.SetSystemBackdropConfiguration(_backdropConfiguration);
 
-        this.Activated += (s, e) =>
+        Activated += (s, e) =>
         {
             if (_backdropConfiguration is not null)
             {
                 _backdropConfiguration.IsInputActive = e.WindowActivationState != WindowActivationState.Deactivated;
             }
         };
-        this.Closed += (s, e) =>
+        Closed += (s, e) =>
         {
             _micaController?.Dispose();
             _micaController = null;
@@ -554,7 +556,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnBackClick(object sender, RoutedEventArgs e)
     {
         if (!IsArchiveVisible)
+        {
             return;
+        }
 
         IsArchiveVisible = false;
         LocalSettings.SetBool("ArchiveVisible", false);
