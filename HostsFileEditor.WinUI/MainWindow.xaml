@@ -134,16 +134,40 @@
                 </AppBarButton>
                 <AppBarSeparator/>
                 <!-- Filters -->
-                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick"/>
-                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick"/>
+                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F5;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
                 <AppBarSeparator/>
                 <!-- Hosts toggles -->
-                <AppBarToggleButton Label="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick"/>
-                <AppBarToggleButton Label="Ping IPs" IsChecked="{x:Bind IsPingIPs, Mode=OneWay}" Click="OnPingIPsClick"/>
-                <AppBarToggleButton Label="Remove Default Text" IsChecked="{x:Bind IsRemoveDefaultText, Mode=OneWay}" Click="OnRemoveDefaultTextClick"/>
+                <AppBarToggleButton Label="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F8;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarToggleButton Label="Ping IPs" IsChecked="{x:Bind IsPingIPs, Mode=OneWay}" Click="OnPingIPsClick">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE774;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarToggleButton Label="Remove Default Text" IsChecked="{x:Bind IsRemoveDefaultText, Mode=OneWay}" Click="OnRemoveDefaultTextClick">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE75C;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
                 <AppBarSeparator/>
-                <AppBarButton Label="Restore Default" Click="OnRestoreClick"/>
-                <AppBarButton Label="Refresh" Click="OnRefreshClick"/>
+                <AppBarButton Label="Restore Default" Click="OnRestoreClick">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE81C;"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="Refresh" Click="OnRefreshClick" Icon="Refresh"/>
                 <AppBarSeparator/>
                 <!-- Archive controls -->
                 <AppBarButton Label="Archive" Click="OnArchiveClick">
@@ -151,12 +175,24 @@
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
                     </AppBarButton.Icon>
                 </AppBarButton>
-                <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick"/>
-                <AppBarButton Label="Load Archive" Click="OnArchiveLoadClick"/>
-                <AppBarButton Label="Delete Archive" Click="OnArchiveDeleteClick"/>
+                <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarButton Label="Load Archive" Click="OnArchiveLoadClick">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE896;"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="Delete Archive" Click="OnArchiveDeleteClick" Icon="Delete"/>
                 <AppBarSeparator/>
                 <!-- Undo/Redo moved to context menu -->
-                <AppBarButton Label="Open Text Editor" Click="OnOpenInTextEditorClick"/>
+                <AppBarButton Label="Open Text Editor" Click="OnOpenInTextEditorClick">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70F;"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
             </CommandBar>
         </Grid>
 
