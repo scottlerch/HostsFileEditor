@@ -428,14 +428,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnFilterCommentsClick(object sender, RoutedEventArgs e)
     {
-        _filterComments = sender is AppBarToggleButton { IsChecked: true };
-        RefreshEntries(true);
+        if (sender is AppBarToggleButton t)
+        {
+            // Inverted meaning: Checked = show comments (no filter); Unchecked = filter out comment-only lines
+            _filterComments = t.IsChecked != true; // true only when button unchecked
+            RefreshEntries(true);
+        }
     }
 
     private void OnFilterDisabledClick(object sender, RoutedEventArgs e)
     {
-        _filterDisabled = sender is AppBarToggleButton { IsChecked: true };
-        RefreshEntries(true);
+        if (sender is AppBarToggleButton t)
+        {
+            // Inverted meaning: Checked = show disabled entries; Unchecked = hide disabled entries
+            _filterDisabled = t.IsChecked != true; // true only when button unchecked
+            RefreshEntries(true);
+        }
     }
 
     private void OnCheckClick(object sender, RoutedEventArgs e)

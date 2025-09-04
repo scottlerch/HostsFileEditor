@@ -102,12 +102,12 @@
 
             <!-- Command bar occupies remaining space -->
             <CommandBar Grid.Column="1" DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left">
-                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="30" >
+                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True" >
                     <AppBarToggleButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
                     </AppBarToggleButton.Icon>
                 </AppBarToggleButton>
-                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick" LabelPosition="Collapsed" MaxWidth="30" >
+                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True" >
                     <AppBarToggleButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
                     </AppBarToggleButton.Icon>
