@@ -355,24 +355,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var rows = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
         if (rows.Count > 0)
         {
-            HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: true);
+            // If all selected are enabled, then uncheck; otherwise check
+            var allEnabled = rows.All(r => r.Enabled);
+            HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: !allEnabled);
         }
         else if (EntriesList.SelectedItem is HostsEntry current)
         {
-            HostsFile.Instance.Entries.SetEnabled([current], isEnabled: true);
-        }
-    }
-
-    private void OnUncheckClick(object sender, RoutedEventArgs e)
-    {
-        var rows = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
-        if (rows.Count > 0)
-        {
-            HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: false);
-        }
-        else if (EntriesList.SelectedItem is HostsEntry current)
-        {
-            HostsFile.Instance.Entries.SetEnabled([current], isEnabled: false);
+            // Toggle single selection
+            HostsFile.Instance.Entries.SetEnabled([current], isEnabled: !current.Enabled);
         }
     }
 

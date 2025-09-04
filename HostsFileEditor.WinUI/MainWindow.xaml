@@ -125,15 +125,10 @@
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
-                <!-- Enable/Disable selected -->
+                <!-- Enable/Disable selected (toggle) -->
                 <AppBarButton Label="Check" Click="OnCheckClick">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarButton Label="Uncheck" Click="OnUncheckClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE738;"/>
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
