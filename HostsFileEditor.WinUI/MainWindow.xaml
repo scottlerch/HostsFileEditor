@@ -136,33 +136,90 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <!-- Filter textbox with left padding and small right gap -->
-            <Grid Grid.Column="0" Margin="18,0,8,0" VerticalAlignment="Center">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="4"/>
-                </Grid.RowDefinitions>
-                <TextBox x:Name="FilterTextBox"
-                         Grid.Row="0"
-                         Width="200"
-                         PlaceholderText="Filter hosts..."
-                         VerticalAlignment="Center"
-                         VerticalContentAlignment="Center"
-                         BorderThickness="1,1,1,0"
-                         TextChanged="OnFilterTextChanged"
-                         GotFocus="OnFilterBoxGotFocus"
-                         LostFocus="OnFilterBoxLostFocus" />
-                <Border x:Name="FilterUnderline"
-                        Grid.Row="1"
-                        Height="2"
-                        Background="White"
-                        HorizontalAlignment="Center"
-                        Width="{Binding ElementName=FilterTextBox, Path=ActualWidth}"
-                        Margin="0,-6,0,0"
-                        CornerRadius="0,0,2,2" />
+            <!-- Hamburger + Filter textbox container -->
+            <Grid Grid.Column="0" Margin="12,0,8,0" VerticalAlignment="Center" ColumnDefinitions="Auto,8,*">
+                <!-- Hamburger menu button -->
+                <Button x:Name="HamburgerButton"
+                        Grid.Column="0"
+                        Width="36"
+                        Height="32"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        BorderThickness="0">
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Import" Icon="OpenFile" Click="OnImportClick"/>
+                            <MenuFlyoutItem Text="Save As" Icon="SaveLocal" Click="OnSaveAsClick"/>
+                            <MenuFlyoutSeparator/>
+                            <MenuFlyoutItem Text="Archive" Click="OnArchiveClick">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <ToggleMenuFlyoutItem Text="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick">
+                                <ToggleMenuFlyoutItem.Icon>
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F8;"/>
+                                </ToggleMenuFlyoutItem.Icon>
+                            </ToggleMenuFlyoutItem>
+                            <ToggleMenuFlyoutItem Text="Ping IPs" IsChecked="{x:Bind IsPingIPs, Mode=OneWay}" Click="OnPingIPsClick">
+                                <ToggleMenuFlyoutItem.Icon>
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE774;"/>
+                                </ToggleMenuFlyoutItem.Icon>
+                            </ToggleMenuFlyoutItem>
+                            <ToggleMenuFlyoutItem Text="Remove Default Text" IsChecked="{x:Bind IsRemoveDefaultText, Mode=OneWay}" Click="OnRemoveDefaultTextClick">
+                                <ToggleMenuFlyoutItem.Icon>
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE75C;"/>
+                                </ToggleMenuFlyoutItem.Icon>
+                            </ToggleMenuFlyoutItem>
+                            <MenuFlyoutSeparator/>
+                            <MenuFlyoutItem Text="Restore Default" Click="OnRestoreClick">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE81C;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="Open Text Editor" Click="OnOpenInTextEditorClick">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70F;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE700;" FontSize="16"/>
+                    <ToolTipService.ToolTip>
+                        <ToolTip Content="Menu"/>
+                    </ToolTipService.ToolTip>
+                </Button>
+                <!-- Spacer -->
+                <Grid Grid.Column="1"/>
+                <!-- Filter -->
+                <Grid Grid.Column="2" VerticalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="4"/>
+                    </Grid.RowDefinitions>
+                    <TextBox x:Name="FilterTextBox"
+                             Grid.Row="0"
+                             Width="200"
+                             PlaceholderText="Filter hosts..."
+                             VerticalAlignment="Center"
+                             VerticalContentAlignment="Center"
+                             BorderThickness="1,1,1,0"
+                             TextChanged="OnFilterTextChanged"
+                             GotFocus="OnFilterBoxGotFocus"
+                             LostFocus="OnFilterBoxLostFocus" />
+                    <Border x:Name="FilterUnderline"
+                            Grid.Row="1"
+                            Height="2"
+                            Background="White"
+                            HorizontalAlignment="Center"
+                            Width="{Binding ElementName=FilterTextBox, Path=ActualWidth}"
+                            Margin="0,-6,0,0"
+                            CornerRadius="0,0,2,2" />
+                </Grid>
             </Grid>
 
-            <!-- Command bar occupies remaining space -->
+            <!-- Command bar occupies remaining space (trimmed) -->
             <CommandBar Grid.Column="1" DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left">
                 <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True" >
                     <AppBarToggleButton.Icon>
@@ -175,9 +232,8 @@
                     </AppBarToggleButton.Icon>
                 </AppBarToggleButton>
                 <AppBarSeparator/>
-                <AppBarButton Icon="OpenFile" Label="Import" Click="OnImportClick"/>
                 <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
-                <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
+                <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
                 <AppBarSeparator/>
                 <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
                 <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
@@ -206,48 +262,12 @@
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
-                <!-- Hosts toggles -->
-                <AppBarToggleButton Label="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F8;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <AppBarToggleButton Label="Ping IPs" IsChecked="{x:Bind IsPingIPs, Mode=OneWay}" Click="OnPingIPsClick">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE774;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <AppBarToggleButton Label="Remove Default Text" IsChecked="{x:Bind IsRemoveDefaultText, Mode=OneWay}" Click="OnRemoveDefaultTextClick">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE75C;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <AppBarSeparator/>
-                <AppBarButton Label="Restore Default" Click="OnRestoreClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE81C;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarButton Label="Refresh" Click="OnRefreshClick" Icon="Refresh"/>
-                <AppBarSeparator/>
                 <!-- Archive controls -->
-                <AppBarButton Label="Archive" Click="OnArchiveClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
                 <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick">
                     <AppBarToggleButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>
                     </AppBarToggleButton.Icon>
                 </AppBarToggleButton>
-                <AppBarSeparator/>
-                <!-- Undo/Redo moved to context menu -->
-                <AppBarButton Label="Open Text Editor" Click="OnOpenInTextEditorClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70F;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
             </CommandBar>
         </Grid>
 
