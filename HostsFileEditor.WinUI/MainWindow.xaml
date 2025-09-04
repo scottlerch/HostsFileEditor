@@ -19,12 +19,13 @@
                 <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8D7;" />
                 <TextBlock Text="Hosts File Editor" FontSize="20" FontWeight="SemiBold"/>
             </StackPanel>
-            <!-- Quick filter like Settings search -->
-            <TextBox x:Name="FilterTextBox" Grid.Column="1" PlaceholderText="Filter hosts..." Margin="12,0" VerticalAlignment="Center" TextChanged="OnFilterTextChanged"/>
         </Grid>
 
         <!-- Command bar -->
-        <CommandBar Grid.Row="1" DefaultLabelPosition="Right" Background="Transparent">
+        <CommandBar Grid.Row="1" DefaultLabelPosition="Right" Background="Transparent" Padding="0">
+            <AppBarElementContainer VerticalAlignment="Center">
+                <TextBox x:Name="FilterTextBox" Width="400" PlaceholderText="Filter hosts..." Margin="0" VerticalAlignment="Center" VerticalContentAlignment="Center" TextChanged="OnFilterTextChanged" />
+            </AppBarElementContainer>
             <AppBarButton Icon="OpenFile" Label="Import" Click="OnImportClick"/>
             <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
             <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
@@ -137,9 +138,9 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{Binding Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
-                                    <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0"/>
-                                    <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" HorizontalAlignment="Stretch"/>
+                                    <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" PlaceholderText="IP address..." />
+                                    <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" PlaceholderText="Host names..." />
+                                    <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>
                             </Border>
                         </DataTemplate>
