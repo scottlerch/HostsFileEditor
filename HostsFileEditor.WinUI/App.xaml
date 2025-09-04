@@ -10,6 +10,118 @@
                 <XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- App-wide styles (inlined) -->
+            <!-- Style to keep back button background always transparent, even when disabled -->
+            <Style x:Key="PlainBackButtonStyle" TargetType="Button">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="MinHeight" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid Background="Transparent" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Rounded selection style for EntriesList items -->
+            <Style x:Key="RoundedListViewItemStyle" TargetType="ListViewItem">
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListViewItem">
+                            <Grid x:Name="Root" Background="Transparent">
+                                <Border x:Name="SelectionBackground" CornerRadius="6" Opacity="0" Background="{ThemeResource ListViewItemBackgroundSelected}"/>
+                                <Border x:Name="PointerOverBackground" CornerRadius="6" Opacity="0" Background="{ThemeResource ListViewItemBackgroundPointerOver}"/>
+                                <ContentPresenter x:Name="ContentPresenter"
+                                                  Margin="0"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="PointerOver">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed"/>
+                                        <VisualState x:Name="Disabled">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="SelectionStates">
+                                        <VisualState x:Name="Unselected">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Selected">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="PointerOverSelected">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="SelectedUnfocused">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <!-- Implicit TextBox style: rounded corners, flat border -->
             <Style TargetType="TextBox">
                 <Setter Property="CornerRadius" Value="4"/>
