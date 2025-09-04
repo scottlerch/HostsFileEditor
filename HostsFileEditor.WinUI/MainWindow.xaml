@@ -132,15 +132,16 @@
 
         <!-- Filter + CommandBar in one row -->
         <Grid x:Name="TopCommandRow" Grid.Row="1" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
+            <!-- Reworked layout: left = hamburger + main command bar; right = filter toggles + filter textbox -->
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <!-- Hamburger + Filter textbox container -->
-            <Grid Grid.Column="0" Margin="12,0,8,0" VerticalAlignment="Center" ColumnDefinitions="Auto,8,*">
+
+            <!-- Left side: Hamburger + main commands -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="12,0,8,0">
                 <!-- Hamburger menu button -->
                 <Button x:Name="HamburgerButton"
-                        Grid.Column="0"
                         Width="36"
                         Height="32"
                         HorizontalAlignment="Left"
@@ -190,10 +191,63 @@
                         <ToolTip Content="Menu"/>
                     </ToolTipService.ToolTip>
                 </Button>
-                <!-- Spacer -->
-                <Grid Grid.Column="1"/>
-                <!-- Filter -->
-                <Grid Grid.Column="2" VerticalAlignment="Center">
+
+                <!-- Main command bar (without filter toggle buttons now) -->
+                <CommandBar DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left" >
+                    <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
+                    <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
+                    <AppBarSeparator/>
+                    <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
+                    <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
+                    <AppBarSeparator/>
+                    <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
+                        <AppBarButton.Icon>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarSeparator/>
+                    <!-- Move Up/Down -->
+                    <AppBarButton Label="Up" Click="OnMoveUpClick">
+                        <AppBarButton.Icon>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarButton Label="Down" Click="OnMoveDownClick">
+                        <AppBarButton.Icon>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;"/>
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarSeparator/>
+                    <!-- Enable/Disable selected (toggle) -->
+                    <AppBarButton Label="Check" Click="OnCheckClick">
+                        <AppBarButton.Icon>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarSeparator/>
+                    <!-- Archive controls -->
+                    <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick">
+                        <AppBarToggleButton.Icon>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>
+                        </AppBarToggleButton.Icon>
+                    </AppBarToggleButton>
+                </CommandBar>
+            </StackPanel>
+
+            <!-- Right side: filter toggle buttons + filter textbox aligned right -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="0,0,18,0" HorizontalAlignment="Right">
+                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <!-- Filter textbox with underline -->
+                <Grid VerticalAlignment="Center" >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="4"/>
@@ -217,58 +271,7 @@
                             Margin="0,-6,0,0"
                             CornerRadius="0,0,2,2" />
                 </Grid>
-            </Grid>
-
-            <!-- Command bar occupies remaining space (trimmed) -->
-            <CommandBar Grid.Column="1" DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left">
-                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True" >
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True" >
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <AppBarSeparator/>
-                <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
-                <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
-                <AppBarSeparator/>
-                <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
-                <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
-                <AppBarSeparator/>
-                <!-- Move Up/Down -->
-                <AppBarButton Label="Up" Click="OnMoveUpClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarButton Label="Down" Click="OnMoveDownClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarSeparator/>
-                <!-- Enable/Disable selected (toggle) -->
-                <AppBarButton Label="Check" Click="OnCheckClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarSeparator/>
-                <!-- Archive controls -->
-                <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-            </CommandBar>
+            </StackPanel>
         </Grid>
 
         <!-- Content area -->
