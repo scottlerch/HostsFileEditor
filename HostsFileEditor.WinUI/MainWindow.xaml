@@ -169,42 +169,83 @@
                     </AppBarToggleButton.Icon>
                 </AppBarToggleButton>
             </CommandBar>
-            <StackPanel x:Name="FilterPanel" Grid.Column="2" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="0,0,21,0" HorizontalAlignment="Right">
-                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <Grid VerticalAlignment="Center">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="4"/>
-                    </Grid.RowDefinitions>
+            <!-- Compact filter panel adjusted to avoid clipping -->
+            <Grid x:Name="FilterPanel" Grid.Column="2" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,21,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="2"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" VerticalAlignment="Center">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     <TextBox x:Name="FilterTextBox"
-                             Grid.Row="0"
+                             Grid.Column="0"
                              Width="200"
                              PlaceholderText="Filter hosts..."
                              VerticalAlignment="Center"
                              VerticalContentAlignment="Center"
-                             BorderThickness="1,1,1,0"
+                             CornerRadius="4,0,0,4"
+                             BorderThickness="1,1,0,1"
                              TextChanged="OnFilterTextChanged"
                              GotFocus="OnFilterBoxGotFocus"
-                             LostFocus="OnFilterBoxLostFocus" />
-                    <Border x:Name="FilterUnderline"
-                            Grid.Row="1"
-                            Height="2"
-                            Background="White"
-                            HorizontalAlignment="Center"
-                            Width="{Binding ElementName=FilterTextBox, Path=ActualWidth}"
-                            Margin="0,-6,0,0"
-                            CornerRadius="0,0,2,2" />
+                             LostFocus="OnFilterBoxLostFocus"
+                             Padding="12,4,12,4"/>
+                    <Button x:Name="FilterOptionsButton"
+                            Grid.Column="1"
+                            Width="40"
+                            Height="32"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource FilterOptionsButtonStyle}"
+                            ToolTipService.ToolTip="Filter options">
+                        <Grid>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71C;" FontSize="16"/>
+                            <InfoBadge x:Name="ActiveFiltersBadge"
+                                       Value="{x:Bind ActiveFilterCount, Mode=OneWay}"
+                                       Visibility="{x:Bind ActiveFiltersBadgeVisibility, Mode=OneWay}"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Top"
+                                       Margin="0,-4,-4,0" />
+                        </Grid>
+                        <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <ToggleMenuFlyoutItem Text="Hide Comments"
+                                                      IsChecked="{x:Bind IsFilterCommentsHidden, Mode=OneWay}"
+                                                      Click="OnFilterCommentsClick">
+                                    <ToggleMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
+                                    </ToggleMenuFlyoutItem.Icon>
+                                </ToggleMenuFlyoutItem>
+                                <ToggleMenuFlyoutItem Text="Hide Disabled"
+                                                      IsChecked="{x:Bind IsFilterDisabledHidden, Mode=OneWay}"
+                                                      Click="OnFilterDisabledClick">
+                                    <ToggleMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
+                                    </ToggleMenuFlyoutItem.Icon>
+                                </ToggleMenuFlyoutItem>
+                                <MenuFlyoutSeparator/>
+                                <MenuFlyoutItem Text="Reset Filters" Click="OnResetFiltersClick">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
                 </Grid>
-            </StackPanel>
+                <!-- Focus underline spanning both columns -->
+                <Border x:Name="FilterUnderline"
+                        Grid.Row="1"
+                        Grid.ColumnSpan="2"
+                        Height="2"
+                        Background="White"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Bottom"
+                        Margin="4,0,4,0"
+                        CornerRadius="0,0,2,2" />
+            </Grid>
         </Grid>
         <Grid Grid.Row="2" Background="Transparent">
             <Grid x:Name="MainHost" Margin="8" RowDefinitions="Auto,*" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
