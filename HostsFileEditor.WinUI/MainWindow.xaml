@@ -47,41 +47,68 @@
                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
-                                        <VisualState x:Name="Normal"/>
+                                        <VisualState x:Name="Normal">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
                                         <VisualState x:Name="PointerOver">
                                             <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="Opacity">
-                                                    <DiscreteObjectKeyFrame Value="1"/>
-                                                </ObjectAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
                                             </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Pressed"/>
-                                        <VisualState x:Name="Disabled"/>
+                                        <VisualState x:Name="Disabled">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
                                     </VisualStateGroup>
                                     <VisualStateGroup x:Name="SelectionStates">
-                                        <VisualState x:Name="Unselected"/>
+                                        <VisualState x:Name="Unselected">
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
                                         <VisualState x:Name="Selected">
                                             <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="Opacity">
-                                                    <DiscreteObjectKeyFrame Value="1"/>
-                                                </ObjectAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
                                             </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="PointerOverSelected">
                                             <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="Opacity">
-                                                    <DiscreteObjectKeyFrame Value="1"/>
-                                                </ObjectAnimationUsingKeyFrames>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="Opacity">
-                                                    <DiscreteObjectKeyFrame Value="1"/>
-                                                </ObjectAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
                                             </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="SelectedUnfocused">
                                             <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="Opacity">
-                                                    <DiscreteObjectKeyFrame Value="1"/>
-                                                </ObjectAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
+                                                </DoubleAnimationUsingKeyFrames>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
+                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
+                                                </DoubleAnimationUsingKeyFrames>
                                             </Storyboard>
                                         </VisualState>
                                     </VisualStateGroup>
@@ -285,7 +312,6 @@
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           ScrollViewer.HorizontalScrollMode="Disabled"
                           Background="Transparent"
-                          ItemContainerStyle="{StaticResource RoundedListViewItemStyle}"
                           ItemsSource="{x:Bind Entries, Mode=OneWay}">
                     <ListView.ContextFlyout>
                         <MenuFlyout>
