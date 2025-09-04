@@ -4,6 +4,7 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Windows.Storage.Pickers;
@@ -318,7 +319,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         RefreshEntries();
     }
 
-    private void OnOpenInTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
+    private void OnOpenTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
+
+    // Added to match XAML wiring: forwards to existing handler
+    private void OnOpenInTextEditorClick(object sender, RoutedEventArgs e) => OnOpenTextEditorClick(sender, e);
 
     private void OnFilterTextChanged(object sender, TextChangedEventArgs e) => RefreshEntries(true);
 
@@ -472,4 +476,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnPropertyChanged(string propertyName)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+    // Underline focus visuals for filter text box
+    private void OnFilterBoxGotFocus(object sender, RoutedEventArgs e)
+    {
+        if (Content is FrameworkElement root && root.FindName("FilterUnderline") is Border underline)
+        {
+            underline.Background = Application.Current.Resources["AccentFillColorDefaultBrush"] as Brush ?? new SolidColorBrush(Colors.DodgerBlue);
+        }
+    }
+
+    private void OnFilterBoxLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (Content is FrameworkElement root && root.FindName("FilterUnderline") is Border underline)
+        {
+            underline.Background = new SolidColorBrush(Colors.White);
+        }
+    }
 }

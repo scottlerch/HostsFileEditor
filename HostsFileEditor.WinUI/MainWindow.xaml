@@ -28,14 +28,30 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <!-- Filter textbox with left padding and small right gap -->
-            <TextBox x:Name="FilterTextBox"
-                     Grid.Column="0"
-                     Width="200"
-                     PlaceholderText="Filter hosts..."
-                     Margin="12,0,8,0"
-                     VerticalAlignment="Center"
-                     VerticalContentAlignment="Center"
-                     TextChanged="OnFilterTextChanged" />
+            <Grid Grid.Column="0" Margin="12,0,8,0" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="4"/>
+                </Grid.RowDefinitions>
+                <TextBox x:Name="FilterTextBox"
+                         Grid.Row="0"
+                         Width="200"
+                         PlaceholderText="Filter hosts..."
+                         VerticalAlignment="Center"
+                         VerticalContentAlignment="Center"
+                         BorderThickness="1,1,1,0"
+                         TextChanged="OnFilterTextChanged"
+                         GotFocus="OnFilterBoxGotFocus"
+                         LostFocus="OnFilterBoxLostFocus" />
+                <Border x:Name="FilterUnderline"
+                        Grid.Row="1"
+                        Height="2"
+                        Background="White"
+                        HorizontalAlignment="Center"
+                        Width="{Binding ElementName=FilterTextBox, Path=ActualWidth}"
+                        Margin="0,-4,0,0"
+                        CornerRadius="0,0,2,2" />
+            </Grid>
 
             <!-- Command bar occupies remaining space -->
             <CommandBar Grid.Column="1" DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left">
@@ -147,8 +163,8 @@
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="Transparent">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>
-                                        <ColumnDefinition Width="160" MinWidth="140" MaxWidth="220"/>
-                                        <ColumnDefinition Width="300" MinWidth="220" MaxWidth="520"/>
+                                        <ColumnDefinition Width="180" MinWidth="140" MaxWidth="220"/>
+                                        <ColumnDefinition Width="320" MinWidth="220" MaxWidth="520"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{Binding Enabled, Mode=TwoWay}"/>
