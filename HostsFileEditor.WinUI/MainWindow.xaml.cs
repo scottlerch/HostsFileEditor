@@ -37,6 +37,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public bool IsArchiveVisible { get; private set; }
 
+    // Back button enable state (active only when archive view is shown)
+    public bool IsBackEnabled => IsArchiveVisible;
+
+    // View visibility helpers
+    public Visibility MainViewVisibility => IsArchiveVisible ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility ArchiveViewVisibility => IsArchiveVisible ? Visibility.Visible : Visibility.Collapsed;
+
     private MicaController? _micaController;
     private SystemBackdropConfiguration? _backdropConfiguration;
     private Grid? _titleBarHost;
@@ -68,6 +75,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         HostsEntry.AutoPingIPAddress = IsPingIPs;
         HostsFile.RemoveDefaultText = IsRemoveDefaultText;
         ArchivesColumnWidth = IsArchiveVisible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+
+        // Notify initial computed bindings
+        OnPropertyChanged(nameof(IsBackEnabled));
+        OnPropertyChanged(nameof(MainViewVisibility));
+        OnPropertyChanged(nameof(ArchiveViewVisibility));
     }
 
     private void TrySetAppWindowTitleBar()
@@ -413,6 +425,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         LocalSettings.SetBool("ArchiveVisible", isChecked);
         OnPropertyChanged(nameof(IsArchiveVisible));
         OnPropertyChanged(nameof(ArchivesColumnWidth));
+        OnPropertyChanged(nameof(IsBackEnabled));
+        OnPropertyChanged(nameof(MainViewVisibility));
+        OnPropertyChanged(nameof(ArchiveViewVisibility));
+    }
+
+    private void OnBackClick(object sender, RoutedEventArgs e)
+    {
+        if (!IsArchiveVisible)
+            return;
+
+        IsArchiveVisible = false;
+        LocalSettings.SetBool("ArchiveVisible", false);
+        OnPropertyChanged(nameof(IsArchiveVisible));
+        OnPropertyChanged(nameof(IsBackEnabled));
+        OnPropertyChanged(nameof(MainViewVisibility));
+        OnPropertyChanged(nameof(ArchiveViewVisibility));
     }
 
     private void OnPingIPsClick(object sender, RoutedEventArgs e)
