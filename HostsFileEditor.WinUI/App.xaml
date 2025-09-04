@@ -12,7 +12,7 @@
 
             <!-- Implicit TextBox style: rounded corners, flat border -->
             <Style TargetType="TextBox">
-                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="CornerRadius" Value="4"/>
                 <Setter Property="BorderThickness" Value="1"/>
             </Style>
 

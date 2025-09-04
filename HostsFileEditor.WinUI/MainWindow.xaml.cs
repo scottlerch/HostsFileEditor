@@ -162,7 +162,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         var picker = new FileOpenPicker();
         InitializeWithWindow.Initialize(picker, GetHwnd());
-        picker.FileTypeFilter.Add("*.*");
+        picker.FileTypeFilter.Clear();
+        picker.FileTypeFilter.Add("*");
         var file = await picker.PickSingleFileAsync();
         if (file != null)
         {
