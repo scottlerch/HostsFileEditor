@@ -75,7 +75,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <!-- Filter textbox with left padding and small right gap -->
-            <Grid Grid.Column="0" Margin="12,0,8,0" VerticalAlignment="Center">
+            <Grid Grid.Column="0" Margin="18,0,8,0" VerticalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="4"/>
@@ -179,12 +179,6 @@
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>
                     </AppBarToggleButton.Icon>
                 </AppBarToggleButton>
-                <AppBarButton Label="Load Archive" Click="OnArchiveLoadClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE896;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarButton Label="Delete Archive" Click="OnArchiveDeleteClick" Icon="Delete"/>
                 <AppBarSeparator/>
                 <!-- Undo/Redo moved to context menu -->
                 <AppBarButton Label="Open Text Editor" Click="OnOpenInTextEditorClick">
@@ -234,8 +228,8 @@
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="Transparent">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>
-                                        <ColumnDefinition Width="180" MinWidth="140" MaxWidth="220"/>
-                                        <ColumnDefinition Width="320" MinWidth="220" MaxWidth="520"/>
+                                        <ColumnDefinition Width="320" MinWidth="140" MaxWidth="320"/>
+                                        <ColumnDefinition Width="380" MinWidth="220" MaxWidth="520"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{Binding Enabled, Mode=TwoWay}"/>
@@ -250,17 +244,28 @@
             </Grid>
 
             <!-- Archive full view -->
-            <Grid x:Name="ArchiveHost" Visibility="{x:Bind ArchiveViewVisibility, Mode=OneWay}">
-                <ListView x:Name="ArchiveList" Margin="8" Background="Transparent" ItemsSource="{x:Bind Archives, Mode=OneWay}">
-                    <ListView.Header>
-                        <TextBlock Text="Archives" FontWeight="SemiBold" Margin="8,8,8,8"/>
-                    </ListView.Header>
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding FileName}"/>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+            <Grid x:Name="ArchiveHost" Visibility="{x:Bind ArchiveViewVisibility, Mode=OneWay}" Margin="8" RowDefinitions="Auto,*">
+                <!-- Header row with label + command bar -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                    <TextBlock Text="Archives" FontWeight="Normal" VerticalAlignment="Center" Margin="8,0,8,0"/>
+                    <CommandBar Grid.Column="1" Background="Transparent" DefaultLabelPosition="Right" Padding="0" HorizontalAlignment="Left">
+                        <AppBarButton Icon="OpenFile" Label="Load" Click="OnArchiveLoadClick"/>
+                        <AppBarButton Icon="Delete" Label="Delete" Click="OnArchiveDeleteClick"/>
+                    </CommandBar>
+                </Grid>
+                <Grid Grid.Row="1">
+                    <ListView x:Name="ArchiveList" Margin="0,8,0,0" Background="Transparent" ItemsSource="{x:Bind Archives, Mode=OneWay}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding FileName}"/>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <!-- Placeholder shown when there are no archives -->
+                    <TextBlock Text="No archives yet." FontStyle="Italic" Foreground="Gray"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsHitTestVisible="False" Visibility="{x:Bind ArchivesEmptyVisibility, Mode=OneWay}"/>
+                </Grid>
             </Grid>
         </Grid>
     </Grid>

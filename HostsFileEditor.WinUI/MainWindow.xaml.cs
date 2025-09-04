@@ -43,6 +43,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // Back button enable state (active only when archive view is shown)
     public bool IsBackEnabled => IsArchiveVisible;
 
+    public Visibility ArchivesEmptyVisibility => Archives.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
     // View visibility helpers
     public Visibility MainViewVisibility => IsArchiveVisible ? Visibility.Collapsed : Visibility.Visible;
     public Visibility ArchiveViewVisibility => IsArchiveVisible ? Visibility.Visible : Visibility.Collapsed;
@@ -83,6 +85,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(IsBackEnabled));
         OnPropertyChanged(nameof(MainViewVisibility));
         OnPropertyChanged(nameof(ArchiveViewVisibility));
+        OnPropertyChanged(nameof(ArchivesEmptyVisibility));
     }
 
     // Handlers invoked by KeyboardAccelerators in XAML (names must match generated wiring)
@@ -609,6 +612,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             Archives.Add(a);
         }
+        OnPropertyChanged(nameof(ArchivesEmptyVisibility));
     }
 
     private void OnPropertyChanged(string propertyName)
