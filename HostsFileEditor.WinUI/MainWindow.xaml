@@ -30,6 +30,14 @@
                 </Setter>
             </Style>
         </Grid.Resources>
+
+        <!-- Keyboard accelerators for Copy/Cut/Paste -->
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="OnCopyAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="X" Modifiers="Control" Invoked="OnCutAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="OnPasteAcceleratorInvoked"/>
+        </Grid.KeyboardAccelerators>
+
         <!-- Custom title bar area to resemble Windows 11 Settings -->
         <Grid x:Name="AppTitleBar" Height="48" Padding="12,0" VerticalAlignment="Top" Background="Transparent">
             <Grid.ColumnDefinitions>
@@ -115,10 +123,7 @@
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
-                <!-- Clipboard and duplicate -->
-                <AppBarButton Icon="Copy" Label="Copy" Click="OnCopyClick"/>
-                <AppBarButton Icon="Cut" Label="Cut" Click="OnCutClick"/>
-                <AppBarButton Icon="Paste" Label="Paste" Click="OnPasteClick"/>
+                <!-- Clipboard and duplicate moved to context menu --> 
                 <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
@@ -176,6 +181,15 @@
                           ScrollViewer.HorizontalScrollMode="Disabled"
                           Background="Transparent"
                           ItemsSource="{x:Bind Entries, Mode=OneWay}">
+                    <!-- Context menu for entries (Copy/Cut/Paste) -->
+                    <ListView.ContextFlyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="Copy" Click="OnCopyClick" Icon="Copy" />
+                            <MenuFlyoutItem Text="Cut" Click="OnCutClick" Icon="Cut" />
+                            <MenuFlyoutItem Text="Paste" Click="OnPasteClick" Icon="Paste" />
+                        </MenuFlyout>
+                    </ListView.ContextFlyout>
+
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="Padding" Value="0"/>

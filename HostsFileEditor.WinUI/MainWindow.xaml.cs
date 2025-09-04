@@ -4,6 +4,7 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -15,6 +16,8 @@ namespace HostsFileEditor;
 
 public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
+    // Note: do not define a member named 'Bindings' — generated partial class provides that field.
+
     internal ObservableCollection<HostsEntry> Entries { get; } = [];
 
     internal ObservableCollection<HostsArchive> Archives { get; } = [];
@@ -80,6 +83,75 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(IsBackEnabled));
         OnPropertyChanged(nameof(MainViewVisibility));
         OnPropertyChanged(nameof(ArchiveViewVisibility));
+    }
+
+    // Handlers invoked by KeyboardAccelerators in XAML (names must match generated wiring)
+    private void OnCopyAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        // Allow textboxes to handle their own copy
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
+        OnCopyClick(this, new RoutedEventArgs());
+        args.Handled = true;
+    }
+
+    private void OnCutAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
+        OnCutClick(this, new RoutedEventArgs());
+        args.Handled = true;
+    }
+
+    private void OnPasteAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
+        OnPasteClick(this, new RoutedEventArgs());
+        args.Handled = true;
+    }
+
+    private void OnCopyClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
+        // Forward to existing handler
+        OnCopyClick(this, new RoutedEventArgs());
+        args.Handled = true;
+    }
+
+    private void OnCutClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
+        OnCutClick(this, new RoutedEventArgs());
+        args.Handled = true;
+    }
+
+    private void OnPasteClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
+        OnPasteClick(this, new RoutedEventArgs());
+        args.Handled = true;
     }
 
     private void TrySetAppWindowTitleBar()
