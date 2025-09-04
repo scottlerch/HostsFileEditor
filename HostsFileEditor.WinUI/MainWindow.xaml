@@ -9,8 +9,6 @@
     Title="Hosts File Editor">
     <Grid RowDefinitions="Auto,Auto,*" Background="Transparent" MinWidth="300" MinHeight="480">
         <!-- Use application-wide styles defined in App.xaml -->
-
-        <!-- Keyboard accelerators for Copy/Cut/Paste and Undo/Redo -->
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="OnCopyAcceleratorInvoked"/>
             <KeyboardAccelerator Key="X" Modifiers="Control" Invoked="OnCutAcceleratorInvoked"/>
@@ -18,15 +16,12 @@
             <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndoAcceleratorInvoked"/>
             <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedoAcceleratorInvoked"/>
         </Grid.KeyboardAccelerators>
-
-        <!-- Custom title bar area to resemble Windows 11 Settings -->
         <Grid x:Name="AppTitleBar" Height="48" Padding="12,0" VerticalAlignment="Top" Background="Transparent">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <!-- Back button (disabled by default) made smaller -->
                 <Button x:Name="BackButton"
                         Width="20"
                         Height="20"
@@ -36,7 +31,6 @@
                         Click="OnBackClick">
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72B;" FontSize="10"/>
                 </Button>
-                <!-- App icon image -->
                 <Image Source="Assets/Square150x150Logo.png"
                        Width="20"
                        Height="20"
@@ -46,16 +40,44 @@
                 <TextBlock Text="Hosts File Editor" FontSize="14" FontWeight="Normal" VerticalAlignment="Center"/>
             </StackPanel>
         </Grid>
-
-        <!-- Command/Filter row with constrained CommandBar for overflow -->
         <Grid x:Name="TopCommandRow" Grid.Row="1" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}" ColumnSpacing="4" Padding="8,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>  <!-- Hamburger -->
-                <ColumnDefinition Width="*"/>     <!-- CommandBar (stretches) -->
-                <ColumnDefinition Width="Auto"/>  <!-- Filters -->
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-
-            <!-- Hamburger button -->
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup>
+                    <VisualState x:Name="WideState">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="600"/>
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="FilterPanel.(Grid.Row)" Value="0"/>
+                            <Setter Target="FilterPanel.(Grid.Column)" Value="2"/>
+                            <Setter Target="FilterPanel.(Grid.ColumnSpan)" Value="1"/>
+                            <Setter Target="FilterPanel.HorizontalAlignment" Value="Right"/>
+                            <Setter Target="FilterTextBox.Width" Value="200"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="NarrowState">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0"/>
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="FilterPanel.(Grid.Row)" Value="1"/>
+                            <Setter Target="FilterPanel.(Grid.Column)" Value="0"/>
+                            <Setter Target="FilterPanel.(Grid.ColumnSpan)" Value="3"/>
+                            <Setter Target="FilterPanel.HorizontalAlignment" Value="Stretch"/>
+                            <Setter Target="FilterTextBox.Width" Value="Auto"/>
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
             <Button x:Name="HamburgerButton"
                     Grid.Column="0"
                     Width="40"
@@ -107,20 +129,17 @@
                     <ToolTip Content="Menu"/>
                 </ToolTipService.ToolTip>
             </Button>
-
-            <!-- Constrained CommandBar (enables dynamic overflow) -->
             <CommandBar Grid.Column="1"
                         HorizontalAlignment="Left"
                         Background="Transparent"
                         DefaultLabelPosition="Right"
                         Padding="0"
-                        IsDynamicOverflowEnabled="True">
+                        IsDynamicOverflowEnabled="True" >
                 <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
                 <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
                 <AppBarSeparator/>
                 <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
                 <AppBarButton Icon="Remove" Label="Remove" Click="OnDeleteClick"/>
-
                 <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
@@ -150,9 +169,7 @@
                     </AppBarToggleButton.Icon>
                 </AppBarToggleButton>
             </CommandBar>
-
-            <!-- Right side: filter toggle buttons + filter textbox -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="0,0,21,0" HorizontalAlignment="Right">
+            <StackPanel x:Name="FilterPanel" Grid.Column="2" Grid.Row="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="0,0,21,0" HorizontalAlignment="Right">
                 <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True">
                     <AppBarToggleButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
@@ -189,10 +206,7 @@
                 </Grid>
             </StackPanel>
         </Grid>
-
-        <!-- Content area -->
         <Grid Grid.Row="2" Background="Transparent">
-            <!-- Main entries view -->
             <Grid x:Name="MainHost" Margin="8" RowDefinitions="Auto,*" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
                 <ListView x:Name="EntriesList"
                           Grid.Row="1"
@@ -219,32 +233,26 @@
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="Transparent">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>
-                                        <ColumnDefinition Width="320" MinWidth="140" MaxWidth="320"/>
-                                        <ColumnDefinition Width="380" MinWidth="220" MaxWidth="520"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{Binding Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
-                                    <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
+                                    <TextBox Grid.Column="1" local:SharedColumnWidth.ColumnKey="IpAddress" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                    <TextBox Grid.Column="2" local:SharedColumnWidth.ColumnKey="HostNames" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
                                     <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-
-                <!-- Message when there are no entries at all -->
                 <TextBlock Grid.Row="1" Text="No hosts entries yet." FontStyle="Italic" Foreground="Gray"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            IsHitTestVisible="False" Visibility="{x:Bind EntriesEmptyVisibility, Mode=OneWay}"/>
-
-                <!-- Message when entries exist but all are filtered out -->
                 <TextBlock Grid.Row="1" Text="No entries match the current filters." FontStyle="Italic" Foreground="Gray"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            IsHitTestVisible="False" Visibility="{x:Bind EntriesFilteredVisibility, Mode=OneWay}"/>
             </Grid>
-
-            <!-- Archive full view -->
             <Grid x:Name="ArchiveHost" Visibility="{x:Bind ArchiveViewVisibility, Mode=OneWay}" Margin="8" RowDefinitions="Auto,*">
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
                     <TextBlock Text="Archives" FontWeight="Normal" VerticalAlignment="Center" Margin="16,0,8,0"/>
