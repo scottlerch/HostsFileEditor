@@ -102,6 +102,17 @@
 
             <!-- Command bar occupies remaining space -->
             <CommandBar Grid.Column="1" DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left">
+                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="30" >
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick" LabelPosition="Collapsed" MaxWidth="30" >
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarSeparator/>
                 <AppBarButton Icon="OpenFile" Label="Import" Click="OnImportClick"/>
                 <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
                 <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
@@ -132,18 +143,6 @@
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
                     </AppBarButton.Icon>
                 </AppBarButton>
-                <AppBarSeparator/>
-                <!-- Filters -->
-                <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
-                <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick">
-                    <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7BA;"/>
-                    </AppBarToggleButton.Icon>
-                </AppBarToggleButton>
                 <AppBarSeparator/>
                 <!-- Hosts toggles -->
                 <AppBarToggleButton Label="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick">
