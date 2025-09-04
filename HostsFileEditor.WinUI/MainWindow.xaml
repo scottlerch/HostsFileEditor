@@ -7,7 +7,7 @@
     xmlns:local="using:HostsFileEditor"
     mc:Ignorable="d"
     Title="Hosts File Editor">
-    <Grid RowDefinitions="Auto,Auto,*" Background="Transparent" MinWidth="720" MinHeight="480">
+    <Grid RowDefinitions="Auto,Auto,*" Background="Transparent" MinWidth="300" MinHeight="480">
         <!-- Use application-wide styles defined in App.xaml -->
 
         <!-- Keyboard accelerators for Copy/Cut/Paste and Undo/Redo -->
@@ -119,7 +119,7 @@
                 <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
                 <AppBarSeparator/>
                 <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
-                <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
+                <AppBarButton Icon="Remove" Label="Remove" Click="OnDeleteClick"/>
 
                 <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
                     <AppBarButton.Icon>
@@ -138,7 +138,7 @@
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
-                <AppBarButton Label="Check" Click="OnCheckClick">
+                <AppBarButton Label="Toggle" Click="OnCheckClick">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
                     </AppBarButton.Icon>
@@ -152,7 +152,7 @@
             </CommandBar>
 
             <!-- Right side: filter toggle buttons + filter textbox -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="0,0,4,0" HorizontalAlignment="Right">
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="0,0,21,0" HorizontalAlignment="Right">
                 <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True">
                     <AppBarToggleButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
