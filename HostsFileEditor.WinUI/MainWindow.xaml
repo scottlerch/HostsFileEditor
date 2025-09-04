@@ -31,11 +31,13 @@
             </Style>
         </Grid.Resources>
 
-        <!-- Keyboard accelerators for Copy/Cut/Paste -->
+        <!-- Keyboard accelerators for Copy/Cut/Paste and Undo/Redo -->
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="OnCopyAcceleratorInvoked"/>
             <KeyboardAccelerator Key="X" Modifiers="Control" Invoked="OnCutAcceleratorInvoked"/>
             <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="OnPasteAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndoAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedoAcceleratorInvoked"/>
         </Grid.KeyboardAccelerators>
 
         <!-- Custom title bar area to resemble Windows 11 Settings -->
@@ -153,9 +155,7 @@
                 <AppBarButton Label="Load Archive" Click="OnArchiveLoadClick"/>
                 <AppBarButton Label="Delete Archive" Click="OnArchiveDeleteClick"/>
                 <AppBarSeparator/>
-                <!-- Undo/Redo and open editor -->
-                <AppBarButton Icon="Undo" Label="Undo" Click="OnUndoClick"/>
-                <AppBarButton Icon="Redo" Label="Redo" Click="OnRedoClick"/>
+                <!-- Undo/Redo moved to context menu -->
                 <AppBarButton Label="Open Text Editor" Click="OnOpenInTextEditorClick"/>
             </CommandBar>
         </Grid>
@@ -174,12 +174,15 @@
                           ScrollViewer.HorizontalScrollMode="Disabled"
                           Background="Transparent"
                           ItemsSource="{x:Bind Entries, Mode=OneWay}">
-                    <!-- Context menu for entries (Copy/Cut/Paste) -->
+                    <!-- Context menu for entries (Copy/Cut/Paste/Undo/Redo) -->
                     <ListView.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="Copy" Click="OnCopyClick" Icon="Copy" />
                             <MenuFlyoutItem Text="Cut" Click="OnCutClick" Icon="Cut" />
                             <MenuFlyoutItem Text="Paste" Click="OnPasteClick" Icon="Paste" />
+                            <MenuFlyoutSeparator />
+                            <MenuFlyoutItem Text="Undo" Click="OnUndoClick" Icon="Undo" />
+                            <MenuFlyoutItem Text="Redo" Click="OnRedoClick" Icon="Redo" />
                         </MenuFlyout>
                     </ListView.ContextFlyout>
 

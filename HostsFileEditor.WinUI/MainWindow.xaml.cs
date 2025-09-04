@@ -458,6 +458,29 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnRedoClick(object sender, RoutedEventArgs e) => Utilities.UndoManager.Instance.Redo();
 
+    private void OnUndoAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        // Avoid interfering when typing in a TextBox
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
+        Utilities.UndoManager.Instance.Undo();
+        args.Handled = true;
+    }
+
+    private void OnRedoAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+
+        Utilities.UndoManager.Instance.Redo();
+        args.Handled = true;
+    }
+
     private async void OnArchiveClick(object sender, RoutedEventArgs e)
     {
         var input = new TextBox { PlaceholderText = "Archive name" };
