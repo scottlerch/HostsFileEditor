@@ -232,6 +232,16 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
+
+                <!-- Message when there are no entries at all -->
+                <TextBlock Grid.Row="1" Text="No hosts entries yet." FontStyle="Italic" Foreground="Gray"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           IsHitTestVisible="False" Visibility="{x:Bind EntriesEmptyVisibility, Mode=OneWay}"/>
+
+                <!-- Message when entries exist but all are filtered out -->
+                <TextBlock Grid.Row="1" Text="No entries match the current filters." FontStyle="Italic" Foreground="Gray"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           IsHitTestVisible="False" Visibility="{x:Bind EntriesFilteredVisibility, Mode=OneWay}"/>
             </Grid>
 
             <!-- Archive full view -->

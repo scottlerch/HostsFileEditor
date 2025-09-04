@@ -49,6 +49,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     public Visibility MainViewVisibility => IsArchiveVisible ? Visibility.Collapsed : Visibility.Visible;
     public Visibility ArchiveViewVisibility => IsArchiveVisible ? Visibility.Visible : Visibility.Collapsed;
 
+    // New visibility properties for entries area
+    public Visibility EntriesEmptyVisibility => HostsFile.Instance.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility EntriesFilteredVisibility => HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
     private MicaController? _micaController;
     private SystemBackdropConfiguration? _backdropConfiguration;
     private Grid? _titleBarHost;
@@ -61,16 +65,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         TrySetAppWindowTitleBar();
         TryEnableMicaBackdrop();
 
-        // Bind to current HostsFile
-        foreach (var e in HostsFile.Instance.Entries)
-        {
-            Entries.Add(e);
-        }
+        // Bind to current HostsFile (use RefreshEntries which applies filters)
+        RefreshEntries();
 
-        foreach (var a in HostsArchiveList.Instance)
-        {
-            Archives.Add(a);
-        }
+        // Populate archives
+        RefreshArchives();
 
         // Initialize persisted settings without Windows.Storage.ApplicationData
         IsPingIPs = LocalSettings.GetBool("AutoPingIPs", defaultValue: false);
@@ -86,6 +85,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(MainViewVisibility));
         OnPropertyChanged(nameof(ArchiveViewVisibility));
         OnPropertyChanged(nameof(ArchivesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     // Handlers invoked by KeyboardAccelerators in XAML (names must match generated wiring)
@@ -269,6 +270,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             Entries.Add(last);
         }
+        OnPropertyChanged(nameof(EntriesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     private void OnAddToTop(object sender, RoutedEventArgs e)
@@ -280,10 +283,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
         else
         {
-            HostsFile.Instance.Entries.AddNew();
+            HostsFile.Instance.Entries.Add();
         }
 
         Entries.Insert(0, HostsFile.Instance.Entries.First());
+        OnPropertyChanged(nameof(EntriesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     private void OnInsertAboveClick(object sender, RoutedEventArgs e)
@@ -329,6 +334,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 Entries.Remove(i);
             }
         }
+        OnPropertyChanged(nameof(EntriesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
@@ -352,6 +359,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 Entries.Remove(r);
             }
         }
+        OnPropertyChanged(nameof(EntriesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     private void OnPasteClick(object sender, RoutedEventArgs e)
@@ -603,6 +612,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 EntriesList.SelectedItems.Add(e);
             }
         }
+
+        // Notify visibility changes for entry-related messages
+        OnPropertyChanged(nameof(EntriesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     private void RefreshArchives()
