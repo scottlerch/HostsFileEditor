@@ -233,9 +233,9 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{Binding Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" PlaceholderText="IP address..." />
-                                    <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" PlaceholderText="Host names..." />
-                                    <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="8,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
+                                    <TextBox Grid.Column="1" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                    <TextBox Grid.Column="2" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
+                                    <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>
                             </Border>
                         </DataTemplate>
