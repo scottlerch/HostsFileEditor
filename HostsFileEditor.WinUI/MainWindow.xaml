@@ -130,113 +130,112 @@
             </StackPanel>
         </Grid>
 
-        <!-- Filter + CommandBar in one row -->
-        <Grid x:Name="TopCommandRow" Grid.Row="1" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
-            <!-- Reworked layout: left = hamburger + main command bar; right = filter toggles + filter textbox -->
+        <!-- Command/Filter row with constrained CommandBar for overflow -->
+        <Grid x:Name="TopCommandRow" Grid.Row="1" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}" ColumnSpacing="4" Padding="8,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>  <!-- Hamburger -->
+                <ColumnDefinition Width="*"/>     <!-- CommandBar (stretches) -->
+                <ColumnDefinition Width="Auto"/>  <!-- Filters -->
             </Grid.ColumnDefinitions>
 
-            <!-- Left side: Hamburger + main commands -->
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="12,0,8,0">
-                <!-- Hamburger menu button -->
-                <Button x:Name="HamburgerButton"
-                        Width="40"
-                        Height="40"
+            <!-- Hamburger button -->
+            <Button x:Name="HamburgerButton"
+                    Grid.Column="0"
+                    Width="40"
+                    Height="40"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0">
+                <Button.Flyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="Import" Icon="OpenFile" Click="OnImportClick"/>
+                        <MenuFlyoutItem Text="Save As" Icon="SaveLocal" Click="OnSaveAsClick"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Text="Archive" Click="OnArchiveClick">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <ToggleMenuFlyoutItem Text="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick">
+                            <ToggleMenuFlyoutItem.Icon>
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F8;"/>
+                            </ToggleMenuFlyoutItem.Icon>
+                        </ToggleMenuFlyoutItem>
+                        <ToggleMenuFlyoutItem Text="Ping IPs" IsChecked="{x:Bind IsPingIPs, Mode=OneWay}" Click="OnPingIPsClick">
+                            <ToggleMenuFlyoutItem.Icon>
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE774;"/>
+                            </ToggleMenuFlyoutItem.Icon>
+                        </ToggleMenuFlyoutItem>
+                        <ToggleMenuFlyoutItem Text="Remove Default Text" IsChecked="{x:Bind IsRemoveDefaultText, Mode=OneWay}" Click="OnRemoveDefaultTextClick">
+                            <ToggleMenuFlyoutItem.Icon>
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE75C;"/>
+                            </ToggleMenuFlyoutItem.Icon>
+                        </ToggleMenuFlyoutItem>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Text="Restore Default" Click="OnRestoreClick">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE81C;"/>
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem Text="Open Text Editor" Click="OnOpenInTextEditorClick">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70F;"/>
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Button.Flyout>
+                <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE700;" FontSize="16"/>
+                <ToolTipService.ToolTip>
+                    <ToolTip Content="Menu"/>
+                </ToolTipService.ToolTip>
+            </Button>
+
+            <!-- Constrained CommandBar (enables dynamic overflow) -->
+            <CommandBar Grid.Column="1"
                         HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
                         Background="Transparent"
-                        BorderThickness="0">
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="Import" Icon="OpenFile" Click="OnImportClick"/>
-                            <MenuFlyoutItem Text="Save As" Icon="SaveLocal" Click="OnSaveAsClick"/>
-                            <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem Text="Archive" Click="OnArchiveClick">
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <ToggleMenuFlyoutItem Text="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick">
-                                <ToggleMenuFlyoutItem.Icon>
-                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F8;"/>
-                                </ToggleMenuFlyoutItem.Icon>
-                            </ToggleMenuFlyoutItem>
-                            <ToggleMenuFlyoutItem Text="Ping IPs" IsChecked="{x:Bind IsPingIPs, Mode=OneWay}" Click="OnPingIPsClick">
-                                <ToggleMenuFlyoutItem.Icon>
-                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE774;"/>
-                                </ToggleMenuFlyoutItem.Icon>
-                            </ToggleMenuFlyoutItem>
-                            <ToggleMenuFlyoutItem Text="Remove Default Text" IsChecked="{x:Bind IsRemoveDefaultText, Mode=OneWay}" Click="OnRemoveDefaultTextClick">
-                                <ToggleMenuFlyoutItem.Icon>
-                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE75C;"/>
-                                </ToggleMenuFlyoutItem.Icon>
-                            </ToggleMenuFlyoutItem>
-                            <MenuFlyoutSeparator/>
-                            <MenuFlyoutItem Text="Restore Default" Click="OnRestoreClick">
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE81C;"/>
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem Text="Open Text Editor" Click="OnOpenInTextEditorClick">
-                                <MenuFlyoutItem.Icon>
-                                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70F;"/>
-                                </MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                        </MenuFlyout>
-                    </Button.Flyout>
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE700;" FontSize="16"/>
-                    <ToolTipService.ToolTip>
-                        <ToolTip Content="Menu"/>
-                    </ToolTipService.ToolTip>
-                </Button>
+                        DefaultLabelPosition="Right"
+                        Padding="0"
+                        IsDynamicOverflowEnabled="True">
+                <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
+                <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
+                <AppBarSeparator/>
+                <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
+                <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
 
-                <!-- Main command bar (without filter toggle buttons now) -->
-                <CommandBar DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left" >
-                    <AppBarSeparator/>
-                    <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
-                    <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
-                    <AppBarSeparator/>
-                    <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
-                    <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
-                    <AppBarSeparator/>
-                    <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
-                        <AppBarButton.Icon>
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                    <AppBarSeparator/>
-                    <!-- Move Up/Down -->
-                    <AppBarButton Label="Up" Click="OnMoveUpClick">
-                        <AppBarButton.Icon>
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                    <AppBarButton Label="Down" Click="OnMoveDownClick">
-                        <AppBarButton.Icon>
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;"/>
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                    <AppBarSeparator/>
-                    <!-- Enable/Disable selected (toggle) -->
-                    <AppBarButton Label="Check" Click="OnCheckClick">
-                        <AppBarButton.Icon>
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
-                        </AppBarButton.Icon>
-                    </AppBarButton>
-                    <AppBarSeparator/>
-                    <!-- Archive controls -->
-                    <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick">
-                        <AppBarToggleButton.Icon>
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>
-                        </AppBarToggleButton.Icon>
-                    </AppBarToggleButton>
-                </CommandBar>
-            </StackPanel>
+                <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarSeparator/>
+                <AppBarButton Label="Up" Click="OnMoveUpClick">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton Label="Down" Click="OnMoveDownClick">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarSeparator/>
+                <AppBarButton Label="Check" Click="OnCheckClick">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarSeparator/>
+                <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+            </CommandBar>
 
-            <!-- Right side: filter toggle buttons + filter textbox aligned right -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="0,0,18,0" HorizontalAlignment="Right">
+            <!-- Right side: filter toggle buttons + filter textbox -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="0,0,4,0" HorizontalAlignment="Right">
                 <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick" LabelPosition="Collapsed" MaxWidth="36" IsChecked="True">
                     <AppBarToggleButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
@@ -247,8 +246,7 @@
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
                     </AppBarToggleButton.Icon>
                 </AppBarToggleButton>
-                <!-- Filter textbox with underline -->
-                <Grid VerticalAlignment="Center" >
+                <Grid VerticalAlignment="Center">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="4"/>
@@ -279,7 +277,6 @@
         <Grid Grid.Row="2" Background="Transparent">
             <!-- Main entries view -->
             <Grid x:Name="MainHost" Margin="8" RowDefinitions="Auto,*" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
-                <!-- Rows -->
                 <ListView x:Name="EntriesList"
                           Grid.Row="1"
                           Margin="0,8,0,0"
@@ -290,7 +287,6 @@
                           Background="Transparent"
                           ItemContainerStyle="{StaticResource RoundedListViewItemStyle}"
                           ItemsSource="{x:Bind Entries, Mode=OneWay}">
-                    <!-- Context menu for entries (Copy/Cut/Paste/Undo/Redo) -->
                     <ListView.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="Copy" Click="OnCopyClick" Icon="Copy" />
@@ -301,7 +297,6 @@
                             <MenuFlyoutItem Text="Redo" Click="OnRedoClick" Icon="Redo" />
                         </MenuFlyout>
                     </ListView.ContextFlyout>
-
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Border Padding="8" CornerRadius="4" BorderThickness="0,0,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="Transparent">
@@ -325,7 +320,6 @@
 
             <!-- Archive full view -->
             <Grid x:Name="ArchiveHost" Visibility="{x:Bind ArchiveViewVisibility, Mode=OneWay}" Margin="8" RowDefinitions="Auto,*">
-                <!-- Header row with label + command bar -->
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
                     <TextBlock Text="Archives" FontWeight="Normal" VerticalAlignment="Center" Margin="16,0,8,0"/>
                     <CommandBar Grid.Column="1" Background="Transparent" DefaultLabelPosition="Right" Padding="0" HorizontalAlignment="Left">
@@ -341,7 +335,6 @@
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
-                    <!-- Placeholder shown when there are no archives -->
                     <TextBlock Text="No archives yet." FontStyle="Italic" Foreground="Gray"
                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsHitTestVisible="False" Visibility="{x:Bind ArchivesEmptyVisibility, Mode=OneWay}"/>
