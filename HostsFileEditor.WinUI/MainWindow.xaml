@@ -323,7 +323,7 @@
             <Grid x:Name="ArchiveHost" Visibility="{x:Bind ArchiveViewVisibility, Mode=OneWay}" Margin="8" RowDefinitions="Auto,*">
                 <!-- Header row with label + command bar -->
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                    <TextBlock Text="Archives" FontWeight="Normal" VerticalAlignment="Center" Margin="8,0,8,0"/>
+                    <TextBlock Text="Archives" FontWeight="Normal" VerticalAlignment="Center" Margin="16,0,8,0"/>
                     <CommandBar Grid.Column="1" Background="Transparent" DefaultLabelPosition="Right" Padding="0" HorizontalAlignment="Left">
                         <AppBarButton Icon="OpenFile" Label="Load" Click="OnArchiveLoadClick"/>
                         <AppBarButton Icon="Delete" Label="Delete" Click="OnArchiveDeleteClick"/>
