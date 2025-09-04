@@ -104,12 +104,13 @@
                 <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
                 <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
                 <AppBarSeparator/>
-                <AppBarButton Icon="Add" Label="Insert Below" Click="OnInsertBelowClick"/>
-                <AppBarButton Label="Insert Above" Click="OnInsertAboveClick">
+                <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
+                <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
                     <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
                     </AppBarButton.Icon>
                 </AppBarButton>
+                <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
                 <AppBarSeparator/>
                 <!-- Move Up/Down -->
                 <AppBarButton Label="Up" Click="OnMoveUpClick">
@@ -123,20 +124,12 @@
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
-                <!-- Clipboard and duplicate moved to context menu --> 
-                <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
-                    </AppBarButton.Icon>
-                </AppBarButton>
-                <AppBarSeparator/>
                 <!-- Enable/Disable selected (toggle) -->
                 <AppBarButton Label="Check" Click="OnCheckClick">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
                     </AppBarButton.Icon>
                 </AppBarButton>
-                <AppBarButton Icon="Delete" Label="Delete" Click="OnDeleteClick"/>
                 <AppBarSeparator/>
                 <!-- Filters -->
                 <AppBarToggleButton Label="Filter Comments" Click="OnFilterCommentsClick"/>

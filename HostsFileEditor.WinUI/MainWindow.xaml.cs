@@ -268,6 +268,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void OnAddToTop(object sender, RoutedEventArgs e)
+    {
+        var first = HostsFile.Instance.Entries.FirstOrDefault();
+        if (first != null)
+        {
+            HostsFile.Instance.Entries.InsertBefore(first);
+        }
+        else
+        {
+            HostsFile.Instance.Entries.AddNew();
+        }
+
+        Entries.Insert(0, HostsFile.Instance.Entries.First());
+    }
+
     private void OnInsertAboveClick(object sender, RoutedEventArgs e)
     {
         var current = EntriesList.SelectedItems.Cast<HostsEntry>().FirstOrDefault();
