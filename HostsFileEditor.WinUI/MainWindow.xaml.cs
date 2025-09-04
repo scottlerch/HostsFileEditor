@@ -318,7 +318,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         RefreshEntries();
     }
 
-    private void OnOpenTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
+    private void OnOpenInTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
 
     private void OnFilterTextChanged(object sender, TextChangedEventArgs e) => RefreshEntries(true);
 

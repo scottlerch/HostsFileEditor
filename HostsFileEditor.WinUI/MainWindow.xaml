@@ -30,7 +30,7 @@
             <!-- Filter textbox with left padding and small right gap -->
             <TextBox x:Name="FilterTextBox"
                      Grid.Column="0"
-                     Width="400"
+                     Width="200"
                      PlaceholderText="Filter hosts..."
                      Margin="12,0,8,0"
                      VerticalAlignment="Center"
@@ -38,7 +38,7 @@
                      TextChanged="OnFilterTextChanged" />
 
             <!-- Command bar occupies remaining space -->
-            <CommandBar Grid.Column="1" DefaultLabelPosition="Right" Background="Transparent" Padding="0">
+            <CommandBar Grid.Column="1" DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left">
                 <AppBarButton Icon="OpenFile" Label="Import" Click="OnImportClick"/>
                 <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
                 <AppBarButton Icon="SaveLocal" Label="Save As" Click="OnSaveAsClick"/>
