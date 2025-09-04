@@ -141,7 +141,7 @@
                 </AppBarToggleButton>
                 <AppBarToggleButton Label="Filter Disabled" Click="OnFilterDisabledClick">
                     <AppBarToggleButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F5;"/>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7BA;"/>
                     </AppBarToggleButton.Icon>
                 </AppBarToggleButton>
                 <AppBarSeparator/>
