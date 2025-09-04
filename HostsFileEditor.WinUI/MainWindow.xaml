@@ -29,6 +29,68 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+            <!-- Rounded selection style for EntriesList items -->
+            <Style x:Key="RoundedListViewItemStyle" TargetType="ListViewItem">
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListViewItem">
+                            <Grid x:Name="Root" Background="Transparent">
+                                <Border x:Name="SelectionBackground" CornerRadius="6" Opacity="0" Background="{ThemeResource ListViewItemBackgroundSelected}"/>
+                                <Border x:Name="PointerOverBackground" CornerRadius="6" Opacity="0" Background="{ThemeResource ListViewItemBackgroundPointerOver}"/>
+                                <ContentPresenter x:Name="ContentPresenter"
+                                                  Margin="0"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal"/>
+                                        <VisualState x:Name="PointerOver">
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="Opacity">
+                                                    <DiscreteObjectKeyFrame Value="1"/>
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed"/>
+                                        <VisualState x:Name="Disabled"/>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="SelectionStates">
+                                        <VisualState x:Name="Unselected"/>
+                                        <VisualState x:Name="Selected">
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="Opacity">
+                                                    <DiscreteObjectKeyFrame Value="1"/>
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="PointerOverSelected">
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="Opacity">
+                                                    <DiscreteObjectKeyFrame Value="1"/>
+                                                </ObjectAnimationUsingKeyFrames>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="Opacity">
+                                                    <DiscreteObjectKeyFrame Value="1"/>
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="SelectedUnfocused">
+                                            <Storyboard>
+                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="Opacity">
+                                                    <DiscreteObjectKeyFrame Value="1"/>
+                                                </ObjectAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </Grid.Resources>
 
         <!-- Keyboard accelerators for Copy/Cut/Paste and Undo/Redo -->
@@ -202,6 +264,7 @@
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           ScrollViewer.HorizontalScrollMode="Disabled"
                           Background="Transparent"
+                          ItemContainerStyle="{StaticResource RoundedListViewItemStyle}"
                           ItemsSource="{x:Bind Entries, Mode=OneWay}">
                     <!-- Context menu for entries (Copy/Cut/Paste/Undo/Redo) -->
                     <ListView.ContextFlyout>
@@ -215,13 +278,6 @@
                         </MenuFlyout>
                     </ListView.ContextFlyout>
 
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Border Padding="8" CornerRadius="4" BorderThickness="0,0,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="Transparent">
