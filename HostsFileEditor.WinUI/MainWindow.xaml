@@ -142,8 +142,8 @@
             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="12,0,8,0">
                 <!-- Hamburger menu button -->
                 <Button x:Name="HamburgerButton"
-                        Width="36"
-                        Height="32"
+                        Width="40"
+                        Height="40"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
                         Background="Transparent"
@@ -194,6 +194,7 @@
 
                 <!-- Main command bar (without filter toggle buttons now) -->
                 <CommandBar DefaultLabelPosition="Right" Background="Transparent" Padding="0" HorizontalAlignment="Left" >
+                    <AppBarSeparator/>
                     <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
                     <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
                     <AppBarSeparator/>
