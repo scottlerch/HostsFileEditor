@@ -148,7 +148,7 @@
                     Background="Transparent"
                     BorderThickness="0">
                 <Button.Flyout>
-                    <MenuFlyout>
+                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
                         <MenuFlyoutItem Text="Import" Icon="OpenFile" Click="OnImportClick"/>
                         <MenuFlyoutItem Text="Save As" Icon="SaveLocal" Click="OnSaveAsClick"/>
                         <MenuFlyoutSeparator/>
