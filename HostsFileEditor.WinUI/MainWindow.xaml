@@ -47,6 +47,13 @@
                         Click="OnBackClick">
                     <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72B;" FontSize="10"/>
                 </Button>
+                <!-- App icon image -->
+                <Image Source="Assets/Square150x150Logo.png"
+                       Width="20"
+                       Height="20"
+                       Stretch="Uniform"
+                       Margin="4,0,4,0"
+                       VerticalAlignment="Center"/>
                 <TextBlock Text="Hosts File Editor" FontSize="14" FontWeight="Normal" VerticalAlignment="Center"/>
             </StackPanel>
         </Grid>
