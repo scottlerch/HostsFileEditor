@@ -140,25 +140,25 @@
                 <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick" KeyboardAcceleratorTextOverride="F5"/>
                 <AppBarSeparator/>
                 <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
-                <AppBarButton Icon="Remove" Label="Remove" Click="OnDeleteClick"/>
-                <AppBarButton Label="Duplicate" Click="OnDuplicateClick">
+                <AppBarButton Icon="Remove" Label="Remove" Click="OnDeleteClick" x:Name="RemoveButton"/>
+                <AppBarButton Label="Duplicate" Click="OnDuplicateClick" x:Name="DuplicateButton">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8C8;"/>
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
-                <AppBarButton Label="Up" Click="OnMoveUpClick">
+                <AppBarButton Label="Up" Click="OnMoveUpClick" x:Name="MoveUpButton">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70E;"/>
                     </AppBarButton.Icon>
                 </AppBarButton>
-                <AppBarButton Label="Down" Click="OnMoveDownClick">
+                <AppBarButton Label="Down" Click="OnMoveDownClick" x:Name="MoveDownButton">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE70D;"/>
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
-                <AppBarButton Label="Toggle" Click="OnCheckClick">
+                <AppBarButton Label="Toggle" Click="OnCheckClick" x:Name="ToggleButton">
                     <AppBarButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE73E;"/>
                     </AppBarButton.Icon>
@@ -258,7 +258,8 @@
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           ScrollViewer.HorizontalScrollMode="Disabled"
                           Background="Transparent"
-                          ItemsSource="{x:Bind Entries, Mode=OneWay}">
+                          ItemsSource="{x:Bind Entries, Mode=OneWay}"
+                          SelectionChanged="OnEntriesSelectionChanged">
                     <ListView.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem Text="Copy" Click="OnCopyClick" Icon="Copy" KeyboardAcceleratorTextOverride="Ctrl+C" />

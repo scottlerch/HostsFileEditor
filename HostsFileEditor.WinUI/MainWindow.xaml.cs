@@ -78,6 +78,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(IsFilterDisabledHidden));
         OnPropertyChanged(nameof(ActiveFilterCount));
         OnPropertyChanged(nameof(ActiveFiltersBadgeVisibility));
+
+        // Ensure buttons reflect current selection state at startup
+        UpdateSelectionDependentButtons();
     }
 
     // Handlers invoked by KeyboardAccelerators in XAML (names must match generated wiring)
@@ -361,6 +364,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
+
+        // Update UI buttons when selection changes cause deletion
+        UpdateSelectionDependentButtons();
     }
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
@@ -386,6 +392,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
+
+        UpdateSelectionDependentButtons();
     }
 
     private void OnPasteClick(object sender, RoutedEventArgs e)
@@ -782,6 +790,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
+
+        // Keep selection-aware buttons in sync after refresh
+        UpdateSelectionDependentButtons();
     }
 
     private void RefreshArchives()
@@ -831,4 +842,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         LocalSettings.SetBool("RemoveDefaultText", IsRemoveDefaultText);
         OnPropertyChanged(nameof(IsRemoveDefaultText));
     }
+
+    // Update enable state of buttons that require a selection
+    private void UpdateSelectionDependentButtons()
+    {
+        var hasSelection = EntriesList is not null && EntriesList.SelectedItems.Count > 0;
+        if (RemoveButton is not null) RemoveButton.IsEnabled = hasSelection;
+        if (DuplicateButton is not null) DuplicateButton.IsEnabled = hasSelection;
+        if (MoveUpButton is not null) MoveUpButton.IsEnabled = hasSelection;
+        if (MoveDownButton is not null) MoveDownButton.IsEnabled = hasSelection;
+        if (ToggleButton is not null) ToggleButton.IsEnabled = hasSelection;
+    }
+
+    // Handler wired from XAML to keep buttons updated when selection changes
+    private void OnEntriesSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        UpdateSelectionDependentButtons();
+    }
+
 }
