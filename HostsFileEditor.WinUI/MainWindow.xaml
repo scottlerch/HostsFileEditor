@@ -15,6 +15,8 @@
             <KeyboardAccelerator Key="V" Modifiers="Control" Invoked="OnPasteAcceleratorInvoked"/>
             <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndoAcceleratorInvoked"/>
             <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedoAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="S" Modifiers="Control" Invoked="OnSaveAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="F5" Invoked="OnRefreshAcceleratorInvoked"/>
         </Grid.KeyboardAccelerators>
         <Grid x:Name="AppTitleBar" Height="48" Padding="12,0" VerticalAlignment="Top" Background="Transparent">
             <Grid.ColumnDefinitions>
@@ -89,7 +91,7 @@
                 <Button.Flyout>
                     <MenuFlyout Placement="BottomEdgeAlignedLeft">
                         <MenuFlyoutItem Text="Import" Icon="OpenFile" Click="OnImportClick"/>
-                        <MenuFlyoutItem Text="Save As" Icon="SaveLocal" Click="OnSaveAsClick"/>
+                        <MenuFlyoutItem Text="Save As" Icon="SaveLocal" Click="OnSaveAsClick" />
                         <MenuFlyoutItem Text="Archive" Click="OnArchiveClick">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
@@ -134,8 +136,8 @@
                         DefaultLabelPosition="Right"
                         Padding="0"
                         IsDynamicOverflowEnabled="True" >
-                <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick"/>
-                <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick"/>
+                <AppBarButton Icon="Save" Label="Save" Click="OnSaveClick" KeyboardAcceleratorTextOverride="Ctrl+S"/>
+                <AppBarButton Icon="Refresh" Label="Refresh" Click="OnRefreshClick" KeyboardAcceleratorTextOverride="F5"/>
                 <AppBarSeparator/>
                 <AppBarButton Icon="Add" Label="Add" Click="OnAddToTop"/>
                 <AppBarButton Icon="Remove" Label="Remove" Click="OnDeleteClick"/>
@@ -259,12 +261,12 @@
                           ItemsSource="{x:Bind Entries, Mode=OneWay}">
                     <ListView.ContextFlyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem Text="Copy" Click="OnCopyClick" Icon="Copy" />
-                            <MenuFlyoutItem Text="Cut" Click="OnCutClick" Icon="Cut" />
-                            <MenuFlyoutItem Text="Paste" Click="OnPasteClick" Icon="Paste" />
+                            <MenuFlyoutItem Text="Copy" Click="OnCopyClick" Icon="Copy" KeyboardAcceleratorTextOverride="Ctrl+C" />
+                            <MenuFlyoutItem Text="Cut" Click="OnCutClick" Icon="Cut" KeyboardAcceleratorTextOverride="Ctrl+X" />
+                            <MenuFlyoutItem Text="Paste" Click="OnPasteClick" Icon="Paste" KeyboardAcceleratorTextOverride="Ctrl+V" />
                             <MenuFlyoutSeparator />
-                            <MenuFlyoutItem Text="Undo" Click="OnUndoClick" Icon="Undo" />
-                            <MenuFlyoutItem Text="Redo" Click="OnRedoClick" Icon="Redo" />
+                            <MenuFlyoutItem Text="Undo" Click="OnUndoClick" Icon="Undo" KeyboardAcceleratorTextOverride="Ctrl+Z" />
+                            <MenuFlyoutItem Text="Redo" Click="OnRedoClick" Icon="Redo" KeyboardAcceleratorTextOverride="Ctrl+Y" />
                         </MenuFlyout>
                     </ListView.ContextFlyout>
                     <ListView.ItemTemplate>

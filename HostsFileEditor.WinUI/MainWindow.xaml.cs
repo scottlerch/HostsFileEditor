@@ -252,6 +252,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private void OnSaveAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+        OnSaveClick(this, new RoutedEventArgs());
+        args.Handled = true;
+    }
+
     private async void OnSaveAsClick(object sender, RoutedEventArgs e)
     {
         try
@@ -420,6 +430,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(IsDisabledHosts));
+    }
+
+    private void OnRefreshAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement() is TextBox)
+        {
+            return;
+        }
+        OnRefreshClick(this, new RoutedEventArgs());
+        args.Handled = true;
     }
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
