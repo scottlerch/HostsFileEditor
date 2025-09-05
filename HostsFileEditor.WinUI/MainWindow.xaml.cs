@@ -302,13 +302,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnInsertBelowClick(object sender, RoutedEventArgs e)
     {
-        HostsFile.Instance.Entries.Add();
-        if (HostsFile.Instance.Entries.LastOrDefault() is { } last && !Entries.Contains(last))
+        var current = EntriesList.SelectedItems.Cast<HostsEntry>().FirstOrDefault();
+        if (current != null)
         {
-            Entries.Add(last);
+            HostsFile.Instance.Entries.InsertAfter(current);
+            RefreshEntries(true);
         }
-        OnPropertyChanged(nameof(EntriesEmptyVisibility));
-        OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     private void OnInsertAboveClick(object sender, RoutedEventArgs e)
@@ -318,10 +317,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             HostsFile.Instance.Entries.InsertBefore(current);
             RefreshEntries(true);
-        }
-        else
-        {
-            OnInsertBelowClick(sender, e);
         }
     }
 
@@ -876,6 +871,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (CtxCopy is not null) CtxCopy.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
         if (CtxCut is not null) CtxCut.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
         if (CtxPaste is not null) CtxPaste.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
+
+        // Show Add Above / Add Below only when an entry is selected
+        if (CtxAddAbove is not null) CtxAddAbove.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
+        if (CtxAddBelow is not null) CtxAddBelow.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
 
         var undoManager = Utilities.UndoManager.Instance;
         var canUndo = undoManager.CanUndo;

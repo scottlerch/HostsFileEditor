@@ -266,6 +266,9 @@
                             <MenuFlyoutItem x:Name="CtxCut" Text="Cut" Click="OnCutClick" Icon="Cut" KeyboardAcceleratorTextOverride="Ctrl+X" />
                             <MenuFlyoutItem x:Name="CtxPaste" Text="Paste" Click="OnPasteClick" Icon="Paste" KeyboardAcceleratorTextOverride="Ctrl+V" />
                             <MenuFlyoutSeparator />
+                            <MenuFlyoutItem x:Name="CtxAddAbove" Text="Add Above" Click="OnInsertAboveClick"/>
+                            <MenuFlyoutItem x:Name="CtxAddBelow" Text="Add Below" Click="OnInsertBelowClick"/>
+                            <MenuFlyoutSeparator />
                             <MenuFlyoutItem x:Name="CtxUndo" Text="Undo" Click="OnUndoClick" Icon="Undo" KeyboardAcceleratorTextOverride="Ctrl+Z" />
                             <MenuFlyoutItem x:Name="CtxRedo" Text="Redo" Click="OnRedoClick" Icon="Redo" KeyboardAcceleratorTextOverride="Ctrl+Y" />
                         </MenuFlyout>
