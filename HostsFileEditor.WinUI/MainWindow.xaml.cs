@@ -238,28 +238,56 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnImportClick(object sender, RoutedEventArgs e)
     {
-        var picker = new FileOpenPicker();
-        InitializeWithWindow.Initialize(picker, GetHwnd());
-        picker.FileTypeFilter.Clear();
-        picker.FileTypeFilter.Add("*");
-        var file = await picker.PickSingleFileAsync();
-        if (file != null)
+        try
         {
-            HostsFile.Instance.Import(file.Path);
-            RefreshEntries();
+            var picker = new FileOpenPicker();
+            InitializeWithWindow.Initialize(picker, GetHwnd());
+            picker.FileTypeFilter.Clear();
+            picker.FileTypeFilter.Add("*");
+            var file = await picker.PickSingleFileAsync();
+            if (file != null)
+            {
+                HostsFile.Instance.Import(file.Path);
+                RefreshEntries();
+            }
+        }
+        catch (Exception ex)
+        {
+            var dlg = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Error Saving Hosts File",
+                Content = $"An error occurred while saving the hosts file:\n\n{ex.Message}",
+                CloseButtonText = "OK"
+            };
+            await dlg.ShowAsync();
         }
     }
 
     private async void OnSaveAsClick(object sender, RoutedEventArgs e)
     {
-        var picker = new FileSavePicker();
-        InitializeWithWindow.Initialize(picker, GetHwnd());
-        picker.FileTypeChoices.Add("Hosts", [".txt", ".hosts"]);
-        picker.SuggestedFileName = "hosts";
-        var file = await picker.PickSaveFileAsync();
-        if (file != null)
+        try
         {
-            HostsFile.Instance.SaveAs(file.Path);
+            var picker = new FileSavePicker();
+            InitializeWithWindow.Initialize(picker, GetHwnd());
+            picker.FileTypeChoices.Add("Hosts", [".txt", ".hosts"]);
+            picker.SuggestedFileName = "hosts";
+            var file = await picker.PickSaveFileAsync();
+            if (file != null)
+            {
+                HostsFile.Instance.SaveAs(file.Path);
+            }
+        }
+        catch (Exception ex)
+        {
+            var dlg = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = "Error Saving Hosts File",
+                Content = $"An error occurred while saving the hosts file:\n\n{ex.Message}",
+                CloseButtonText = "OK"
+            };
+            await dlg.ShowAsync();
         }
     }
 
@@ -274,6 +302,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
+    }
+
+    private void OnInsertAboveClick(object sender, RoutedEventArgs e)
+    {
+        var current = EntriesList.SelectedItems.Cast<HostsEntry>().FirstOrDefault();
+        if (current != null)
+        {
+            HostsFile.Instance.Entries.InsertBefore(current);
+            RefreshEntries(true);
+        }
+        else
+        {
+            OnInsertBelowClick(sender, e);
+        }
     }
 
     private void OnAddToTop(object sender, RoutedEventArgs e)
@@ -291,20 +333,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         Entries.Insert(0, HostsFile.Instance.Entries.First());
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
-    }
-
-    private void OnInsertAboveClick(object sender, RoutedEventArgs e)
-    {
-        var current = EntriesList.SelectedItems.Cast<HostsEntry>().FirstOrDefault();
-        if (current != null)
-        {
-            HostsFile.Instance.Entries.InsertBefore(current);
-            RefreshEntries(true);
-        }
-        else
-        {
-            OnInsertBelowClick(sender, e);
-        }
     }
 
     private void OnMoveUpClick(object sender, RoutedEventArgs e)

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -12,6 +12,7 @@
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <RuntimeIdentifier Condition="'$(WindowsAppSDKSelfContained)'=='true' and '$(RuntimeIdentifier)'=='' and '$(OS)'=='Windows_NT'">win-x64</RuntimeIdentifier>
     <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822</NoWarn>
+    <ApplicationIcon>Assets\HostsFileEditor.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
