@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace HostsFileEditor.Utilities;
+namespace HostsFileEditor.Win32;
 
 public static partial class Win32FileDialogs
 {

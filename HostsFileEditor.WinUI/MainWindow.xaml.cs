@@ -13,6 +13,7 @@ using System.Numerics;
 using WinRT;
 using WinRT.Interop;
 using System;
+using HostsFileEditor.Win32;
 
 namespace HostsFileEditor;
 
@@ -243,7 +244,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         try
         {
             var hwnd = GetHwnd();
-            var path = Utilities.Win32FileDialogs.OpenFileDialog(hwnd, "All Files (*.*)|*.*");
+            var path = Win32FileDialogs.OpenFileDialog(hwnd, "All Files (*.*)|*.*");
             if (!string.IsNullOrWhiteSpace(path))
             {
                 HostsFile.Instance.Import(path);
@@ -278,7 +279,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         try
         {
             var hwnd = GetHwnd();
-            var path = Utilities.Win32FileDialogs.SaveFileDialog(hwnd, "hosts", "Hosts (*.txt;*.hosts)|*.txt;*.hosts|Text (*.txt)|*.txt|All Files (*.*)|*.*");
+            var path = Win32FileDialogs.SaveFileDialog(hwnd, "hosts", "Hosts (*.txt;*.hosts)|*.txt;*.hosts|Text (*.txt)|*.txt|All Files (*.*)|*.*");
             if (!string.IsNullOrWhiteSpace(path))
             {
                 HostsFile.Instance.SaveAs(path);
