@@ -4,17 +4,12 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Hosting;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Numerics;
-using System.Threading.Tasks;
-using Windows.Storage.Pickers;
 using WinRT;
 using WinRT.Interop;
 
@@ -29,10 +24,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     internal ObservableCollection<HostsArchive> Archives { get; } = [];
 
     private IEnumerable<HostsEntry>? _clipboardEntries;
-
-    // Internal flags: true means the corresponding entries are HIDDEN (filtered out)
-    private bool _filterComments; // hide comment-only lines
-    private bool _filterDisabled; // hide disabled entries
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -50,10 +41,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     public Visibility EntriesFilteredVisibility => HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     // New public properties matching new XAML wording (checked == hide)
-    public bool IsFilterCommentsHidden => _filterComments;   // bound to ToggleMenuFlyoutItem.IsChecked
-    public bool IsFilterDisabledHidden => _filterDisabled;   // bound to ToggleMenuFlyoutItem.IsChecked
+    public bool IsFilterCommentsHidden { get; private set; }   // bound to ToggleMenuFlyoutItem.IsChecked
+    public bool IsFilterDisabledHidden { get; private set; }   // bound to ToggleMenuFlyoutItem.IsChecked
 
-    public int ActiveFilterCount => (_filterComments ? 1 : 0) + (_filterDisabled ? 1 : 0);
+    public int ActiveFilterCount => (IsFilterCommentsHidden ? 1 : 0) + (IsFilterDisabledHidden ? 1 : 0);
     public Visibility ActiveFiltersBadgeVisibility => ActiveFilterCount > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     private MicaController? _micaController;
@@ -240,14 +231,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         try
         {
-            var picker = new FileOpenPicker();
-            InitializeWithWindow.Initialize(picker, GetHwnd());
-            picker.FileTypeFilter.Clear();
-            picker.FileTypeFilter.Add("*");
-            var file = await picker.PickSingleFileAsync();
-            if (file != null)
+            var hwnd = GetHwnd();
+            var path = Utilities.Win32FileDialogs.OpenFileDialog(hwnd, "All Files (*.*)|*.*");
+            if (!string.IsNullOrWhiteSpace(path))
             {
-                HostsFile.Instance.Import(file.Path);
+                HostsFile.Instance.Import(path);
                 RefreshEntries();
             }
         }
@@ -268,14 +256,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         try
         {
-            var picker = new FileSavePicker();
-            InitializeWithWindow.Initialize(picker, GetHwnd());
-            picker.FileTypeChoices.Add("Hosts", [".txt", ".hosts"]);
-            picker.SuggestedFileName = "hosts";
-            var file = await picker.PickSaveFileAsync();
-            if (file != null)
+            var hwnd = GetHwnd();
+            var path = Utilities.Win32FileDialogs.SaveFileDialog(hwnd, "hosts", "Hosts (*.txt;*.hosts)|*.txt;*.hosts|Text (*.txt)|*.txt|All Files (*.*)|*.*");
+            if (!string.IsNullOrWhiteSpace(path))
             {
-                HostsFile.Instance.SaveAs(file.Path);
+                HostsFile.Instance.SaveAs(path);
             }
         }
         catch (Exception ex)
@@ -473,7 +458,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (sender is ToggleMenuFlyoutItem t)
         {
             // IsChecked == true => hide comments
-            _filterComments = t.IsChecked == true;
+            IsFilterCommentsHidden = t.IsChecked == true;
             RefreshEntries(true);
             OnPropertyChanged(nameof(IsFilterCommentsHidden));
             OnPropertyChanged(nameof(ActiveFilterCount));
@@ -486,7 +471,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (sender is ToggleMenuFlyoutItem t)
         {
             // IsChecked == true => hide disabled entries
-            _filterDisabled = t.IsChecked == true;
+            IsFilterDisabledHidden = t.IsChecked == true;
             RefreshEntries(true);
             OnPropertyChanged(nameof(IsFilterDisabledHidden));
             OnPropertyChanged(nameof(ActiveFilterCount));
@@ -496,9 +481,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnResetFiltersClick(object sender, RoutedEventArgs e)
     {
-        bool changed = _filterComments || _filterDisabled;
-        _filterComments = false;
-        _filterDisabled = false;
+        var changed = IsFilterCommentsHidden || IsFilterDisabledHidden;
+        IsFilterCommentsHidden = false;
+        IsFilterDisabledHidden = false;
         if (changed)
         {
             RefreshEntries(true);
@@ -600,7 +585,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var visual = ElementCompositionPreview.GetElementVisual(element);
         visual.StopAnimation("Translation");
 
-        double width = customOffset ?? fe.ActualWidth;
+        var width = customOffset ?? fe.ActualWidth;
         if (width <= 0 && Content is FrameworkElement root)
         {
             width = root.ActualWidth;
@@ -609,7 +594,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             width = 400;
         }
-        float startX = (float)(fromRight ? width : -width);
+        var startX = (float)(fromRight ? width : -width);
 
         visual.Properties.InsertVector3("Translation", new Vector3(startX, 0, 0));
 
@@ -638,7 +623,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var visual = ElementCompositionPreview.GetElementVisual(element);
         visual.StopAnimation("Translation");
 
-        double width = customOffset ?? fe.ActualWidth;
+        var width = customOffset ?? fe.ActualWidth;
         if (width <= 0 && Content is FrameworkElement root)
         {
             width = root.ActualWidth;
@@ -647,7 +632,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             width = 400;
         }
-        float endX = (float)(toRight ? width : -width);
+        var endX = (float)(toRight ? width : -width);
 
         var compositor = visual.Compositor;
         var anim = compositor.CreateVector3KeyFrameAnimation();
@@ -665,7 +650,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnViewArchiveClick(object sender, RoutedEventArgs e)
     {
-        if (_isAnimatingArchive) return;
+        if (_isAnimatingArchive)
+        {
+            return;
+        }
+
         _isAnimatingArchive = true;
         try
         {
@@ -738,7 +727,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void RefreshEntries(bool preserveSelection = false)
     {
-        string text = string.Empty;
+        var text = string.Empty;
         if (Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb && ftb.Text is string s)
         {
             text = s.Trim();
@@ -748,11 +737,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         Entries.Clear();
         foreach (var e in HostsFile.Instance.Entries)
         {
-            if (_filterComments && e.HasCommentOnly)
+            if (IsFilterCommentsHidden && e.HasCommentOnly)
             {
                 continue;
             }
-            if (_filterDisabled && !e.Enabled && !e.HasCommentOnly)
+            if (IsFilterDisabledHidden && !e.Enabled && !e.HasCommentOnly)
             {
                 continue;
             }
