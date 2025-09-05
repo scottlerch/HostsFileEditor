@@ -1,3 +1,4 @@
+using HostsFileEditor.Win32;
 using Microsoft.UI;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
@@ -12,15 +13,11 @@ using System.ComponentModel;
 using System.Numerics;
 using WinRT;
 using WinRT.Interop;
-using System;
-using HostsFileEditor.Win32;
 
 namespace HostsFileEditor;
 
 public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
-    // Note: do not define a member named 'Bindings' — generated partial class provides that field.
-
     internal ObservableCollection<HostsEntry> Entries { get; } = [];
 
     internal ObservableCollection<HostsArchive> Archives { get; } = [];
@@ -42,7 +39,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     public Visibility EntriesEmptyVisibility => HostsFile.Instance.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     public Visibility EntriesFilteredVisibility => HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    // New public properties matching new XAML wording (checked == hide)
     public bool IsFilterCommentsHidden { get; private set; }   // bound to ToggleMenuFlyoutItem.IsChecked
     public bool IsFilterDisabledHidden { get; private set; }   // bound to ToggleMenuFlyoutItem.IsChecked
 
@@ -90,75 +86,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         // Unsubscribe when window closes to avoid leaks
         Closed += (s, e) => Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
-    }
-
-    // Handlers invoked by KeyboardAccelerators in XAML (names must match generated wiring)
-    private void OnCopyAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        // Allow textboxes to handle their own copy
-        if (FocusManager.GetFocusedElement() is TextBox)
-        {
-            return;
-        }
-
-        OnCopyClick(this, new RoutedEventArgs());
-        args.Handled = true;
-    }
-
-    private void OnCutAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (FocusManager.GetFocusedElement() is TextBox)
-        {
-            return;
-        }
-
-        OnCutClick(this, new RoutedEventArgs());
-        args.Handled = true;
-    }
-
-    private void OnPasteAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (FocusManager.GetFocusedElement() is TextBox)
-        {
-            return;
-        }
-
-        OnPasteClick(this, new RoutedEventArgs());
-        args.Handled = true;
-    }
-
-    private void OnCopyClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (FocusManager.GetFocusedElement() is TextBox)
-        {
-            return;
-        }
-
-        // Forward to existing handler
-        OnCopyClick(this, new RoutedEventArgs());
-        args.Handled = true;
-    }
-
-    private void OnCutClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (FocusManager.GetFocusedElement() is TextBox)
-        {
-            return;
-        }
-
-        OnCutClick(this, new RoutedEventArgs());
-        args.Handled = true;
-    }
-
-    private void OnPasteClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (FocusManager.GetFocusedElement() is TextBox)
-        {
-            return;
-        }
-
-        OnPasteClick(this, new RoutedEventArgs());
-        args.Handled = true;
     }
 
     private void TrySetAppWindowTitleBar()
@@ -227,6 +154,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 _backdropConfiguration.IsInputActive = e.WindowActivationState != WindowActivationState.Deactivated;
             }
         };
+
         Closed += (s, e) =>
         {
             _micaController?.Dispose();
@@ -238,6 +166,24 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private IntPtr GetHwnd() => WindowNative.GetWindowHandle(this);
+
+    private void OnCopyAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnCopyClick(this, new RoutedEventArgs()), args);
+
+    private void OnCutAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnCutClick(this, new RoutedEventArgs()), args);
+
+    private void OnPasteAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnPasteClick(this, new RoutedEventArgs()), args);
+
+    private void OnCopyClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnCopyClick(this, new RoutedEventArgs()), args);
+
+    private void OnCutClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnCutClick(this, new RoutedEventArgs()), args);
+
+    private void OnPasteClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnPasteClick(this, new RoutedEventArgs()), args);
 
     private async void OnImportClick(object sender, RoutedEventArgs e)
     {
@@ -253,26 +199,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            var dlg = new ContentDialog
-            {
-                XamlRoot = Content.XamlRoot,
-                Title = "Error Saving Hosts File",
-                Content = $"An error occurred while saving the hosts file:\n\n{ex.Message}",
-                CloseButtonText = "OK"
-            };
-            await dlg.ShowAsync();
+            await ShowErrorDialogAsync("Error Saving Hosts File", $"An error occurred while saving the hosts file:\n\n{ex.Message}");
         }
     }
 
+    private void OnSaveClick(object sender, RoutedEventArgs e) => HostsFile.Instance.Save();
+
     private void OnSaveAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (FocusManager.GetFocusedElement() is TextBox)
-        {
-            return;
-        }
-        OnSaveClick(this, new RoutedEventArgs());
-        args.Handled = true;
-    }
+        => TryInvokeUnlessTextBox(() => OnSaveClick(this, new RoutedEventArgs()), args);
 
     private async void OnSaveAsClick(object sender, RoutedEventArgs e)
     {
@@ -287,18 +221,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            var dlg = new ContentDialog
-            {
-                XamlRoot = Content.XamlRoot,
-                Title = "Error Saving Hosts File",
-                Content = $"An error occurred while saving the hosts file:\n\n{ex.Message}",
-                CloseButtonText = "OK"
-            };
-            await dlg.ShowAsync();
+            await ShowErrorDialogAsync("Error Saving Hosts File", $"An error occurred while saving the hosts file:\n\n{ex.Message}");
         }
     }
-
-    private void OnSaveClick(object sender, RoutedEventArgs e) => HostsFile.Instance.Save();
 
     private void OnInsertBelowClick(object sender, RoutedEventArgs e)
     {
@@ -395,6 +320,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 Entries.Remove(r);
             }
         }
+
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
 
@@ -449,14 +375,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private void OnRefreshAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (FocusManager.GetFocusedElement() is TextBox)
-        {
-            return;
-        }
-        OnRefreshClick(this, new RoutedEventArgs());
-        args.Handled = true;
-    }
+        => TryInvokeUnlessTextBox(() => OnRefreshClick(this, new RoutedEventArgs()), args);
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
     {
@@ -482,10 +401,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         RefreshEntries();
     }
 
-    private void OnOpenTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
-
-    // Added to match XAML wiring: forwards to existing handler
-    private void OnOpenInTextEditorClick(object sender, RoutedEventArgs e) => OnOpenTextEditorClick(sender, e);
+    private void OnOpenInTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
 
     private void OnFilterTextChanged(object sender, TextChangedEventArgs e) => RefreshEntries(true);
 
@@ -552,8 +468,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnUndoAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        // Avoid interfering when typing in a TextBox
-        if (FocusManager.GetFocusedElement() is TextBox)
+        if (IsTextBoxFocused())
         {
             return;
         }
@@ -564,7 +479,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnRedoAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (FocusManager.GetFocusedElement() is TextBox)
+        if (IsTextBoxFocused())
         {
             return;
         }
@@ -836,23 +751,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnPingIPsClick(object sender, RoutedEventArgs e)
     {
-        var isChecked = sender is AppBarToggleButton { IsChecked: true } || sender is ToggleMenuFlyoutItem { IsChecked: true };
-        IsPingIPs = isChecked;
-        HostsEntry.AutoPingIPAddress = IsPingIPs;
-        LocalSettings.SetBool("AutoPingIPs", IsPingIPs);
-        OnPropertyChanged(nameof(IsPingIPs));
+        ApplyToggleSetting("AutoPingIPs", v => { IsPingIPs = v; HostsEntry.AutoPingIPAddress = v; }, nameof(IsPingIPs), sender);
     }
 
     private void OnRemoveDefaultTextClick(object sender, RoutedEventArgs e)
     {
-        var isChecked = sender is AppBarToggleButton { IsChecked: true } || sender is ToggleMenuFlyoutItem { IsChecked: true };
-        IsRemoveDefaultText = isChecked;
-        HostsFile.RemoveDefaultText = IsRemoveDefaultText;
-        LocalSettings.SetBool("RemoveDefaultText", IsRemoveDefaultText);
-        OnPropertyChanged(nameof(IsRemoveDefaultText));
+        ApplyToggleSetting("RemoveDefaultText", v => { IsRemoveDefaultText = v; HostsFile.RemoveDefaultText = v; }, nameof(IsRemoveDefaultText), sender);
     }
 
-    // Update enable state of buttons that require a selection
     private void UpdateSelectionDependentButtons()
     {
         var hasSelection = EntriesList is not null && EntriesList.SelectedItems.Count > 0;
@@ -863,7 +769,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (ToggleButton is not null) ToggleButton.IsEnabled = hasSelection;
     }
 
-    // Update context menu items visibility / enabled state for Copy/Cut/Paste and Undo/Redo
     private void UpdateContextMenuItems()
     {
         var hasSelection = EntriesList is not null && EntriesList.SelectedItems.Count > 0;
