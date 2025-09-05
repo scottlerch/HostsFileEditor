@@ -30,6 +30,13 @@ public class UndoManager
 
     public static UndoManager Instance => _instance.Value;
 
+    // New public properties to expose availability without reflection
+    public bool CanUndo => _undoActionsPosition != _undoActions.First;
+    public bool CanRedo => _redoActionsPosition != _redoActions.Last;
+
+    // Event raised when the undo/redo history changes (so UI can update)
+    public event EventHandler? HistoryChanged;
+
     public void BatchActions(Action action)
     {
         var reentered = _batchingActions;
@@ -72,6 +79,7 @@ public class UndoManager
                 }
 
                 EnforceCapacity();
+                OnHistoryChanged();
             }
         }
     }
@@ -113,6 +121,7 @@ public class UndoManager
             }
 
             EnforceCapacity();
+            OnHistoryChanged();
         }
     }
 
@@ -133,6 +142,7 @@ public class UndoManager
             }
 
             _suspendAddActions = false;
+            OnHistoryChanged();
         }
     }
 
@@ -153,6 +163,7 @@ public class UndoManager
             }
 
             _suspendAddActions = false;
+            OnHistoryChanged();
         }
     }
 
@@ -163,6 +174,8 @@ public class UndoManager
 
         _redoActions.Clear();
         _redoActionsPosition = _redoActions.AddLast(new LinkedList<Action>());
+
+        OnHistoryChanged();
     }
 
     public void SuspendUndo(Action action)
@@ -226,5 +239,10 @@ public class UndoManager
             _undoActions.RemoveFirst();
             _undoActions.AddFirst(first);
         }
+    }
+
+    private void OnHistoryChanged()
+    {
+        HistoryChanged?.Invoke(this, EventArgs.Empty);
     }
 }

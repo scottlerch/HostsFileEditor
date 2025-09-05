@@ -262,12 +262,12 @@
                           SelectionChanged="OnEntriesSelectionChanged">
                     <ListView.ContextFlyout>
                         <MenuFlyout>
-                            <MenuFlyoutItem Text="Copy" Click="OnCopyClick" Icon="Copy" KeyboardAcceleratorTextOverride="Ctrl+C" />
-                            <MenuFlyoutItem Text="Cut" Click="OnCutClick" Icon="Cut" KeyboardAcceleratorTextOverride="Ctrl+X" />
-                            <MenuFlyoutItem Text="Paste" Click="OnPasteClick" Icon="Paste" KeyboardAcceleratorTextOverride="Ctrl+V" />
+                            <MenuFlyoutItem x:Name="CtxCopy" Text="Copy" Click="OnCopyClick" Icon="Copy" KeyboardAcceleratorTextOverride="Ctrl+C" />
+                            <MenuFlyoutItem x:Name="CtxCut" Text="Cut" Click="OnCutClick" Icon="Cut" KeyboardAcceleratorTextOverride="Ctrl+X" />
+                            <MenuFlyoutItem x:Name="CtxPaste" Text="Paste" Click="OnPasteClick" Icon="Paste" KeyboardAcceleratorTextOverride="Ctrl+V" />
                             <MenuFlyoutSeparator />
-                            <MenuFlyoutItem Text="Undo" Click="OnUndoClick" Icon="Undo" KeyboardAcceleratorTextOverride="Ctrl+Z" />
-                            <MenuFlyoutItem Text="Redo" Click="OnRedoClick" Icon="Redo" KeyboardAcceleratorTextOverride="Ctrl+Y" />
+                            <MenuFlyoutItem x:Name="CtxUndo" Text="Undo" Click="OnUndoClick" Icon="Undo" KeyboardAcceleratorTextOverride="Ctrl+Z" />
+                            <MenuFlyoutItem x:Name="CtxRedo" Text="Redo" Click="OnRedoClick" Icon="Redo" KeyboardAcceleratorTextOverride="Ctrl+Y" />
                         </MenuFlyout>
                     </ListView.ContextFlyout>
                     <ListView.ItemTemplate>

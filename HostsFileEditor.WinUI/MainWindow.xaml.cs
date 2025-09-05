@@ -12,6 +12,7 @@ using System.ComponentModel;
 using System.Numerics;
 using WinRT;
 using WinRT.Interop;
+using System;
 
 namespace HostsFileEditor;
 
@@ -79,8 +80,15 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(ActiveFilterCount));
         OnPropertyChanged(nameof(ActiveFiltersBadgeVisibility));
 
-        // Ensure buttons reflect current selection state at startup
+        // Ensure buttons reflect current selection/state at startup
         UpdateSelectionDependentButtons();
+        UpdateContextMenuItems();
+
+        // Subscribe to undo history changes so we can update Undo/Redo visibility
+        Utilities.UndoManager.Instance.HistoryChanged += OnUndoHistoryChanged;
+
+        // Unsubscribe when window closes to avoid leaks
+        Closed += (s, e) => Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
     }
 
     // Handlers invoked by KeyboardAccelerators in XAML (names must match generated wiring)
@@ -367,6 +375,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         // Update UI buttons when selection changes cause deletion
         UpdateSelectionDependentButtons();
+        UpdateContextMenuItems();
     }
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
@@ -394,6 +403,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
 
         UpdateSelectionDependentButtons();
+        UpdateContextMenuItems();
     }
 
     private void OnPasteClick(object sender, RoutedEventArgs e)
@@ -405,6 +415,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             RefreshEntries();
             _clipboardEntries = null;
         }
+
+        UpdateContextMenuItems();
     }
 
     private void OnDuplicateClick(object sender, RoutedEventArgs e)
@@ -793,6 +805,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         // Keep selection-aware buttons in sync after refresh
         UpdateSelectionDependentButtons();
+        UpdateContextMenuItems();
     }
 
     private void RefreshArchives()
@@ -854,10 +867,34 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (ToggleButton is not null) ToggleButton.IsEnabled = hasSelection;
     }
 
+    // Update context menu items visibility / enabled state for Copy/Cut/Paste and Undo/Redo
+    private void UpdateContextMenuItems()
+    {
+        var hasSelection = EntriesList is not null && EntriesList.SelectedItems.Count > 0;
+
+        if (CtxCopy is not null) CtxCopy.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
+        if (CtxCut is not null) CtxCut.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
+        if (CtxPaste is not null) CtxPaste.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
+
+        var undoManager = Utilities.UndoManager.Instance;
+        var canUndo = undoManager.CanUndo;
+        var canRedo = undoManager.CanRedo;
+
+        if (CtxUndo is not null) CtxUndo.Visibility = canUndo ? Visibility.Visible : Visibility.Collapsed;
+        if (CtxRedo is not null) CtxRedo.Visibility = canRedo ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void OnUndoHistoryChanged(object? sender, EventArgs e)
+    {
+        // Ensure UI update runs on UI thread
+        _ = DispatcherQueue.TryEnqueue(() => UpdateContextMenuItems());
+    }
+
     // Handler wired from XAML to keep buttons updated when selection changes
     private void OnEntriesSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         UpdateSelectionDependentButtons();
+        UpdateContextMenuItems();
     }
 
 }
