@@ -6,11 +6,14 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Numerics;
+using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using WinRT;
 using WinRT.Interop;
@@ -56,6 +59,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private MicaController? _micaController;
     private SystemBackdropConfiguration? _backdropConfiguration;
     private Grid? _titleBarHost;
+
+    private bool _isAnimatingArchive; // prevent re-entrant animations
 
     public MainWindow()
     {
@@ -556,55 +561,160 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void OnViewArchiveClick(object sender, RoutedEventArgs e)
+    private async Task SlideInAsync(UIElement element, bool fromRight = true, double? customOffset = null)
     {
-        var isChecked = sender is AppBarToggleButton { IsChecked: true };
-        IsArchiveVisible = isChecked;
-        ArchivesColumnWidth = isChecked ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-        LocalSettings.SetBool("ArchiveVisible", isChecked);
-        OnPropertyChanged(nameof(IsArchiveVisible));
-        OnPropertyChanged(nameof(ArchivesColumnWidth));
-        OnPropertyChanged(nameof(IsBackEnabled));
-        OnPropertyChanged(nameof(MainViewVisibility));
-        OnPropertyChanged(nameof(ArchiveViewVisibility));
-    }
-
-    private void OnBackClick(object sender, RoutedEventArgs e)
-    {
-        if (!IsArchiveVisible)
+        if (element is not FrameworkElement fe)
         {
             return;
         }
 
-        IsArchiveVisible = false;
-        LocalSettings.SetBool("ArchiveVisible", false);
-        OnPropertyChanged(nameof(IsArchiveVisible));
-        OnPropertyChanged(nameof(IsBackEnabled));
-        OnPropertyChanged(nameof(MainViewVisibility));
-        OnPropertyChanged(nameof(ArchiveViewVisibility));
+        ElementCompositionPreview.SetIsTranslationEnabled(element, true);
+        var visual = ElementCompositionPreview.GetElementVisual(element);
+        visual.StopAnimation("Translation");
+
+        double width = customOffset ?? fe.ActualWidth;
+        if (width <= 0 && Content is FrameworkElement root)
+        {
+            width = root.ActualWidth;
+        }
+        if (width <= 0)
+        {
+            width = 400;
+        }
+        float startX = (float)(fromRight ? width : -width);
+
+        visual.Properties.InsertVector3("Translation", new Vector3(startX, 0, 0));
+
+        var compositor = visual.Compositor;
+        var anim = compositor.CreateVector3KeyFrameAnimation();
+        anim.Duration = TimeSpan.FromMilliseconds(300);
+        anim.InsertKeyFrame(0f, new Vector3(startX, 0, 0));
+        anim.InsertKeyFrame(1f, new Vector3(0, 0, 0));
+
+        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        visual.StartAnimation("Translation", anim);
+        batch.End();
+        var tcs = new TaskCompletionSource<bool>();
+        batch.Completed += (_, __) => tcs.TrySetResult(true);
+        await tcs.Task.ConfigureAwait(true);
     }
 
-    private void OnPingIPsClick(object sender, RoutedEventArgs e)
+    private async Task SlideOutAsync(UIElement element, bool toRight = true, double? customOffset = null)
     {
-        var isChecked = sender is AppBarToggleButton { IsChecked: true };
-        IsPingIPs = isChecked;
-        HostsEntry.AutoPingIPAddress = IsPingIPs;
-        LocalSettings.SetBool("AutoPingIPs", IsPingIPs);
-        OnPropertyChanged(nameof(IsPingIPs));
+        if (element is not FrameworkElement fe)
+        {
+            return;
+        }
+
+        ElementCompositionPreview.SetIsTranslationEnabled(element, true);
+        var visual = ElementCompositionPreview.GetElementVisual(element);
+        visual.StopAnimation("Translation");
+
+        double width = customOffset ?? fe.ActualWidth;
+        if (width <= 0 && Content is FrameworkElement root)
+        {
+            width = root.ActualWidth;
+        }
+        if (width <= 0)
+        {
+            width = 400;
+        }
+        float endX = (float)(toRight ? width : -width);
+
+        var compositor = visual.Compositor;
+        var anim = compositor.CreateVector3KeyFrameAnimation();
+        anim.Duration = TimeSpan.FromMilliseconds(300);
+        anim.InsertKeyFrame(0f, new Vector3(0, 0, 0));
+        anim.InsertKeyFrame(1f, new Vector3(endX, 0, 0));
+
+        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        visual.StartAnimation("Translation", anim);
+        batch.End();
+        var tcs = new TaskCompletionSource<bool>();
+        batch.Completed += (_, __) => tcs.TrySetResult(true);
+        await tcs.Task.ConfigureAwait(true);
     }
 
-    private void OnRemoveDefaultTextClick(object sender, RoutedEventArgs e)
+    private async void OnViewArchiveClick(object sender, RoutedEventArgs e)
     {
-        var isChecked = sender is AppBarToggleButton { IsChecked: true };
-        IsRemoveDefaultText = isChecked;
-        HostsFile.RemoveDefaultText = IsRemoveDefaultText;
-        LocalSettings.SetBool("RemoveDefaultText", IsRemoveDefaultText);
-        OnPropertyChanged(nameof(IsRemoveDefaultText));
+        if (_isAnimatingArchive) return;
+        _isAnimatingArchive = true;
+        try
+        {
+            var show = sender is AppBarToggleButton { IsChecked: true };
+            if (show)
+            {
+                IsArchiveVisible = true;
+                ArchivesColumnWidth = new GridLength(1, GridUnitType.Star);
+                LocalSettings.SetBool("ArchiveVisible", true);
+                OnPropertyChanged(nameof(IsArchiveVisible));
+                OnPropertyChanged(nameof(ArchivesColumnWidth));
+                OnPropertyChanged(nameof(IsBackEnabled));
+                OnPropertyChanged(nameof(MainViewVisibility));
+                OnPropertyChanged(nameof(ArchiveViewVisibility));
+                // Animate archive sliding in from right
+                if (ArchiveHost.Visibility == Visibility.Visible)
+                {
+                    await SlideInAsync(ArchiveHost, fromRight: true);
+                }
+            }
+            else
+            {
+                // Animate out before collapsing
+                if (ArchiveHost.Visibility == Visibility.Visible)
+                {
+                    await SlideOutAsync(ArchiveHost, toRight: true);
+                }
+                IsArchiveVisible = false;
+                ArchivesColumnWidth = new GridLength(0);
+                LocalSettings.SetBool("ArchiveVisible", false);
+                OnPropertyChanged(nameof(IsArchiveVisible));
+                OnPropertyChanged(nameof(ArchivesColumnWidth));
+                OnPropertyChanged(nameof(IsBackEnabled));
+                OnPropertyChanged(nameof(MainViewVisibility));
+                OnPropertyChanged(nameof(ArchiveViewVisibility));
+            }
+        }
+        finally
+        {
+            _isAnimatingArchive = false;
+        }
+    }
+
+    private async void OnBackClick(object sender, RoutedEventArgs e)
+    {
+        if (!IsArchiveVisible || _isAnimatingArchive)
+        {
+            return;
+        }
+
+        _isAnimatingArchive = true;
+        try
+        {
+            if (ArchiveHost.Visibility == Visibility.Visible)
+            {
+                await SlideOutAsync(ArchiveHost, toRight: true);
+            }
+            IsArchiveVisible = false;
+            LocalSettings.SetBool("ArchiveVisible", false);
+            OnPropertyChanged(nameof(IsArchiveVisible));
+            OnPropertyChanged(nameof(IsBackEnabled));
+            OnPropertyChanged(nameof(MainViewVisibility));
+            OnPropertyChanged(nameof(ArchiveViewVisibility));
+        }
+        finally
+        {
+            _isAnimatingArchive = false;
+        }
     }
 
     private void RefreshEntries(bool preserveSelection = false)
     {
-        var text = FilterTextBox.Text?.Trim() ?? string.Empty;
+        string text = string.Empty;
+        if (Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb && ftb.Text is string s)
+        {
+            text = s.Trim();
+        }
         var sel = preserveSelection ? EntriesList.SelectedItems.Cast<HostsEntry>().ToHashSet() : [];
 
         Entries.Clear();
@@ -633,7 +743,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             }
         }
 
-        // Notify visibility changes for entry-related messages
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
@@ -666,5 +775,23 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             underline.Background = new SolidColorBrush(Colors.White);
         }
+    }
+
+    private void OnPingIPsClick(object sender, RoutedEventArgs e)
+    {
+        var isChecked = sender is AppBarToggleButton { IsChecked: true } || sender is ToggleMenuFlyoutItem { IsChecked: true };
+        IsPingIPs = isChecked;
+        HostsEntry.AutoPingIPAddress = IsPingIPs;
+        LocalSettings.SetBool("AutoPingIPs", IsPingIPs);
+        OnPropertyChanged(nameof(IsPingIPs));
+    }
+
+    private void OnRemoveDefaultTextClick(object sender, RoutedEventArgs e)
+    {
+        var isChecked = sender is AppBarToggleButton { IsChecked: true } || sender is ToggleMenuFlyoutItem { IsChecked: true };
+        IsRemoveDefaultText = isChecked;
+        HostsFile.RemoveDefaultText = IsRemoveDefaultText;
+        LocalSettings.SetBool("RemoveDefaultText", IsRemoveDefaultText);
+        OnPropertyChanged(nameof(IsRemoveDefaultText));
     }
 }

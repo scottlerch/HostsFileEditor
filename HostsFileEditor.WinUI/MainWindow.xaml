@@ -90,12 +90,12 @@
                     <MenuFlyout Placement="BottomEdgeAlignedLeft">
                         <MenuFlyoutItem Text="Import" Icon="OpenFile" Click="OnImportClick"/>
                         <MenuFlyoutItem Text="Save As" Icon="SaveLocal" Click="OnSaveAsClick"/>
-                        <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Text="Archive" Click="OnArchiveClick">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE7C3;"/>
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
+                        <MenuFlyoutSeparator/>
                         <ToggleMenuFlyoutItem Text="Disable Hosts" IsChecked="{x:Bind IsDisabledHosts, Mode=OneWay}" Click="OnDisableHostsClick">
                             <ToggleMenuFlyoutItem.Icon>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8F8;"/>
@@ -111,7 +111,6 @@
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE75C;"/>
                             </ToggleMenuFlyoutItem.Icon>
                         </ToggleMenuFlyoutItem>
-                        <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Text="Restore Default" Click="OnRestoreClick">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE81C;"/>
