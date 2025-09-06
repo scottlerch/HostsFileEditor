@@ -11,57 +11,82 @@
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="FilterOptionsButtonStyle" TargetType="Button">
-                <Setter Property="Background" Value="{ThemeResource TextControlBackground}"/>
-                <Setter Property="BorderBrush" Value="{ThemeResource TextControlBorderBrush}"/>
                 <Setter Property="BorderThickness" Value="0,1,1,1"/>
                 <Setter Property="CornerRadius" Value="0,4,4,0"/>
                 <Setter Property="Padding" Value="0"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource TextControlBorderBrush}" />
+                <Setter Property="Background" Value="{ThemeResource TextControlBackground}"/>
+                <Setter Property="Foreground" Value="{ThemeResource TextControlForeground}"/>
                 <Setter Property="HorizontalContentAlignment" Value="Center"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <Setter Property="MinHeight" Value="32"/>
+                <Setter Property="Background" Value="Transparent" />
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid>
-                                <Border x:Name="RootBorder"
+                            <Grid x:Name="Root">
+                                <!-- Outer box like TextBox -->
+                                <Border x:Name="Box"
                                     Background="{TemplateBinding Background}"
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="{TemplateBinding CornerRadius}">
-                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                </Border>
+                                    CornerRadius="{TemplateBinding CornerRadius}"/>
+
+                                <!-- Content -->
+                                <ContentPresenter x:Name="Content"
+                                    Margin="{TemplateBinding Padding}"
+                                    Foreground="{TemplateBinding Foreground}"
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+
+                                <!-- Focus underline -->
+                                <Rectangle x:Name="Underline"
+                                    Height="2"
+                                    VerticalAlignment="Bottom"
+                                    Opacity="0"
+                                    Fill="{ThemeResource TextControlForegroundFocused}"/>
+
+                                <!-- ✅ Visual states belong here -->
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal"/>
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="Box.BorderBrush" Value="{ThemeResource TextControlBorderBrushPointerOver}"/>
+                                                <Setter Target="Box.Background" Value="{ThemeResource TextControlBackgroundPointerOver}"/>
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="Box.BorderBrush" Value="{ThemeResource TextControlBorderBrushPointerOver}"/>
+                                                <Setter Target="Box.Background" Value="{ThemeResource TextControlBackgroundPointerOver}"/>
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <VisualState.Setters>
+                                                <Setter Target="Box.BorderBrush" Value="{ThemeResource TextControlBorderBrushDisabled}"/>
+                                                <Setter Target="Box.Background" Value="{ThemeResource TextControlBackgroundDisabled}"/>
+                                                <Setter Target="Underline.Opacity" Value="0"/>
+                                                <Setter Target="Content.Foreground" Value="{ThemeResource TextControlForegroundDisabled}"/>
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused">
+                                            <VisualState.Setters>
+                                                <Setter Target="Box.BorderBrush" Value="{ThemeResource TextControlBorderBrushFocused}"/>
+                                                <Setter Target="Underline.Opacity" Value="1"/>
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="PointerFocused"/>
+                                        <VisualState x:Name="Unfocused">
+                                            <VisualState.Setters>
+                                                <Setter Target="Underline.Opacity" Value="0"/>
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
                             </Grid>
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal"/>
-                                    <VisualState x:Name="PointerOver">
-                                        <VisualState.Setters>
-                                            <Setter Target="RootBorder.Background" Value="{ThemeResource TextControlBackgroundPointerOver}"/>
-                                            <Setter Target="RootBorder.BorderBrush" Value="{ThemeResource TextControlBorderBrushPointerOver}"/>
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState x:Name="Pressed">
-                                        <VisualState.Setters>
-                                            <Setter Target="RootBorder.Background" Value="{ThemeResource TextControlBackgroundPressed}"/>
-                                            <Setter Target="RootBorder.BorderBrush" Value="{ThemeResource TextControlBorderBrushPressed}"/>
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState x:Name="Disabled">
-                                        <VisualState.Setters>
-                                            <Setter Target="RootBorder.Opacity" Value="0.5"/>
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                                <VisualStateGroup x:Name="FocusStates">
-                                    <VisualState x:Name="Focused">
-                                        <VisualState.Setters>
-                                            <Setter Target="RootBorder.BorderBrush" Value="{ThemeResource TextControlBorderBrushFocused}"/>
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState x:Name="Unfocused"/>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -91,92 +116,6 @@
 
             <!-- Rounded selection style for EntriesList items -->
             <Style x:Key="RoundedListViewItemStyle" TargetType="ListViewItem">
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ListViewItem">
-                            <Grid x:Name="Root" Background="Transparent">
-                                <Border x:Name="SelectionBackground" CornerRadius="6" Opacity="0" Background="{ThemeResource ListViewItemBackgroundSelected}"/>
-                                <Border x:Name="PointerOverBackground" CornerRadius="6" Opacity="0" Background="{ThemeResource ListViewItemBackgroundPointerOver}"/>
-                                <ContentPresenter x:Name="ContentPresenter"
-                                                  Margin="0"
-                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                <VisualStateManager.VisualStateGroups>
-                                    <VisualStateGroup x:Name="CommonStates">
-                                        <VisualState x:Name="Normal">
-                                            <Storyboard>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="PointerOver">
-                                            <Storyboard>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="Pressed"/>
-                                        <VisualState x:Name="Disabled">
-                                            <Storyboard>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                    </VisualStateGroup>
-                                    <VisualStateGroup x:Name="SelectionStates">
-                                        <VisualState x:Name="Unselected">
-                                            <Storyboard>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="Selected">
-                                            <Storyboard>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="PointerOverSelected">
-                                            <Storyboard>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="SelectedUnfocused">
-                                            <Storyboard>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetName="PointerOverBackground" Storyboard.TargetProperty="(UIElement.Opacity)">
-                                                    <DiscreteDoubleKeyFrame KeyTime="0" Value="0" />
-                                                </DoubleAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                    </VisualStateGroup>
-                                </VisualStateManager.VisualStateGroups>
-                            </Grid>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
             </Style>
 
             <!-- Implicit TextBox style: rounded corners, flat border -->
@@ -185,26 +124,6 @@
                 <Setter Property="BorderThickness" Value="1"/>
             </Style>
 
-            <!-- Remap TextBox template brushes to Fluent greys (Settings-like). -->
-            <!-- These keys are consumed by the TextBox default template. -->
-            <StaticResource x:Key="TextControlBackground" ResourceKey="ControlFillColorSecondaryBrush"/>
-            <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="ControlFillColorTertiaryBrush"/>
-            <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="ControlFillColorInputActiveBrush"/>
-            <StaticResource x:Key="TextControlBackgroundDisabled" ResourceKey="ControlFillColorDisabledBrush"/>
-
-            <StaticResource x:Key="TextControlBorderBrush" ResourceKey="ControlStrokeColorSecondaryBrush"/>
-            <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="ControlStrokeColorSecondaryBrush"/>
-            <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="ControlStrokeColorDefaultBrush"/>
-            <StaticResource x:Key="TextControlBorderBrushDisabled" ResourceKey="ControlStrokeColorDefaultBrush"/>
-
-            <StaticResource x:Key="TextControlForeground" ResourceKey="TextFillColorPrimaryBrush"/>
-            <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="TextFillColorPrimaryBrush"/>
-            <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="TextFillColorPrimaryBrush"/>
-            <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="TextFillColorDisabledBrush"/>
-            <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="TextFillColorSecondaryBrush"/>
-
-            <!-- Remove bevel/elevation line if used by the template -->
-            <SolidColorBrush x:Key="ControlElevationBorderBrush" Opacity="0"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -8,7 +8,6 @@
     mc:Ignorable="d"
     Title="Hosts File Editor">
     <Grid RowDefinitions="Auto,Auto,*" Background="Transparent" MinWidth="300" MinHeight="480">
-        <!-- Use application-wide styles defined in App.xaml -->
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="OnCopyAcceleratorInvoked"/>
             <KeyboardAccelerator Key="X" Modifiers="Control" Invoked="OnCutAcceleratorInvoked"/>
@@ -236,16 +235,6 @@
                         </Button.Flyout>
                     </Button>
                 </Grid>
-                <!-- Focus underline spanning both columns -->
-                <Border x:Name="FilterUnderline"
-                        Grid.Row="1"
-                        Grid.ColumnSpan="2"
-                        Height="2"
-                        Background="White"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Bottom"
-                        Margin="4,0,4,0"
-                        CornerRadius="0,0,2,2" />
             </Grid>
         </Grid>
         <Grid Grid.Row="2" Background="Transparent">
@@ -257,7 +246,6 @@
                           HorizontalContentAlignment="Stretch"
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           ScrollViewer.HorizontalScrollMode="Disabled"
-                          Background="Transparent"
                           ItemsSource="{x:Bind Entries, Mode=OneWay}"
                           SelectionChanged="OnEntriesSelectionChanged">
                     <ListView.ContextFlyout>
@@ -275,8 +263,8 @@
                     </ListView.ContextFlyout>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Border Padding="8" CornerRadius="4" BorderThickness="0,0,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="Transparent">
-                                <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="Transparent">
+                            <Border Padding="8" CornerRadius="4" BorderThickness="0,0,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch">
+                                <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>
                                         <ColumnDefinition Width="Auto"/>
