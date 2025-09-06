@@ -22,6 +22,7 @@ public static class SharedColumnWidth
     private static int _suppressEvents; // >0 when recalculating
 
     public static string? GetColumnKey(DependencyObject obj) => (string?)obj.GetValue(ColumnKeyProperty);
+
     public static void SetColumnKey(DependencyObject obj, string? value) => obj.SetValue(ColumnKeyProperty, value);
 
     public static readonly DependencyProperty ColumnKeyProperty = DependencyProperty.RegisterAttached(

@@ -1,3 +1,4 @@
+using HostsFileEditor.Services;
 using HostsFileEditor.Win32;
 using Microsoft.UI;
 using Microsoft.UI.Composition;
@@ -5,12 +6,10 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Numerics;
 using WinRT;
 using WinRT.Interop;
 
@@ -27,22 +26,33 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public bool IsDisabledHosts => !HostsFile.IsEnabled;
+
     public bool IsPingIPs { get; private set; }
+
     public bool IsRemoveDefaultText { get; private set; }
+
     public GridLength ArchivesColumnWidth { get; private set; } = new(0);
+
     public bool IsArchiveVisible { get; private set; }
+
     public bool IsBackEnabled => IsArchiveVisible;
 
     public Visibility ArchivesEmptyVisibility => Archives.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
     public Visibility MainViewVisibility => IsArchiveVisible ? Visibility.Collapsed : Visibility.Visible;
+
     public Visibility ArchiveViewVisibility => IsArchiveVisible ? Visibility.Visible : Visibility.Collapsed;
+
     public Visibility EntriesEmptyVisibility => HostsFile.Instance.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
     public Visibility EntriesFilteredVisibility => HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    public bool IsFilterCommentsHidden { get; private set; }   // bound to ToggleMenuFlyoutItem.IsChecked
-    public bool IsFilterDisabledHidden { get; private set; }   // bound to ToggleMenuFlyoutItem.IsChecked
+    public bool IsFilterCommentsHidden { get; private set; }
+
+    public bool IsFilterDisabledHidden { get; private set; }
 
     public int ActiveFilterCount => (IsFilterCommentsHidden ? 1 : 0) + (IsFilterDisabledHidden ? 1 : 0);
+
     public Visibility ActiveFiltersBadgeVisibility => ActiveFilterCount > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     private MicaController? _micaController;
@@ -51,9 +61,35 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private bool _isAnimatingArchive; // prevent re-entrant animations
 
-    public MainWindow()
+    private readonly DialogService _dialogService;
+    private readonly AnimationService _animationService;
+    private readonly SelectionStateService _selectionService;
+
+    public MainWindow(DialogService dialogService, AnimationService animationService)
     {
+        _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+        _animationService = animationService ?? throw new ArgumentNullException(nameof(animationService));
+
         InitializeComponent();
+
+        _selectionService = new SelectionStateService(
+            hasSelection: () => EntriesList is not null && EntriesList.SelectedItems.Count > 0,
+            setRemoveEnabled: v => { if (RemoveButton is not null) RemoveButton.IsEnabled = v; },
+            setDuplicateEnabled: v => { if (DuplicateButton is not null) DuplicateButton.IsEnabled = v; },
+            setMoveUpEnabled: v => { if (MoveUpButton is not null) MoveUpButton.IsEnabled = v; },
+            setMoveDownEnabled: v => { if (MoveDownButton is not null) MoveDownButton.IsEnabled = v; },
+            setToggleEnabled: v => { if (ToggleButton is not null) ToggleButton.IsEnabled = v; },
+            setCtxCopyVis: v => { if (CtxCopy is not null) CtxCopy.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setCtxCutVis: v => { if (CtxCut is not null) CtxCut.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setCtxPasteVis: v => { if (CtxPaste is not null) CtxPaste.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setCtxAddAboveVis: v => { if (CtxAddAbove is not null) CtxAddAbove.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setCtxAddBelowVis: v => { if (CtxAddBelow is not null) CtxAddBelow.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setUndoRedoVis: (undo, redo) =>
+            {
+                if (CtxUndo is not null) CtxUndo.Visibility = undo ? Visibility.Visible : Visibility.Collapsed;
+                if (CtxRedo is not null) CtxRedo.Visibility = redo ? Visibility.Visible : Visibility.Collapsed;
+            });
+
         TrySetAppWindowTitleBar();
         TryEnableMicaBackdrop();
         RefreshEntries();
@@ -78,8 +114,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(ActiveFiltersBadgeVisibility));
 
         // Ensure buttons reflect current selection/state at startup
-        UpdateSelectionDependentButtons();
-        UpdateContextMenuItems();
+        _selectionService.UpdateSelectionDependentButtons();
+        _selectionService.UpdateContextMenuItems();
 
         // Subscribe to undo history changes so we can update Undo/Redo visibility
         Utilities.UndoManager.Instance.HistoryChanged += OnUndoHistoryChanged;
@@ -176,21 +212,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnPasteAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         => TryInvokeUnlessTextBox(() => OnPasteClick(this, new RoutedEventArgs()), args);
 
-    private void OnCopyClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
-        => TryInvokeUnlessTextBox(() => OnCopyClick(this, new RoutedEventArgs()), args);
-
-    private void OnCutClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
-        => TryInvokeUnlessTextBox(() => OnCutClick(this, new RoutedEventArgs()), args);
-
-    private void OnPasteClick(Microsoft.UI.Xaml.Input.KeyboardAccelerator sender, Microsoft.UI.Xaml.Input.KeyboardAcceleratorInvokedEventArgs args)
-        => TryInvokeUnlessTextBox(() => OnPasteClick(this, new RoutedEventArgs()), args);
-
     private async void OnImportClick(object sender, RoutedEventArgs e)
     {
         try
         {
-            var hwnd = GetHwnd();
-            var path = Win32FileDialogs.OpenFileDialog(hwnd, "All Files (*.*)|*.*");
+            var path = Win32FileDialogs.OpenFileDialog(GetHwnd(), "All Files (*.*)|*.*");
             if (!string.IsNullOrWhiteSpace(path))
             {
                 HostsFile.Instance.Import(path);
@@ -212,8 +238,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         try
         {
-            var hwnd = GetHwnd();
-            var path = Win32FileDialogs.SaveFileDialog(hwnd, "hosts", "Hosts (*.txt;*.hosts)|*.txt;*.hosts|Text (*.txt)|*.txt|All Files (*.*)|*.*");
+            var path = Win32FileDialogs.SaveFileDialog(GetHwnd(), "hosts", "Hosts (*.txt;*.hosts)|*.txt;*.hosts|Text (*.txt)|*.txt|All Files (*.*)|*.*");
             if (!string.IsNullOrWhiteSpace(path))
             {
                 HostsFile.Instance.SaveAs(path);
@@ -295,8 +320,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
 
         // Update UI buttons when selection changes cause deletion
-        UpdateSelectionDependentButtons();
-        UpdateContextMenuItems();
+        _selectionService.UpdateSelectionDependentButtons();
+        _selectionService.UpdateContextMenuItems();
     }
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
@@ -324,8 +349,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
 
-        UpdateSelectionDependentButtons();
-        UpdateContextMenuItems();
+        _selectionService.UpdateSelectionDependentButtons();
+        _selectionService.UpdateContextMenuItems();
     }
 
     private void OnPasteClick(object sender, RoutedEventArgs e)
@@ -338,7 +363,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _clipboardEntries = null;
         }
 
-        UpdateContextMenuItems();
+        _selectionService.UpdateContextMenuItems();
     }
 
     private void OnDuplicateClick(object sender, RoutedEventArgs e)
@@ -379,16 +404,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
     {
-        var dlg = new ContentDialog
-        {
-            XamlRoot = Content.XamlRoot,
-            Title = "Reload hosts file?",
-            Content = "You will lose any unsaved changes. Continue?",
-            PrimaryButtonText = "Yes",
-            CloseButtonText = "No"
-        };
-        var result = await dlg.ShowAsync();
-        if (result == ContentDialogResult.Primary)
+        var confirmed = await ShowConfirmationAsync("Reload hosts file?", "You will lose any unsaved changes. Continue?");
+        if (confirmed)
         {
             HostsFile.Instance.Refresh();
             RefreshEntries();
@@ -490,19 +507,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnArchiveClick(object sender, RoutedEventArgs e)
     {
-        var input = new TextBox { PlaceholderText = "Archive name" };
-        var dlg = new ContentDialog
+        var name = _dialogService is not null
+            ? await _dialogService.ShowInputAsync(Content.XamlRoot, "Create Archive", "Archive name", "OK", "Cancel")
+            : null;
+
+        if (!string.IsNullOrWhiteSpace(name))
         {
-            XamlRoot = Content.XamlRoot,
-            Title = "Create Archive",
-            Content = input,
-            PrimaryButtonText = "OK",
-            CloseButtonText = "Cancel"
-        };
-        var result = await dlg.ShowAsync();
-        if (result == ContentDialogResult.Primary && !string.IsNullOrWhiteSpace(input.Text))
-        {
-            HostsFile.Instance.Archive(input.Text.Trim());
+            HostsFile.Instance.Archive(name.Trim());
             RefreshArchives();
         }
     }
@@ -525,156 +536,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private async Task SlideInAsync(UIElement element, bool fromRight = true, double? customOffset = null)
-    {
-        if (element is not FrameworkElement fe)
-        {
-            return;
-        }
-
-        ElementCompositionPreview.SetIsTranslationEnabled(element, true);
-        var visual = ElementCompositionPreview.GetElementVisual(element);
-        visual.StopAnimation("Translation");
-
-        var width = customOffset ?? fe.ActualWidth;
-        if (width <= 0 && Content is FrameworkElement root)
-        {
-            width = root.ActualWidth;
-        }
-        if (width <= 0)
-        {
-            width = 400;
-        }
-        var startX = (float)(fromRight ? width : -width);
-
-        visual.Properties.InsertVector3("Translation", new Vector3(startX, 0, 0));
-
-        var compositor = visual.Compositor;
-        var anim = compositor.CreateVector3KeyFrameAnimation();
-        anim.Duration = TimeSpan.FromMilliseconds(300);
-        anim.InsertKeyFrame(0f, new Vector3(startX, 0, 0));
-        anim.InsertKeyFrame(1f, new Vector3(0, 0, 0));
-
-        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-        visual.StartAnimation("Translation", anim);
-        batch.End();
-        var tcs = new TaskCompletionSource<bool>();
-        batch.Completed += (_, __) => tcs.TrySetResult(true);
-        await tcs.Task.ConfigureAwait(true);
-    }
-
-    private async Task SlideOutAsync(UIElement element, bool toRight = true, double? customOffset = null)
-    {
-        if (element is not FrameworkElement fe)
-        {
-            return;
-        }
-
-        ElementCompositionPreview.SetIsTranslationEnabled(element, true);
-        var visual = ElementCompositionPreview.GetElementVisual(element);
-        visual.StopAnimation("Translation");
-
-        var width = customOffset ?? fe.ActualWidth;
-        if (width <= 0 && Content is FrameworkElement root)
-        {
-            width = root.ActualWidth;
-        }
-        if (width <= 0)
-        {
-            width = 400;
-        }
-        var endX = (float)(toRight ? width : -width);
-
-        var compositor = visual.Compositor;
-        var anim = compositor.CreateVector3KeyFrameAnimation();
-        anim.Duration = TimeSpan.FromMilliseconds(300);
-        anim.InsertKeyFrame(0f, new Vector3(0, 0, 0));
-        anim.InsertKeyFrame(1f, new Vector3(endX, 0, 0));
-
-        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
-        visual.StartAnimation("Translation", anim);
-        batch.End();
-        var tcs = new TaskCompletionSource<bool>();
-        batch.Completed += (_, __) => tcs.TrySetResult(true);
-        await tcs.Task.ConfigureAwait(true);
-    }
-
     private async void OnViewArchiveClick(object sender, RoutedEventArgs e)
     {
-        if (_isAnimatingArchive)
-        {
-            return;
-        }
-
-        _isAnimatingArchive = true;
-        try
-        {
-            var show = sender is AppBarToggleButton { IsChecked: true };
-            if (show)
-            {
-                IsArchiveVisible = true;
-                ArchivesColumnWidth = new GridLength(1, GridUnitType.Star);
-                LocalSettings.SetBool("ArchiveVisible", true);
-                OnPropertyChanged(nameof(IsArchiveVisible));
-                OnPropertyChanged(nameof(ArchivesColumnWidth));
-                OnPropertyChanged(nameof(IsBackEnabled));
-                OnPropertyChanged(nameof(MainViewVisibility));
-                OnPropertyChanged(nameof(ArchiveViewVisibility));
-                // Animate archive sliding in from right
-                if (ArchiveHost.Visibility == Visibility.Visible)
-                {
-                    await SlideInAsync(ArchiveHost, fromRight: true);
-                }
-            }
-            else
-            {
-                // Animate out before collapsing
-                if (ArchiveHost.Visibility == Visibility.Visible)
-                {
-                    await SlideOutAsync(ArchiveHost, toRight: true);
-                }
-                IsArchiveVisible = false;
-                ArchivesColumnWidth = new GridLength(0);
-                LocalSettings.SetBool("ArchiveVisible", false);
-                OnPropertyChanged(nameof(IsArchiveVisible));
-                OnPropertyChanged(nameof(ArchivesColumnWidth));
-                OnPropertyChanged(nameof(IsBackEnabled));
-                OnPropertyChanged(nameof(MainViewVisibility));
-                OnPropertyChanged(nameof(ArchiveViewVisibility));
-            }
-        }
-        finally
-        {
-            _isAnimatingArchive = false;
-        }
+        var show = sender is AppBarToggleButton { IsChecked: true };
+        await ToggleArchiveVisibilityAsync(show);
     }
 
-    private async void OnBackClick(object sender, RoutedEventArgs e)
-    {
-        if (!IsArchiveVisible || _isAnimatingArchive)
-        {
-            return;
-        }
-
-        _isAnimatingArchive = true;
-        try
-        {
-            if (ArchiveHost.Visibility == Visibility.Visible)
-            {
-                await SlideOutAsync(ArchiveHost, toRight: true);
-            }
-            IsArchiveVisible = false;
-            LocalSettings.SetBool("ArchiveVisible", false);
-            OnPropertyChanged(nameof(IsArchiveVisible));
-            OnPropertyChanged(nameof(IsBackEnabled));
-            OnPropertyChanged(nameof(MainViewVisibility));
-            OnPropertyChanged(nameof(ArchiveViewVisibility));
-        }
-        finally
-        {
-            _isAnimatingArchive = false;
-        }
-    }
+    private async void OnBackClick(object sender, RoutedEventArgs e) => await ToggleArchiveVisibilityAsync(false);
 
     private void RefreshEntries(bool preserveSelection = false)
     {
@@ -715,8 +583,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
 
         // Keep selection-aware buttons in sync after refresh
-        UpdateSelectionDependentButtons();
-        UpdateContextMenuItems();
+        _selectionService.UpdateSelectionDependentButtons();
+        _selectionService.UpdateContextMenuItems();
     }
 
     private void RefreshArchives()
@@ -749,57 +617,18 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void OnPingIPsClick(object sender, RoutedEventArgs e)
-    {
+    private void OnPingIPsClick(object sender, RoutedEventArgs e) =>
         ApplyToggleSetting("AutoPingIPs", v => { IsPingIPs = v; HostsEntry.AutoPingIPAddress = v; }, nameof(IsPingIPs), sender);
-    }
 
-    private void OnRemoveDefaultTextClick(object sender, RoutedEventArgs e)
-    {
+    private void OnRemoveDefaultTextClick(object sender, RoutedEventArgs e) =>
         ApplyToggleSetting("RemoveDefaultText", v => { IsRemoveDefaultText = v; HostsFile.RemoveDefaultText = v; }, nameof(IsRemoveDefaultText), sender);
-    }
 
-    private void UpdateSelectionDependentButtons()
-    {
-        var hasSelection = EntriesList is not null && EntriesList.SelectedItems.Count > 0;
-        if (RemoveButton is not null) RemoveButton.IsEnabled = hasSelection;
-        if (DuplicateButton is not null) DuplicateButton.IsEnabled = hasSelection;
-        if (MoveUpButton is not null) MoveUpButton.IsEnabled = hasSelection;
-        if (MoveDownButton is not null) MoveDownButton.IsEnabled = hasSelection;
-        if (ToggleButton is not null) ToggleButton.IsEnabled = hasSelection;
-    }
+    private void OnUndoHistoryChanged(object? sender, EventArgs e) =>
+        _ = DispatcherQueue.TryEnqueue(() => _selectionService.UpdateContextMenuItems());
 
-    private void UpdateContextMenuItems()
-    {
-        var hasSelection = EntriesList is not null && EntriesList.SelectedItems.Count > 0;
-
-        if (CtxCopy is not null) CtxCopy.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
-        if (CtxCut is not null) CtxCut.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
-        if (CtxPaste is not null) CtxPaste.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
-
-        // Show Add Above / Add Below only when an entry is selected
-        if (CtxAddAbove is not null) CtxAddAbove.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
-        if (CtxAddBelow is not null) CtxAddBelow.Visibility = hasSelection ? Visibility.Visible : Visibility.Collapsed;
-
-        var undoManager = Utilities.UndoManager.Instance;
-        var canUndo = undoManager.CanUndo;
-        var canRedo = undoManager.CanRedo;
-
-        if (CtxUndo is not null) CtxUndo.Visibility = canUndo ? Visibility.Visible : Visibility.Collapsed;
-        if (CtxRedo is not null) CtxRedo.Visibility = canRedo ? Visibility.Visible : Visibility.Collapsed;
-    }
-
-    private void OnUndoHistoryChanged(object? sender, EventArgs e)
-    {
-        // Ensure UI update runs on UI thread
-        _ = DispatcherQueue.TryEnqueue(() => UpdateContextMenuItems());
-    }
-
-    // Handler wired from XAML to keep buttons updated when selection changes
     private void OnEntriesSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        UpdateSelectionDependentButtons();
-        UpdateContextMenuItems();
+        _selectionService.UpdateSelectionDependentButtons();
+        _selectionService.UpdateContextMenuItems();
     }
-
 }
