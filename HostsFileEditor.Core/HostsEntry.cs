@@ -141,7 +141,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
                 undoAction: () => Comment = local,
                 redoAction: () => Comment = value);
 
-            Update(ref _comment, value, () => Comment);
+            Update(ref _comment, value, nameof(Comment));
         }
     }
 
@@ -157,7 +157,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
                 undoAction: () => Enabled = local,
                 redoAction: () => Enabled = value);
 
-            Update(ref _enabled, value, () => Enabled);
+            Update(ref _enabled, value, nameof(Enabled));
         }
     }
 
@@ -173,7 +173,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
                 undoAction: () => HostNames = local,
                 redoAction: () => HostNames = value.Trim());
 
-            Update(ref _hostnames, value.Trim(), () => HostNames, ValidateHostnames);
+            Update(ref _hostnames, value.Trim(), nameof(HostNames), ValidateHostnames);
         }
     }
 
@@ -189,7 +189,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
                 undoAction: () => IpAddress = local,
                 redoAction: () => IpAddress = value.Trim());
 
-            Update(ref _ipAddress, value.Trim(), () => IpAddress, ValidateIpAddress);
+            Update(ref _ipAddress, value.Trim(), nameof(IpAddress), ValidateIpAddress);
         }
     }
 
@@ -222,14 +222,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            Update(ref _unparsedText, value, () => UnparsedText);
+            Update(ref _unparsedText, value, nameof(UnparsedText));
         }
     }
 
     public bool Valid
     {
         get => _valid;
-        set => Update(ref _valid, value, () => Valid);
+        set => Update(ref _valid, value, nameof(Valid));
     }
 
     public string this[string propertyName] => _errors.TryGetValue(propertyName, out var value) ? value : string.Empty;
@@ -272,10 +272,10 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
                 syncContext?.Post(
                     state =>
                     {
-                        _errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] =
+                        _errors[nameof(IpAddress)] =
                             string.Format(Resources.PingFailed, e.Reply.Status.ToString());
 
-                        OnPropertyChanged(Utilities.Reflect.GetPropertyName(() => IpAddress));
+                        OnPropertyChanged(nameof(IpAddress));
                     },
                     null);
             }
@@ -284,9 +284,9 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
 
     private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    private void Update<T>(ref T backing, T value, Expression<Func<T>> property) => Update(ref backing, value, property, delegate { });
+    private void Update<T>(ref T backing, T value, string property) => Update(ref backing, value, property, delegate { });
 
-    private void Update<T>(ref T backing, T value, Expression<Func<T>> property, Action performValidation)
+    private void Update<T>(ref T backing, T value, string property, Action performValidation)
     {
         if (!Equals(backing, value))
         {
@@ -297,30 +297,34 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
             var prevValid = _valid;
             performValidation();
 
-            OnPropertyChanged(property.GetPropertyName());
+            OnPropertyChanged(property);
 
             if (prevValid != _valid)
             {
-                OnPropertyChanged(Utilities.Reflect.GetPropertyName(() => Valid));
-                OnPropertyChanged(Utilities.Reflect.GetPropertyName(() => IpAddress));
-                OnPropertyChanged(Utilities.Reflect.GetPropertyName(() => HostNames));
-                OnPropertyChanged(Utilities.Reflect.GetPropertyName(() => Enabled));
+                OnPropertyChanged(nameof(Valid));
+                OnPropertyChanged(nameof(IpAddress));
+                OnPropertyChanged(nameof(HostNames));
+                OnPropertyChanged(nameof(Enabled));
             }
+
+            OnPropertyChanged(nameof(Self));
         }
     }
+
+    public HostsEntry Self => this;
 
     private void ValidateHostnames()
     {
         if (string.IsNullOrWhiteSpace(_hostnames) && !_enabled)
         {
-            _errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = string.Empty;
+            _errors[nameof(HostNames)] = string.Empty;
             _hostnamesValid = true;
         }
         else
         {
             _hostnamesValid = HostNameRegex().IsMatch(_hostnames);
 
-            _errors[Utilities.Reflect.GetPropertyName(() => HostNames)] = !_hostnamesValid ? Resources.InvalidHostnames : string.Empty;
+            _errors[nameof(HostNames)] = !_hostnamesValid ? Resources.InvalidHostnames : string.Empty;
         }
 
         _valid = _ipAddressValid && _hostnamesValid;
@@ -330,20 +334,20 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
     {
         if (string.IsNullOrWhiteSpace(_ipAddress) && !_enabled)
         {
-            _errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = string.Empty;
+            _errors[nameof(IpAddress)] = string.Empty;
             _valid = false;
         }
         else
         {
-            _ipAddressValid = IPAddress.TryParse(IpAddress, out var dummy);
+            _ipAddressValid = IPAddress.TryParse(IpAddress, out var _);
 
             if (!_ipAddressValid)
             {
-                _errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = Resources.InvalidIPAddress;
+                _errors[nameof(IpAddress)] = Resources.InvalidIPAddress;
             }
             else
             {
-                _errors[Utilities.Reflect.GetPropertyName(() => IpAddress)] = string.Empty;
+                _errors[nameof(IpAddress)] = string.Empty;
 
                 if (AutoPingIPAddress)
                 {

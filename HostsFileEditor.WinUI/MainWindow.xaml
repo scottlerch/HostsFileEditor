@@ -277,7 +277,7 @@
                     </ListView.Resources>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Border Padding="8,4,8,4" CornerRadius="4" BorderThickness="0,1,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="{Binding Valid, Converter={StaticResource ValidityToBrushConverter}}">
+                            <Border Padding="8,4,8,4" CornerRadius="4" BorderThickness="0,1,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="{Binding Self, Converter={StaticResource HostEntryToBrushConverter}}">
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>

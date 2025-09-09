@@ -159,11 +159,11 @@ public class HostsFile : INotifyPropertyChanged
         NativeMethods.FlushDns();
     }
 
-    protected void OnPropertyChanged<T>(Expression<Func<T>> property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property.GetPropertyName()));
+    protected void OnPropertyChanged(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
 
     private void OnHostsEntriesListChanged(object? sender, ListChangedEventArgs e)
     {
-        OnPropertyChanged(() => LineCount);
-        OnPropertyChanged(() => EnabledCount);
+        OnPropertyChanged(nameof(LineCount));
+        OnPropertyChanged(nameof(EnabledCount));
     }
 }

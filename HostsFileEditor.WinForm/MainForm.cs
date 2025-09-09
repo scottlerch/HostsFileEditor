@@ -373,7 +373,7 @@ internal partial class MainForm : Form
         };
 
         bindingSourceArchive.DataSource = _hostsArchiveView;
-        _hostsArchiveView.Sort = Reflect.GetPropertyName(() => new HostsArchive().FileName);
+        _hostsArchiveView.Sort = nameof(HostsArchive.FileName);
 
         bindingSourceHostFile.DataSource = HostsFile.Instance;
 
