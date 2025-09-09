@@ -248,6 +248,12 @@
                           ScrollViewer.HorizontalScrollMode="Disabled"
                           ItemsSource="{x:Bind Entries, Mode=OneWay}"
                           SelectionChanged="OnEntriesSelectionChanged">
+                    <ListView.ItemContainerTransitions>
+                        <TransitionCollection>
+                            <AddDeleteThemeTransition/>
+                            <ReorderThemeTransition/>
+                        </TransitionCollection>
+                    </ListView.ItemContainerTransitions>
                     <ListView.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem x:Name="CtxCopy" Text="Copy" Click="OnCopyClick" Icon="Copy" KeyboardAcceleratorTextOverride="Ctrl+C" />

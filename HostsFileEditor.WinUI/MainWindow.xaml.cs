@@ -544,45 +544,142 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnBackClick(object sender, RoutedEventArgs e) => await ToggleArchiveVisibilityAsync(false);
 
+    // Optimized to update Entries in-place to minimize ListView flicker.
+    // Pseudocode:
+    // 1. Capture filter text (trim).
+    // 2. If preserveSelection: capture selected items into HashSet.
+    // 3. Build filtered target list (newList) applying comment/disabled filters + text filter.
+    // 4. Fast path: if counts equal AND all items in same order (reference equality), skip collection mutation.
+    // 5. Otherwise perform minimal diff:
+    //    For i from 0 .. newList.Count-1:
+    //      a. If i >= Entries.Count -> Entries.Add(newItem)
+    //      b. Else if Entries[i] != newItem:
+    //           i.   Try find newItem in Entries at index j > i. If found -> move (remove at j, insert at i).
+    //           ii.  Else insert newItem at i.
+    //    After loop, remove any trailing items in Entries (while Entries.Count > newList.Count).
+    // 6. Restore selection if preserveSelection: clear current selection and re-add items present in snapshot.
+    //    If not preserving selection, emulate old behavior (clearing destroyed selection) by clearing selection explicitly.
+    // 7. Raise property changed notifications for empty / filtered visibility (only if potentially changed).
+    // 8. Update selection-dependent buttons & context menu.
     private void RefreshEntries(bool preserveSelection = false)
     {
+        // 1. Filter text
         var text = string.Empty;
-        if (Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb && ftb.Text is string s)
+        if (Content is FrameworkElement root &&
+            root.FindName("FilterTextBox") is TextBox ftb &&
+            ftb.Text is string s)
         {
             text = s.Trim();
         }
-        var sel = preserveSelection ? EntriesList.SelectedItems.Cast<HostsEntry>().ToHashSet() : [];
 
-        Entries.Clear();
+        // 2. Capture selection if needed
+        HashSet<HostsEntry>? selectedSnapshot = null;
+        if (preserveSelection && EntriesList.SelectedItems.Count > 0)
+        {
+            selectedSnapshot = EntriesList.SelectedItems.Cast<HostsEntry>().ToHashSet();
+        }
+
+        // 3. Build target filtered list
+        var newList = new List<HostsEntry>();
         foreach (var e in HostsFile.Instance.Entries)
         {
             if (IsFilterCommentsHidden && e.HasCommentOnly)
-            {
                 continue;
-            }
             if (IsFilterDisabledHidden && !e.Enabled && !e.HasCommentOnly)
-            {
                 continue;
-            }
 
             if (string.IsNullOrEmpty(text) || e.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
             {
-                Entries.Add(e);
+                newList.Add(e);
             }
         }
 
-        if (preserveSelection)
+        // 4. Fast path: identical sequence -> only adjust selection/properties
+        var same =
+            Entries.Count == newList.Count &&
+            Entries.Zip(newList, (a, b) => ReferenceEquals(a, b)).All(eq => eq);
+
+        if (!same)
         {
-            foreach (var e in Entries.Where(sel.Contains))
+            // 5. Minimal diff updates
+            // Build index lookup for faster future searches if needed
+            // (We rebuild on-the-fly because collection changes shift indices)
+            for (int i = 0; i < newList.Count; i++)
             {
-                EntriesList.SelectedItems.Add(e);
+                var desired = newList[i];
+
+                if (i >= Entries.Count)
+                {
+                    Entries.Add(desired);
+                    continue;
+                }
+
+                if (!ReferenceEquals(Entries[i], desired))
+                {
+                    // Try to find desired later in the list to move it
+                    var existingIndex = -1;
+                    for (int j = i + 1; j < Entries.Count; j++)
+                    {
+                        if (ReferenceEquals(Entries[j], desired))
+                        {
+                            existingIndex = j;
+                            break;
+                        }
+                    }
+
+                    if (existingIndex >= 0)
+                    {
+                        if (existingIndex != i)
+                        {
+                            Entries.Move(existingIndex, i);
+                        }
+                    }
+                    else
+                    {
+                        // Insert new item
+                        Entries.Insert(i, desired);
+                    }
+                }
+            }
+
+            // Remove trailing excess
+            while (Entries.Count > newList.Count)
+            {
+                Entries.RemoveAt(Entries.Count - 1);
             }
         }
 
+        // 6. Restore / clear selection
+        if (preserveSelection && selectedSnapshot is not null)
+        {
+            // Rebuild selection to reflect items still present
+            var toSelect = Entries.Where(selectedSnapshot.Contains).ToList();
+
+            // Avoid unnecessary churn if already matches
+            bool selectionDiffers =
+                EntriesList.SelectedItems.Count != toSelect.Count ||
+                EntriesList.SelectedItems.Cast<HostsEntry>().Except(toSelect).Any();
+
+            if (selectionDiffers)
+            {
+                EntriesList.SelectedItems.Clear();
+                foreach (var item in toSelect)
+                {
+                    EntriesList.SelectedItems.Add(item);
+                }
+            }
+        }
+        else
+        {
+            // Match original behavior (clearing collection previously removed selection)
+            EntriesList.SelectedItems.Clear();
+        }
+
+        // 7. Property notifications (possible count / filter changes)
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
 
-        // Keep selection-aware buttons in sync after refresh
+        // 8. Update dependent UI
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
     }
