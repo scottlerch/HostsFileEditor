@@ -248,14 +248,6 @@
                           ScrollViewer.HorizontalScrollMode="Disabled"
                           ItemsSource="{x:Bind Entries, Mode=OneWay}"
                           SelectionChanged="OnEntriesSelectionChanged">
-                    <!-- Style override to remove underline/border from TextBoxes within entries list -->
-                    <ListView.Resources>
-                        <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
-                            <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="BorderBrush" Value="Transparent"/>
-                            <Setter Property="Background" Value="Transparent"/>
-                        </Style>
-                    </ListView.Resources>
                     <ListView.ContextFlyout>
                         <MenuFlyout>
                             <MenuFlyoutItem x:Name="CtxCopy" Text="Copy" Click="OnCopyClick" Icon="Copy" KeyboardAcceleratorTextOverride="Ctrl+C" />
@@ -269,10 +261,17 @@
                             <MenuFlyoutItem x:Name="CtxRedo" Text="Redo" Click="OnRedoClick" Icon="Redo" KeyboardAcceleratorTextOverride="Ctrl+Y" />
                         </MenuFlyout>
                     </ListView.ContextFlyout>
+                    <!-- Style override to remove underline/border from TextBoxes within entries list -->
+                    <ListView.Resources>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="BorderBrush" Value="Transparent"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </ListView.Resources>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <!-- TODO: decide between: LayerOnAcrylicFillColorDefaultBrush LayerFillColorDefaultBrush-->
-                            <Border Padding="8,4,8,4" CornerRadius="4" BorderThickness="0,1,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="{ThemeResource LayerFillColorDefaultBrush}">
+                            <Border Padding="8,4,8,4" CornerRadius="4" BorderThickness="0,1,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="{Binding Valid, Converter={StaticResource ValidityToBrushConverter}}">
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>

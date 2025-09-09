@@ -10,6 +10,9 @@
                 <XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- Converters -->
+            <local:ValidityToBrushConverter x:Key="ValidityToBrushConverter" />
+
             <Style x:Key="FilterOptionsButtonStyle" TargetType="Button">
                 <Setter Property="BorderThickness" Value="0,1,1,1"/>
                 <Setter Property="CornerRadius" Value="0,4,4,0"/>
