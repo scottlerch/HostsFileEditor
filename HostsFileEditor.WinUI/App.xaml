@@ -1,19 +1,19 @@
-<Application
-    x:Class="HostsFileEditor.App"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:HostsFileEditor"
-    xmlns:converters="using:HostsFileEditor.Converters">
+<Application x:Class="HostsFileEditor.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:HostsFileEditor"
+             xmlns:converters="using:HostsFileEditor.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Load WinUI 3 default control/theme resources (Fluent tokens, brushes, styles) -->
+                <!-- WinUI 3 default resources -->
                 <XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Converters -->
             <converters:HostEntryToBrushConverter x:Key="HostEntryToBrushConverter" />
 
+            <!-- Filter options button (original style) -->
             <Style x:Key="FilterOptionsButtonStyle" TargetType="Button">
                 <Setter Property="BorderThickness" Value="0,1,1,1"/>
                 <Setter Property="CornerRadius" Value="0,4,4,0"/>
@@ -29,28 +29,21 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Grid x:Name="Root">
-                                <!-- Outer box like TextBox -->
                                 <Border x:Name="Box"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="{TemplateBinding CornerRadius}"/>
-
-                                <!-- Content -->
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="{TemplateBinding CornerRadius}"/>
                                 <ContentPresenter x:Name="Content"
-                                    Margin="{TemplateBinding Padding}"
-                                    Foreground="{TemplateBinding Foreground}"
-                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-
-                                <!-- Focus underline -->
+                                                  Margin="{TemplateBinding Padding}"
+                                                  Foreground="{TemplateBinding Foreground}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                 <Rectangle x:Name="Underline"
-                                    Height="2"
-                                    VerticalAlignment="Bottom"
-                                    Opacity="0"
-                                    Fill="{ThemeResource TextControlForegroundFocused}"/>
-
-                                <!-- ✅ Visual states belong here -->
+                                           Height="2"
+                                           VerticalAlignment="Bottom"
+                                           Opacity="0"
+                                           Fill="{ThemeResource TextControlForegroundFocused}"/>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
                                         <VisualState x:Name="Normal"/>
@@ -96,8 +89,7 @@
                 </Setter>
             </Style>
 
-            <!-- App-wide styles (inlined) -->
-            <!-- Style to keep back button background always transparent, even when disabled -->
+            <!-- Back button style with hover/pressed/disabled visuals (enhanced) -->
             <Style x:Key="PlainBackButtonStyle" TargetType="Button">
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
@@ -111,14 +103,24 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Grid Background="Transparent" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+                                <Border x:Name="HoverBackground" Background="Transparent" CornerRadius="4" />
                                 <ContentPresenter x:Name="ContentPresenter" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
                                         <VisualState x:Name="Normal" />
-                                        <VisualState x:Name="PointerOver" />
-                                        <VisualState x:Name="Pressed" />
+                                        <VisualState x:Name="PointerOver">
+                                            <VisualState.Setters>
+                                                <Setter Target="HoverBackground.Background" Value="{ThemeResource ButtonBackgroundPointerOver}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <VisualState.Setters>
+                                                <Setter Target="HoverBackground.Background" Value="{ThemeResource ButtonBackgroundPressed}" />
+                                            </VisualState.Setters>
+                                        </VisualState>
                                         <VisualState x:Name="Disabled">
                                             <VisualState.Setters>
+                                                <Setter Target="HoverBackground.Background" Value="Transparent" />
                                                 <Setter Target="ContentPresenter.Opacity" Value="0.35" />
                                             </VisualState.Setters>
                                         </VisualState>
@@ -130,11 +132,10 @@
                 </Setter>
             </Style>
 
-            <!-- Rounded selection style for EntriesList items -->
-            <Style x:Key="RoundedListViewItemStyle" TargetType="ListViewItem">
-            </Style>
+            <!-- Rounded selection style placeholder (kept for future use) -->
+            <Style x:Key="RoundedListViewItemStyle" TargetType="ListViewItem" />
 
-            <!-- Implicit TextBox style: rounded corners, flat border -->
+            <!-- Implicit TextBox tweaks -->
             <Style TargetType="TextBox">
                 <Setter Property="CornerRadius" Value="4"/>
                 <Setter Property="BorderThickness" Value="1"/>
