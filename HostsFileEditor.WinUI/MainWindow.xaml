@@ -305,12 +305,12 @@
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
                     <TextBlock Text="Archives" FontWeight="Normal" VerticalAlignment="Center" Margin="16,0,8,0"/>
                     <CommandBar Grid.Column="1" Background="Transparent" DefaultLabelPosition="Right" Padding="0" HorizontalAlignment="Left">
-                        <AppBarButton Icon="OpenFile" Label="Load" Click="OnArchiveLoadClick"/>
-                        <AppBarButton Icon="Delete" Label="Delete" Click="OnArchiveDeleteClick"/>
+                        <AppBarButton x:Name="ArchiveLoadButton" Icon="OpenFile" Label="Load" Click="OnArchiveLoadClick" IsEnabled="False"/>
+                        <AppBarButton x:Name="ArchiveDeleteButton" Icon="Delete" Label="Delete" Click="OnArchiveDeleteClick" IsEnabled="False"/>
                     </CommandBar>
                 </Grid>
                 <Grid Grid.Row="1">
-                    <ListView x:Name="ArchiveList" Margin="0,8,0,0" Background="Transparent" ItemsSource="{x:Bind Archives, Mode=OneWay}">
+                    <ListView x:Name="ArchiveList" Margin="0,8,0,0" Background="Transparent" ItemsSource="{x:Bind Archives, Mode=OneWay}" SelectionChanged="OnArchiveSelectionChanged">
                         <ListView.ItemTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding FileName}"/>

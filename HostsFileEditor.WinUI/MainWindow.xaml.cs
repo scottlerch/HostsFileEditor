@@ -728,4 +728,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
     }
+
+    private void OnArchiveSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ArchiveList is not null)
+        {
+            var hasSelection = ArchiveList.SelectedItem is HostsArchive;
+            if (ArchiveLoadButton is not null) ArchiveLoadButton.IsEnabled = hasSelection;
+            if (ArchiveDeleteButton is not null) ArchiveDeleteButton.IsEnabled = hasSelection;
+        }
+    }
 }
