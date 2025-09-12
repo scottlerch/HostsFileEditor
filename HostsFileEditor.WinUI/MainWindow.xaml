@@ -238,7 +238,7 @@
             </Grid>
         </Grid>
         <Grid Grid.Row="2" Background="Transparent">
-            <Grid x:Name="MainHost" Margin="8" RowDefinitions="Auto,*" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
+            <Grid x:Name="MainHost" Margin="8,0,8,8" RowDefinitions="Auto,*" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
                 <ListView x:Name="EntriesList"
                           Grid.Row="1"
                           Margin="0,8,0,0"
