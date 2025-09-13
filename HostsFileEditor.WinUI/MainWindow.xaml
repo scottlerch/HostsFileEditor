@@ -17,28 +17,28 @@
             <KeyboardAccelerator Key="S" Modifiers="Control" Invoked="OnSaveAcceleratorInvoked"/>
             <KeyboardAccelerator Key="F5" Invoked="OnRefreshAcceleratorInvoked"/>
         </Grid.KeyboardAccelerators>
-        <Grid x:Name="AppTitleBar" Height="48" Padding="12,0" VerticalAlignment="Top" Background="Transparent">
+        <Grid x:Name="AppTitleBar" Height="42" Padding="0" VerticalAlignment="Top" Background="Transparent">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
                 <Button x:Name="BackButton"
-                        Width="20"
-                        Height="20"
+                        Width="38"
+                        Height="36"
                         VerticalAlignment="Center"
                         Style="{StaticResource PlainBackButtonStyle}"
                         IsEnabled="{x:Bind IsBackEnabled, Mode=OneWay}"
                         Click="OnBackClick">
-                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72B;" FontSize="10"/>
+                    <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72B;" FontSize="11"/>
                 </Button>
                 <Image Source="Assets/Square150x150Logo.png"
                        Width="20"
                        Height="20"
                        Stretch="Uniform"
-                       Margin="4,0,4,0"
+                       Margin="0,0,4,0"
                        VerticalAlignment="Center"/>
-                <TextBlock Text="Hosts File Editor" FontSize="14" FontWeight="Normal" VerticalAlignment="Center"/>
+                <TextBlock Text="Hosts File Editor" FontSize="11" FontWeight="Normal" VerticalAlignment="Center"/>
             </StackPanel>
         </Grid>
         <Grid x:Name="TopCommandRow" Grid.Row="1" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}" ColumnSpacing="4" Padding="8,0">

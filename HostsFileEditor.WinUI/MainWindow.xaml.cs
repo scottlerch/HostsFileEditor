@@ -161,7 +161,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var rightInset = appWindow.TitleBar.RightInset;
 
         // Keep some horizontal breathing room and avoid overlap with caption buttons.
-        var baseLeft = 12d;
+        var baseLeft = 4d;
         var baseRight = 12d;
         _titleBarHost.Padding = new Thickness(baseLeft + leftInset, 0, baseRight + rightInset, 0);
     }
