@@ -10,9 +10,6 @@
                 <XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Converters -->
-            <converters:HostEntryToBrushConverter x:Key="HostEntryToBrushConverter" />
-
             <!-- Filter options button (original style) -->
             <Style x:Key="FilterOptionsButtonStyle" TargetType="Button">
                 <Setter Property="BorderThickness" Value="0,1,1,1"/>

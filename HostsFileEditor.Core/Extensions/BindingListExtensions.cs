@@ -2,12 +2,13 @@
 // Licensed under GPL-2.0-or-later
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HostsFileEditor.Extensions;
 
 internal static class BindingListExtensions
 {
-    public static void BatchUpdate<T>(this BindingList<T> list, Action action)
+    public static void BatchUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this BindingList<T> list, Action action)
     {
         list.RaiseListChangedEvents = false;
         action();

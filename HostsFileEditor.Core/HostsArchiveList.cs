@@ -1,6 +1,7 @@
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Utilities;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HostsFileEditor;
 
@@ -12,6 +13,7 @@ public class HostsArchiveList : BindingList<HostsArchive>
     private static readonly Lazy<HostsArchiveList> _instance =
         new(() => new HostsArchiveList());
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList used only for simple collection change notifications; PropertyDescriptor reflection not exercised.")]
     private HostsArchiveList()
     {
         Refresh();
@@ -29,6 +31,7 @@ public class HostsArchiveList : BindingList<HostsArchive>
         Remove(archive);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList used only for simple collection change notifications; PropertyDescriptor reflection not exercised.")]
     public void Refresh()
     {
         this.BatchUpdate(() =>

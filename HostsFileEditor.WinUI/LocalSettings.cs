@@ -8,13 +8,13 @@ internal static class LocalSettings
     private static readonly string _settingsPath = Path.Combine(_settingsDirectory, "settings.json");
 
     private static readonly object _lock = new();
-    private static readonly Dictionary<string, object> _cache = Load();
+    private static readonly Dictionary<string, bool> _cache = Load();
 
     public static bool GetBool(string key, bool defaultValue)
     {
         lock (_lock)
         {
-            return _cache.TryGetValue(key, out var value) && value is bool b ? b : defaultValue;
+            return _cache.TryGetValue(key, out var value) ? value : defaultValue;
         }
     }
 
@@ -27,14 +27,14 @@ internal static class LocalSettings
         }
     }
 
-    private static Dictionary<string, object> Load()
+    private static Dictionary<string, bool> Load()
     {
         try
         {
             if (File.Exists(_settingsPath))
             {
                 var json = File.ReadAllText(_settingsPath);
-                var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+                var dict = JsonSerializer.Deserialize(json, LocalSettingsJsonContext.Default.DictionaryStringBoolean);
                 return dict ?? [];
             }
         }
@@ -55,7 +55,7 @@ internal static class LocalSettings
                 Directory.CreateDirectory(_settingsDirectory);
             }
 
-            var json = JsonSerializer.Serialize(_cache);
+            var json = JsonSerializer.Serialize(_cache, LocalSettingsJsonContext.Default.DictionaryStringBoolean);
             File.WriteAllText(_settingsPath, json);
         }
         catch

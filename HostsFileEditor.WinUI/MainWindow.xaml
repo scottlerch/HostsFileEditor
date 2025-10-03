@@ -276,8 +276,8 @@
                         </Style>
                     </ListView.Resources>
                     <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <Border Padding="8,4,8,4" CornerRadius="4" BorderThickness="0,1,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="{Binding Self, Converter={StaticResource HostEntryToBrushConverter}}">
+                        <DataTemplate x:DataType="local:HostsEntry">
+                            <Border Padding="8,4,8,4" CornerRadius="4" BorderThickness="0,1,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="{x:Bind local:HostEntryBrushHelper.Get(Self), Mode=OneWay}">
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>
@@ -285,10 +285,10 @@
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{Binding Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" local:SharedColumnWidth.ColumnKey="IpAddress" Text="{Binding IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
-                                    <TextBox Grid.Column="2" local:SharedColumnWidth.ColumnKey="HostNames" Text="{Binding HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
-                                    <TextBox Grid.Column="3" Text="{Binding Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
+                                    <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{x:Bind Enabled, Mode=TwoWay}"/>
+                                    <TextBox Grid.Column="1" local:SharedColumnWidth.ColumnKey="IpAddress" Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                    <TextBox Grid.Column="2" local:SharedColumnWidth.ColumnKey="HostNames" Text="{x:Bind HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
+                                    <TextBox Grid.Column="3" Text="{x:Bind Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -312,8 +312,8 @@
                 <Grid Grid.Row="1">
                     <ListView x:Name="ArchiveList" Margin="0,8,0,0" Background="Transparent" ItemsSource="{x:Bind Archives, Mode=OneWay}" SelectionChanged="OnArchiveSelectionChanged">
                         <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding FileName}"/>
+                            <DataTemplate x:DataType="local:HostsArchive">
+                                <TextBlock Text="{x:Bind FileName}"/>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>

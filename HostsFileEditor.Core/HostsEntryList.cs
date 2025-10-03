@@ -2,6 +2,7 @@ using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HostsFileEditor;
 
@@ -11,12 +12,14 @@ public class HostsEntryList : BindingList<HostsEntry>
         [Environment.NewLine],
         StringSplitOptions.None);
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
     public HostsEntryList(IEnumerable<string> entryLines, bool filterDefault)
         : this()
     {
         AddLines(entryLines, filterDefault);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
     public HostsEntryList()
     {
         AllowEdit = true;
