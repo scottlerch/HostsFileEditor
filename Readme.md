@@ -1,4 +1,4 @@
-﻿## Download
+## Download
 
 Release binaries can be downloaded from [GitHub](https://github.com/scottlerch/HostsFileEditor/releases).
  * [Download Latest Installer](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditorSetup-1.2.0.msi)
@@ -29,7 +29,7 @@ Using the filter and sort while editing is quirky. The filter and sort are appli
 
 Requires .NET 9.0 or later. To build the installer you must have [Windows SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) with `makeappx.exe` and `signtool.exe` commands.
 
-To build the application, use the .NET CLI:
+To build the application, use the .NET CLI run from Visual Studio 2022 Developer PowerShell so `makeappx.exe` and `signtool.exe` are in your `PATH`:
 
 ```bash
 # Build for Debug (includes debugging symbols)
@@ -47,6 +47,8 @@ dotnet publish -c Release -bl:logs/publish.binlog
 # Clean project build artifacts, bin directory, and logs directory
 dotnet clean
 ```
+
+Install matching Windows App SDK runtime from [here](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) so the application can run.
 
 ### Build Outputs
 

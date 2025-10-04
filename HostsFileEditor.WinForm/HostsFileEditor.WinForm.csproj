@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
@@ -66,7 +66,7 @@
   </Target>
   <Target Name="SignAndPackageAfterPublish" AfterTargets="Publish">
     <PropertyGroup>
-      <CertFile Condition="'$(CertFile)'==''">HostsFileEditorTestCert.pfx</CertFile>
+      <CertFile Condition="'$(CertFile)'==''">..\HostsFileEditorTestCert.pfx</CertFile>
       <CertPassword Condition="'$(CertPassword)'==''">test</CertPassword>
       <PublishZipFile>$(AssemblyName).zip</PublishZipFile>
       <MsixFile>$(PublishDir)$(AssemblyName).msix</MsixFile>
@@ -85,7 +85,7 @@
     <ItemGroup Condition="'$(Configuration)' == 'Debug'">
       <PublishedFiles Include="$(PublishDir)**\*.*" />
     </ItemGroup>
-    <Copy SourceFiles="@(PublishedFiles)" DestinationFolder="$(MSBuildProjectDirectory)\..\bin" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(PublishedFiles)" DestinationFolder="$(MSBuildProjectDirectory)\..\bin\classic" SkipUnchangedFiles="true" />
     <Message Text="Copied @(PublishedFiles->Count()) files to bin directory" Importance="high" />
   </Target>
 </Project>

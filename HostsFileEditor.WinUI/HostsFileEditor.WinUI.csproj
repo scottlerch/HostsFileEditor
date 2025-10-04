@@ -3,22 +3,22 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
     <UseWinUI>true</UseWinUI>
-    <AssemblyName>HostsFileEditor.WinUI</AssemblyName>
+    <AssemblyName>HostsFileEditor</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
     <Platforms>x64;arm64</Platforms>
     <EnablePreviewMsixTooling>true</EnablePreviewMsixTooling>
     <UseWindowsForms>false</UseWindowsForms>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
-    <PublishSingleFile>true</PublishSingleFile>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <SelfContained>true</SelfContained>
+    <PublishSingleFile>false</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
-    <PublishAot>false</PublishAot><!-- unclear if this will work with WinUI yet -->
-    <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822</NoWarn>
+    <PublishAot>true</PublishAot>
+    <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081</NoWarn>
     <ApplicationIcon>Assets\HostsFileEditor.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
@@ -33,5 +33,34 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.manifest" />
+    <Content Include="AppxManifest.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\*.*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
+  <Target Name="SignAndPackageAfterPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <CertFile Condition="'$(CertFile)'==''">..\HostsFileEditorTestCert.pfx</CertFile>
+      <CertPassword Condition="'$(CertPassword)'==''">test</CertPassword>
+      <MsixFile>$(PublishDir)$(AssemblyName).msix</MsixFile>
+      <CopyRoot>$(MSBuildProjectDirectory)\..\bin\modern\</CopyRoot>
+    </PropertyGroup>
+    <!-- Sign the executable -->
+    <Exec Command="signtool sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(PublishDir)$(AssemblyName).exe&quot;" />
+    <!-- Create the MSIX package -->
+    <Exec Command="makeappx pack /d &quot;$(PublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
+    <!-- Sign the MSIX package -->
+    <Exec Command="signtool sign /fd SHA256 /a /f $(CertFile) /p $(CertPassword) &quot;$(MsixFile)&quot;" />
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+      <PublishedFiles Include="$(PublishDir)**\*.*" Exclude="$(PublishDir)**\*.pdb;$(PublishDir)**\*.lib" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+      <PublishedFiles Include="$(PublishDir)**\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PublishedFiles)" DestinationFiles="@(PublishedFiles->'$(CopyRoot)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Message Text="Copied @(PublishedFiles-&gt;Count()) files to bin directory" Importance="high" />
+  </Target>
 </Project>
