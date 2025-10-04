@@ -10,13 +10,135 @@
     <_PackagedOutputStampDir>$(BaseIntermediateOutputPath)packaging\</_PackagedOutputStampDir>
   </PropertyGroup>
 
+  <!-- Inline task: find the newest versioned folder under <KitsRoot10>\bin that has the tool -->
+  <UsingTask TaskName="FindLatestSdkTool"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <KitsRoot10 ParameterType="System.String" Required="true" />
+      <ToolName   ParameterType="System.String" Required="true" />
+      <Result     ParameterType="System.String" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+#pragma warning disable 0162
+        Result = string.Empty;
+
+        string bestPath = null;
+        Version bestVer = null;
+
+        if (!string.IsNullOrEmpty(KitsRoot10))
+        {
+            var bin = Path.Combine(KitsRoot10, "bin");
+            if (Directory.Exists(bin))
+            {
+                foreach (var dir in Directory.GetDirectories(bin))
+                {
+                    var name = Path.GetFileName(dir); // e.g. "10.0.26100.0"
+                    if (Version.TryParse(name, out var v))
+                    {
+                        var candidate = Path.Combine(dir, "x64", ToolName);
+                        if (File.Exists(candidate) && (bestVer == null || v > bestVer))
+                        {
+                            bestVer = v;
+                            bestPath = candidate;
+                        }
+                    }
+                }
+            }
+        }
+
+        Result = bestPath ?? string.Empty;
+        return true;
+      ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <!-- Resolve tool paths (signtool / makeappx) when not already resolvable via PATH -->
+  <Target Name="_ResolvePackagingTools" BeforeTargets="SignAndPackage">
+
+    <!-- Defaults: try PATH first -->
+    <PropertyGroup>
+      <SignToolExe Condition="'$(SignToolExe)'==''">signtool.exe</SignToolExe>
+      <MakeAppxExe Condition="'$(MakeAppxExe)'==''">makeappx.exe</MakeAppxExe>
+    </PropertyGroup>
+
+    <!-- Normalize common roots -->
+    <PropertyGroup>
+      <_WindowsSdkVerBinPathNorm>$([MSBuild]::EnsureTrailingSlash('$(WindowsSdkVerBinPath)'))</_WindowsSdkVerBinPathNorm>
+      <_WindowsSdkDirNorm>$([MSBuild]::EnsureTrailingSlash('$(WindowsSdkDir)'))</_WindowsSdkDirNorm>
+      <_WindowsSDKVersionNorm>$([MSBuild]::EnsureTrailingSlash('$(WindowsSDKVersion)'))</_WindowsSDKVersionNorm>
+      <_TargetPlatformVersionNorm>$([MSBuild]::EnsureTrailingSlash('$(TargetPlatformVersion)'))</_TargetPlatformVersionNorm>
+      <!-- Prefer WindowsSDKVersion if present; else TargetPlatformVersion -->
+      <_SdkVersionToUse Condition="'$(_SdkVersionToUse)'=='' and '$(_WindowsSDKVersionNorm)'!=''">$(_WindowsSDKVersionNorm)</_SdkVersionToUse>
+      <_SdkVersionToUse Condition="'$(_SdkVersionToUse)'=='' and '$(_TargetPlatformVersionNorm)'!=''">$(_TargetPlatformVersionNorm)</_SdkVersionToUse>
+    </PropertyGroup>
+
+    <!-- 1) WindowsSdkVerBinPath (already versioned in VS dev shells) -->
+    <PropertyGroup Condition="'$(_WindowsSdkVerBinPathNorm)'!=''">
+      <SignToolExe Condition="'$(SignToolExe)'=='signtool.exe' and Exists('$(_WindowsSdkVerBinPathNorm)x64\signtool.exe')">$(_WindowsSdkVerBinPathNorm)x64\signtool.exe</SignToolExe>
+      <MakeAppxExe Condition="'$(MakeAppxExe)'=='makeappx.exe' and Exists('$(_WindowsSdkVerBinPathNorm)x64\makeappx.exe')">$(_WindowsSdkVerBinPathNorm)x64\makeappx.exe</MakeAppxExe>
+    </PropertyGroup>
+
+    <!-- 2) WindowsSdkDir + (WindowsSDKVersion or TargetPlatformVersion) -->
+    <PropertyGroup Condition="'$(_WindowsSdkDirNorm)'!='' and '$(_SdkVersionToUse)'!=''">
+      <_SdkBinVersionDir>$(_WindowsSdkDirNorm)bin\$(_SdkVersionToUse)</_SdkBinVersionDir>
+      <SignToolExe Condition="'$(SignToolExe)'=='signtool.exe' and Exists('$(_SdkBinVersionDir)x64\signtool.exe')">$(_SdkBinVersionDir)x64\signtool.exe</SignToolExe>
+      <MakeAppxExe Condition="'$(MakeAppxExe)'=='makeappx.exe' and Exists('$(_SdkBinVersionDir)x64\makeappx.exe')">$(_SdkBinVersionDir)x64\makeappx.exe</MakeAppxExe>
+    </PropertyGroup>
+
+    <!-- 3) Registry-derived KitsRoot10 (shell-independent) -->
+    <PropertyGroup>
+      <_KitsRoot10>$([MSBuild]::GetRegistryValue('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots','KitsRoot10',''))</_KitsRoot10>
+      <_KitsRoot10 Condition="'$(_KitsRoot10)'==''">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots','KitsRoot10','', 'Registry32'))</_KitsRoot10>
+      <_KitsRoot10 Condition="'$(_KitsRoot10)'==''">$([MSBuild]::GetRegistryValueFromView('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Kits\Installed Roots','KitsRoot10','', 'Registry64'))</_KitsRoot10>
+      <_KitsRoot10>$([MSBuild]::EnsureTrailingSlash('$(_KitsRoot10)'))</_KitsRoot10>
+    </PropertyGroup>
+
+    <!-- 4) KitsRoot10 + version (same version preference as above) -->
+    <PropertyGroup Condition="'$(_KitsRoot10)'!='' and '$(_SdkVersionToUse)'!=''">
+      <_KitsVerDir>$(_KitsRoot10)bin\$(_SdkVersionToUse)</_KitsVerDir>
+      <SignToolExe Condition="'$(SignToolExe)'=='signtool.exe' and Exists('$(_KitsVerDir)x64\signtool.exe')">$(_KitsVerDir)x64\signtool.exe</SignToolExe>
+      <MakeAppxExe Condition="'$(MakeAppxExe)'=='makeappx.exe' and Exists('$(_KitsVerDir)x64\makeappx.exe')">$(_KitsVerDir)x64\makeappx.exe</MakeAppxExe>
+    </PropertyGroup>
+
+    <!-- 5) Enumerate versioned directories under KitsRoot10\bin and pick the newest (no LINQ) -->
+    <FindLatestSdkTool Condition="'$(SignToolExe)'=='signtool.exe' and '$(_KitsRoot10)'!=''"
+                       KitsRoot10="$(_KitsRoot10)" ToolName="signtool.exe">
+      <Output TaskParameter="Result" PropertyName="_LatestSignTool" />
+    </FindLatestSdkTool>
+
+    <FindLatestSdkTool Condition="'$(MakeAppxExe)'=='makeappx.exe' and '$(_KitsRoot10)'!=''"
+                       KitsRoot10="$(_KitsRoot10)" ToolName="makeappx.exe">
+      <Output TaskParameter="Result" PropertyName="_LatestMakeAppx" />
+    </FindLatestSdkTool>
+
+    <PropertyGroup>
+      <SignToolExe Condition="'$(SignToolExe)'=='signtool.exe' and '$(_LatestSignTool)'!=''">$(_LatestSignTool)</SignToolExe>
+      <MakeAppxExe Condition="'$(MakeAppxExe)'=='makeappx.exe' and '$(_LatestMakeAppx)'!=''">$(_LatestMakeAppx)</MakeAppxExe>
+    </PropertyGroup>
+
+    <!-- 6) Last resort: unversioned \bin\x64 under KitsRoot10 -->
+    <PropertyGroup Condition="'$(_KitsRoot10)'!=''">
+      <SignToolExe Condition="'$(SignToolExe)'=='signtool.exe' and Exists('$(_KitsRoot10)bin\x64\signtool.exe')">$(_KitsRoot10)bin\x64\signtool.exe</SignToolExe>
+      <MakeAppxExe Condition="'$(MakeAppxExe)'=='makeappx.exe' and Exists('$(_KitsRoot10)bin\x64\makeappx.exe')">$(_KitsRoot10)bin\x64\makeappx.exe</MakeAppxExe>
+    </PropertyGroup>
+
+    <Message Text="Using SignTool: $(SignToolExe)" Importance="Low" />
+    <Message Text="Using MakeAppx: $(MakeAppxExe)" Importance="Low" />
+  </Target>
+ 
   <!-- Ensure stamp directory exists -->
   <Target Name="_CreatePackagingStampDir" BeforeTargets="Publish">
     <MakeDir Directories="$(_PackagedOutputStampDir)" Condition="!Exists('$(_PackagedOutputStampDir)')" />
   </Target>
 
   <!-- Main packaging target hooked into Publish pipeline so outputs are up-to-date and cleaned automatically. -->
-  <Target Name="SignAndPackage" DependsOnTargets="Publish" AfterTargets="Publish">
+  <Target Name="SignAndPackage" DependsOnTargets="_ResolvePackagingTools;Publish" AfterTargets="Publish">
     <PropertyGroup>
       <_EffectivePublishDir>$(ProjectDir)$(PublishDir)</_EffectivePublishDir>
       <MsixFile>$(_EffectivePublishDir)$(AssemblyName).msix</MsixFile>
@@ -32,13 +154,13 @@
     </ItemGroup>
 
     <!-- Sign EXE if enabled and exists -->
-    <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(_EffectivePublishDir)$(AssemblyName).exe')" Command="signtool sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(_EffectivePublishDir)$(AssemblyName).exe&quot;" />
+    <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(_EffectivePublishDir)$(AssemblyName).exe')" Command="&quot;$(SignToolExe)&quot; sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(_EffectivePublishDir)$(AssemblyName).exe&quot;" />
 
     <!-- Create MSIX -->
-    <Exec Condition="Exists('$(_EffectivePublishDir)')" Command="makeappx pack /d &quot;$(_EffectivePublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
+    <Exec Condition="Exists('$(_EffectivePublishDir)')" Command="&quot;$(MakeAppxExe)&quot; pack /d &quot;$(_EffectivePublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
 
     <!-- Sign MSIX -->
-    <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(MsixFile)')" Command="signtool sign /fd SHA256 /a /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; &quot;$(MsixFile)&quot;" />
+    <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(MsixFile)')" Command="&quot;$(SignToolExe)&quot; sign /fd SHA256 /a /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; &quot;$(MsixFile)&quot;" />
 
     <!-- Optionally ZIP (only when CreatePublishZip true) -->
     <Exec Condition="'$(CreatePublishZip)'=='true'" Command="cd /d &quot;$(_EffectivePublishDir)&quot; &amp;&amp; &quot;$(Pkg7ZipCLI)\tools\7za.exe&quot; a -tzip -aoa &quot;$(PublishZipFile)&quot; *.exe" />
@@ -57,7 +179,7 @@
 
     <!-- Write stamp file to allow incremental up-to-date check -->
     <WriteLinesToFile File="$(_PackagedOutputStampDir)$(ProjectName).stamp" Lines="SignAndPackage completed $(_Now)" Overwrite="true" />
-
+    
     <Message Text="Packaged $(ProjectName) to $(OutputPackagingDir) (Files: @(_PublishedFiles->Count()))" Importance="high" />
   </Target>
 
