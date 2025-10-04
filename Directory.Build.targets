@@ -1,0 +1,76 @@
+<Project>
+  <!-- Shared signing, packaging, and copy logic executed during Publish (not AfterTargets) so that outputs are tracked. -->
+  <PropertyGroup>
+    <!-- Default certificate values (can be overridden per invocation) -->
+    <CertFile Condition="'$(CertFile)'==''">$(MSBuildThisFileDirectory)HostsFileEditorTestCert.pfx</CertFile>
+    <CertPassword Condition="'$(CertPassword)'==''">test</CertPassword>
+    <!-- Whether to sign published exe/msix -->
+    <EnableSigning>true</EnableSigning>
+    <!-- Marker directory for copied publish outputs -->
+    <_PackagedOutputStampDir>$(BaseIntermediateOutputPath)packaging\</_PackagedOutputStampDir>
+  </PropertyGroup>
+
+  <!-- Ensure stamp directory exists -->
+  <Target Name="_CreatePackagingStampDir" BeforeTargets="Publish">
+    <MakeDir Directories="$(_PackagedOutputStampDir)" Condition="!Exists('$(_PackagedOutputStampDir)')" />
+  </Target>
+
+  <!-- Main packaging target hooked into Publish pipeline so outputs are up-to-date and cleaned automatically. -->
+  <Target Name="SignAndPackage" DependsOnTargets="Publish" AfterTargets="Publish">
+    <PropertyGroup>
+      <_EffectivePublishDir>$(ProjectDir)$(PublishDir)</_EffectivePublishDir>
+      <MsixFile>$(_EffectivePublishDir)$(AssemblyName).msix</MsixFile>
+      <PublishZipFile>$(AssemblyName).zip</PublishZipFile>
+      <_Now>$([System.DateTime]::UtcNow.ToString("o"))</_Now>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+      <_PublishedFiles Include="$(_EffectivePublishDir)**\*.*" Exclude="$(_EffectivePublishDir)**\*.pdb" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+      <_PublishedFiles Include="$(_EffectivePublishDir)**\*.*" />
+    </ItemGroup>
+
+    <!-- Sign EXE if enabled and exists -->
+    <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(_EffectivePublishDir)$(AssemblyName).exe')" Command="signtool sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(_EffectivePublishDir)$(AssemblyName).exe&quot;" />
+
+    <!-- Create MSIX -->
+    <Exec Condition="Exists('$(_EffectivePublishDir)')" Command="makeappx pack /d &quot;$(_EffectivePublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
+
+    <!-- Sign MSIX -->
+    <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(MsixFile)')" Command="signtool sign /fd SHA256 /a /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; &quot;$(MsixFile)&quot;" />
+
+    <!-- Optionally ZIP (only when CreatePublishZip true) -->
+    <Exec Condition="'$(CreatePublishZip)'=='true'" Command="cd /d &quot;$(_EffectivePublishDir)&quot; &amp;&amp; &quot;$(Pkg7ZipCLI)\tools\7za.exe&quot; a -tzip -aoa &quot;$(PublishZipFile)&quot; *.exe" />
+
+    <!-- Add msix/zip artifacts explicitly so they get copied -->
+    <ItemGroup>
+      <_PublishedFiles Include="$(MsixFile)" Condition="Exists('$(MsixFile)')" />
+      <_PublishedFiles Include="$(_EffectivePublishDir)$(PublishZipFile)" Condition="'$(CreatePublishZip)'=='true' AND Exists('$(_EffectivePublishDir)$(PublishZipFile)')" />
+    </ItemGroup>
+
+    <!-- Copy published files into flavor directory if defined -->
+    <ItemGroup Condition=" '$(OutputPackagingDir)' != '' ">
+      <_CopyPublishedFiles Include="@(_PublishedFiles)" />
+    </ItemGroup>
+    <Copy Condition=" '@(_CopyPublishedFiles)' != '' " SourceFiles="@(_CopyPublishedFiles)" DestinationFiles="@(_CopyPublishedFiles->'$(OutputPackagingDir)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+
+    <!-- Write stamp file to allow incremental up-to-date check -->
+    <WriteLinesToFile File="$(_PackagedOutputStampDir)$(ProjectName).stamp" Lines="SignAndPackage completed $(_Now)" Overwrite="true" />
+
+    <Message Text="Packaged $(ProjectName) to $(OutputPackagingDir) (Files: @(_PublishedFiles->Count()))" Importance="high" />
+  </Target>
+
+  <!-- Participate in Clean: remove copied outputs and stamp -->
+  <Target Name="_CleanSignAndPackage" AfterTargets="Clean">
+    <ItemGroup>
+      <_StampFiles Include="$(_PackagedOutputStampDir)*.stamp" />
+    </ItemGroup>
+    <Delete Files="@(_StampFiles)" />
+    <ItemGroup>
+      <_GeneratedArtifacts Include="$(PublishDir)$(AssemblyName).msix" />
+      <_GeneratedArtifacts Include="$(PublishDir)$(AssemblyName).zip" Condition="'$(CreatePublishZip)'=='true'" />
+    </ItemGroup>
+    <Delete Files="@(_GeneratedArtifacts)" />
+  </Target>
+</Project>

@@ -28,6 +28,10 @@
     <!-- Reflection based JSON serialization is required for WinForms designer -->
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(Configuration)' == 'Debug'">true</JsonSerializerIsReflectionEnabledByDefault>
     <CustomResourceTypesSupport>true</CustomResourceTypesSupport>
+    <!-- Shared packaging properties -->
+    <PackagingFlavor>classic</PackagingFlavor>
+    <OutputPackagingDir>$(MSBuildProjectDirectory)\..\bin\classic\</OutputPackagingDir>
+    <CreatePublishZip>true</CreatePublishZip>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />
@@ -63,29 +67,5 @@
     <RemoveDir Directories="$(MSBuildProjectDirectory)\bin" Condition="Exists('$(MSBuildProjectDirectory)\bin')" />
     <RemoveDir Directories="$(MSBuildProjectDirectory)\obj" Condition="Exists('$(MSBuildProjectDirectory)\obj')" />
     <Message Text="Cleaned all build artifacts and bin directory" Importance="high" />
-  </Target>
-  <Target Name="SignAndPackageAfterPublish" AfterTargets="Publish">
-    <PropertyGroup>
-      <CertFile Condition="'$(CertFile)'==''">..\HostsFileEditorTestCert.pfx</CertFile>
-      <CertPassword Condition="'$(CertPassword)'==''">test</CertPassword>
-      <PublishZipFile>$(AssemblyName).zip</PublishZipFile>
-      <MsixFile>$(PublishDir)$(AssemblyName).msix</MsixFile>
-    </PropertyGroup>
-    <!-- Sign the executable -->
-    <Exec Command="signtool sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(PublishDir)$(AssemblyName).exe&quot;" />
-    <!-- Create the MSIX package -->
-    <Exec Command="makeappx pack /d &quot;$(PublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
-    <!-- Sign the MSIX package -->
-    <Exec Command="signtool sign /fd SHA256 /a /f $(CertFile) /p $(CertPassword) &quot;$(MsixFile)&quot;" />
-    <!-- Create a ZIP file of the published files -->
-    <Exec Command="cd /d &quot;$(PublishDir)&quot; &amp;&amp; &quot;$(Pkg7ZipCLI)\tools\7za.exe&quot; a -tzip -aoa &quot;$(PublishZipFile)&quot; *.exe" />
-    <ItemGroup Condition="'$(Configuration)' == 'Release'">
-      <PublishedFiles Include="$(PublishDir)**\*.*" Exclude="$(PublishDir)**\*.pdb" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-      <PublishedFiles Include="$(PublishDir)**\*.*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(PublishedFiles)" DestinationFolder="$(MSBuildProjectDirectory)\..\bin\classic" SkipUnchangedFiles="true" />
-    <Message Text="Copied @(PublishedFiles->Count()) files to bin directory" Importance="high" />
   </Target>
 </Project>
