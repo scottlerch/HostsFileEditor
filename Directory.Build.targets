@@ -10,6 +10,13 @@
     <_PackagedOutputStampDir>$(BaseIntermediateOutputPath)packaging\</_PackagedOutputStampDir>
   </PropertyGroup>
 
+  <!-- Ensure AppxManifest.xml is always published for projects that have it -->
+  <ItemGroup>
+    <None Update="AppxManifest.xml" Condition="Exists('$(ProjectDir)AppxManifest.xml')"
+          CopyToOutputDirectory="Never"
+          CopyToPublishDirectory="Always" />
+  </ItemGroup>
+
   <!-- Inline task: find the newest versioned folder under <KitsRoot10>\bin that has the tool -->
   <UsingTask TaskName="FindLatestSdkTool"
              TaskFactory="RoslynCodeTaskFactory"
@@ -137,8 +144,12 @@
     <MakeDir Directories="$(_PackagedOutputStampDir)" Condition="!Exists('$(_PackagedOutputStampDir)')" />
   </Target>
 
-  <!-- Main packaging target hooked into Publish pipeline so outputs are up-to-date and cleaned automatically. -->
-  <Target Name="SignAndPackage" DependsOnTargets="_ResolvePackagingTools;Publish" AfterTargets="Publish">
+  <!-- Main packaging target now incremental: Inputs/Outputs allow MSBuild to skip when unchanged. -->
+  <Target Name="SignAndPackage"
+          DependsOnTargets="_ResolvePackagingTools"
+          AfterTargets="Publish"
+          Inputs="@(ResolvedFileToPublish)"
+          Outputs="$(ProjectDir)$(PublishDir)$(AssemblyName).msix">
     <PropertyGroup>
       <_EffectivePublishDir>$(ProjectDir)$(PublishDir)</_EffectivePublishDir>
       <MsixFile>$(_EffectivePublishDir)$(AssemblyName).msix</MsixFile>
@@ -152,6 +163,9 @@
     <ItemGroup Condition="'$(Configuration)' == 'Debug'">
       <_PublishedFiles Include="$(_EffectivePublishDir)**\*.*" />
     </ItemGroup>
+
+    <!-- Ensure manifest is present (redundant if CopyToPublishDirectory worked, but defensive) -->
+    <Copy SourceFiles="$(ProjectDir)AppxManifest.xml" DestinationFolder="$(_EffectivePublishDir)" SkipUnchangedFiles="true" Condition="Exists('$(ProjectDir)AppxManifest.xml')" />
 
     <!-- Sign EXE if enabled and exists -->
     <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(_EffectivePublishDir)$(AssemblyName).exe')" Command="&quot;$(SignToolExe)&quot; sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(_EffectivePublishDir)$(AssemblyName).exe&quot;" />
@@ -179,7 +193,6 @@
 
     <!-- Write stamp file to allow incremental up-to-date check -->
     <WriteLinesToFile File="$(_PackagedOutputStampDir)$(ProjectName).stamp" Lines="SignAndPackage completed $(_Now)" Overwrite="true" />
-    
     <Message Text="Packaged $(ProjectName) to $(OutputPackagingDir) (Files: @(_PublishedFiles->Count()))" Importance="high" />
   </Target>
 
