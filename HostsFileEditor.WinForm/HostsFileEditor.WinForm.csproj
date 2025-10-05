@@ -28,7 +28,6 @@
     <!-- Reflection based JSON serialization is required for WinForms designer -->
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(Configuration)' == 'Debug'">true</JsonSerializerIsReflectionEnabledByDefault>
     <CustomResourceTypesSupport>true</CustomResourceTypesSupport>
-    <!-- Shared packaging properties -->
     <PackagingFlavor>classic</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\bin\classic\</OutputPackagingDir>
     <CreatePublishZip>true</CreatePublishZip>

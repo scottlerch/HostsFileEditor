@@ -20,7 +20,6 @@
     <PublishAot>true</PublishAot>
     <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081</NoWarn>
     <ApplicationIcon>Assets\HostsFileEditor.ico</ApplicationIcon>
-    <!-- Shared packaging properties -->
     <PackagingFlavor>modern</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\bin\modern\</OutputPackagingDir>
     <CreatePublishZip>false</CreatePublishZip>
@@ -45,5 +44,4 @@
     </Content>
     <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
-  <!-- Removed per-project SignAndPackageAfterPublish target; now centralized in Directory.Build.targets -->
 </Project>
