@@ -15,7 +15,8 @@ public class HostsArchive
     {
         ArgumentNullException.ThrowIfNull(name);
 
-        FilePath = Path.Combine(HostsArchiveList.ArchiveDirectory, name);
+        // Use effective archive directory (allows test override)
+        FilePath = Path.Combine(HostsArchiveList.EffectiveArchiveDirectory, name);
     }
 
     public string FilePath

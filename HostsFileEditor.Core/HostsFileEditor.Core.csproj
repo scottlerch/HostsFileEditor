@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net9.0-windows;net8.0-windows10.0.19041.0</TargetFrameworks>
+    <TargetFrameworks>net9.0-windows</TargetFrameworks>
     <IsPublishable>false</IsPublishable>
     <AssemblyName>HostsFileEditor.Core</AssemblyName>
     <NoWarn>$(NoWarn);CA2011;CA1401;CA1824</NoWarn>

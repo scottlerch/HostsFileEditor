@@ -58,30 +58,44 @@ public class HostsEntryList : BindingList<HostsEntry>
 
         this.BatchUpdate(() =>
         {
-            var copy = entries.ToList();
-            var insertIndex = IndexOf(beforeEntry) - 1;
-
-            if (insertIndex >= 0)
+            var moving = entries.ToList();
+            if (moving.Count == 0)
             {
-                UndoManager.Instance.BatchActions(() =>
-                {
-                    Remove(copy);
-
-                    if (insertIndex > Count)
-                    {
-                        insertIndex = Count;
-                    }
-                    else if (insertIndex < 0)
-                    {
-                        insertIndex = 0;
-                    }
-
-                    foreach (var entry in copy)
-                    {
-                        Insert(insertIndex++, entry);
-                    }
-                });
+                return;
             }
+
+            // Capture original indices BEFORE any removals
+            var originalIndices = moving.ToDictionary(e => e, e => IndexOf(e));
+            var beforeIndex = IndexOf(beforeEntry);
+            if (beforeIndex < 0)
+            {
+                return; // target not found
+            }
+
+            // Order moving entries by their original appearance in the list
+            moving.Sort((x, y) => originalIndices[x].CompareTo(originalIndices[y]));
+
+            // Compute insertion index after removals: shift left by how many moving items were before the target
+            var removedBefore = moving.Count(e => originalIndices[e] < beforeIndex);
+            var insertIndex = beforeIndex - removedBefore;
+            if (insertIndex < 0) insertIndex = 0;
+
+            UndoManager.Instance.BatchActions(() =>
+            {
+                // Remove using simple removal (one-by-one) to minimize re-ordering side effects
+                foreach (var e in moving)
+                {
+                    // If already removed (duplicate in list not expected) skip
+                    if (Contains(e)) base.Remove(e);
+                }
+
+                if (insertIndex > Count) insertIndex = Count;
+
+                foreach (var entry in moving)
+                {
+                    Insert(insertIndex++, entry);
+                }
+            });
         });
     }
 
@@ -92,30 +106,40 @@ public class HostsEntryList : BindingList<HostsEntry>
 
         this.BatchUpdate(() =>
         {
-            var copy = entries.ToList();
-            var insertIndex = IndexOf(afterEntry) + 1;
-
-            if (insertIndex < Count)
+            var moving = entries.ToList();
+            if (moving.Count == 0)
             {
-                UndoManager.Instance.BatchActions(() =>
-                {
-                    Remove(copy);
-
-                    if (insertIndex > Count)
-                    {
-                        insertIndex = Count;
-                    }
-                    else if (insertIndex < 0)
-                    {
-                        insertIndex = 0;
-                    }
-
-                    foreach (var entry in copy)
-                    {
-                        Insert(insertIndex++, entry);
-                    }
-                });
+                return;
             }
+
+            var originalIndices = moving.ToDictionary(e => e, e => IndexOf(e));
+            var afterIndex = IndexOf(afterEntry);
+            if (afterIndex < 0)
+            {
+                return; // target not found
+            }
+
+            moving.Sort((x, y) => originalIndices[x].CompareTo(originalIndices[y]));
+
+            var removedBefore = moving.Count(e => originalIndices[e] < afterIndex);
+            var updatedAfterIndex = afterIndex - removedBefore; // index after removals
+            var insertIndex = updatedAfterIndex + 1; // after the target
+
+            UndoManager.Instance.BatchActions(() =>
+            {
+                foreach (var e in moving)
+                {
+                    if (Contains(e)) base.Remove(e);
+                }
+
+                if (insertIndex > Count) insertIndex = Count;
+                if (insertIndex < 0) insertIndex = 0;
+
+                foreach (var entry in moving)
+                {
+                    Insert(insertIndex++, entry);
+                }
+            });
         });
     }
 

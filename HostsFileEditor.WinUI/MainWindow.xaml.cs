@@ -120,8 +120,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // Subscribe to undo history changes so we can update Undo/Redo visibility
         Utilities.UndoManager.Instance.HistoryChanged += OnUndoHistoryChanged;
 
+        // Subscribe to core entries changes so undo/redo of add/remove shows in UI
+        HostsFile.Instance.Entries.ListChanged += OnCoreEntriesListChanged;
+
         // Unsubscribe when window closes to avoid leaks
-        Closed += (s, e) => Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
+        Closed += (s, e) =>
+        {
+            Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
+            HostsFile.Instance.Entries.ListChanged -= OnCoreEntriesListChanged;
+        };
+    }
+
+    private void OnCoreEntriesListChanged(object? sender, ListChangedEventArgs e)
+    {
+        // Use dispatcher to ensure UI-thread update and preserve selection when possible
+        _ = DispatcherQueue.TryEnqueue(() => RefreshEntries(preserveSelection: true));
     }
 
     private void TrySetAppWindowTitleBar()

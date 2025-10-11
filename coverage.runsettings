@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+    <DataCollectionRunSettings>
+        <DataCollectors>
+            <DataCollector friendlyName="XPlat Code Coverage">
+                <Configuration>
+                    <Format>opencover</Format>
+                    <ExcludeByAttribute>GeneratedCodeAttribute;CompilerGeneratedAttribute</ExcludeByAttribute>
+                    <Exclude>
+                        [*]*.Generated.*
+                        [*]System.Text.RegularExpressions.Generated.*
+                    </Exclude>
+                </Configuration>
+            </DataCollector>
+        </DataCollectors>
+    </DataCollectionRunSettings>
+</RunSettings>

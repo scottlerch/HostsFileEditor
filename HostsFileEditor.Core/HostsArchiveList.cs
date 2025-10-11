@@ -10,6 +10,11 @@ public class HostsArchiveList : BindingList<HostsArchive>
     public static readonly string ArchiveDirectory =
         Path.Combine(HostsFile.DefaultHostFileDirectory, "archive");
 
+    // Test hook to override archive directory for safe unit testing
+    internal static string? TestArchiveDirectoryOverride { get; set; }
+
+    internal static string EffectiveArchiveDirectory => TestArchiveDirectoryOverride ?? ArchiveDirectory;
+
     private static readonly Lazy<HostsArchiveList> _instance =
         new(() => new HostsArchiveList());
 
@@ -38,9 +43,9 @@ public class HostsArchiveList : BindingList<HostsArchive>
         {
             Clear();
 
-            if (Directory.Exists(ArchiveDirectory))
+            if (Directory.Exists(EffectiveArchiveDirectory))
             {
-                var files = Directory.GetFiles(ArchiveDirectory);
+                var files = Directory.GetFiles(EffectiveArchiveDirectory);
 
                 foreach (var file in files)
                 {

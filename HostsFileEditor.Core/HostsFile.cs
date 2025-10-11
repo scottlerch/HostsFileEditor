@@ -3,7 +3,6 @@ using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using HostsFileEditor.Win32;
 using System.ComponentModel;
-using System.Linq.Expressions;
 
 namespace HostsFileEditor;
 
@@ -22,6 +21,9 @@ public class HostsFile : INotifyPropertyChanged
 
     public static readonly string DefaultDisabledHostFilePath =
         DefaultHostFilePath + ".disabled";
+
+    // Internal test hook: override backup file path so unit tests do not need elevated permissions
+    internal static string? TestBackupHostFilePathOverride { get; set; }
 
     private static readonly Lazy<HostsFile> _instance =
         new(() =>
@@ -43,9 +45,10 @@ public class HostsFile : INotifyPropertyChanged
         }
         else
         {
-            using (FileEx.DisableAttributes(DefaultBackupHostFilePath, FileAttributes.ReadOnly))
+            var backupPath = TestBackupHostFilePathOverride ?? DefaultBackupHostFilePath;
+            using (FileEx.DisableAttributes(backupPath, FileAttributes.ReadOnly))
             {
-                File.Copy(filePath, DefaultBackupHostFilePath, true);
+                File.Copy(filePath, backupPath, true);
             }
 
             Entries = new HostsEntryList(File.ReadAllLines(filePath), RemoveDefaultText);

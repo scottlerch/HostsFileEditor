@@ -4,6 +4,7 @@
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="CNAME" />
+    <File Path="coverage.runsettings" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Build.targets" />
     <File Path="global.json" />
@@ -12,6 +13,7 @@
     <File Path="Readme.md" />
     <File Path="_config.yml" />
   </Folder>
+  <Project Path="HostsFileEditor.Core.Tests/HostsFileEditor.Core.Tests.csproj" />
   <Project Path="HostsFileEditor.Core/HostsFileEditor.Core.csproj" />
   <Project Path="HostsFileEditor.WinForm/HostsFileEditor.WinForm.csproj" />
   <Project Path="HostsFileEditor.WinUI/HostsFileEditor.WinUI.csproj">
