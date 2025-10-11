@@ -7,3 +7,4 @@
 *.nupkg
 /**/bin
 /**/obj
+/HostsFileEditor.Core.Tests/TestResults/17992170-b374-4b89-9240-0451f653426b
