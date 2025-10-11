@@ -3,6 +3,7 @@
     <File Path="images/classic.png" />
     <File Path="images/classic_tray.png" />
     <File Path="images/modern.png" />
+    <File Path="images/modern_dark.png" />
   </Folder>
   <Folder Name="/Solution Files/">
     <File Path=".editorconfig" />
