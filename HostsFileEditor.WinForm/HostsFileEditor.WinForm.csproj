@@ -29,7 +29,7 @@
     <JsonSerializerIsReflectionEnabledByDefault Condition="'$(Configuration)' == 'Debug'">true</JsonSerializerIsReflectionEnabledByDefault>
     <CustomResourceTypesSupport>true</CustomResourceTypesSupport>
     <PackagingFlavor>classic</PackagingFlavor>
-    <OutputPackagingDir>$(MSBuildProjectDirectory)\..\bin\classic\</OutputPackagingDir>
+    <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\classic\</OutputPackagingDir>
     <CreatePublishZip>true</CreatePublishZip>
   </PropertyGroup>
   <ItemGroup>
@@ -51,14 +51,14 @@
     <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
   <Target Name="CreateBuildDirectories" BeforeTargets="BeforeBuild">
-    <MakeDir Directories="$(MSBuildProjectDirectory)\..\bin" Condition="!Exists('$(MSBuildProjectDirectory)\..\bin')" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\artifacts" Condition="!Exists('$(MSBuildProjectDirectory)\..\artifacts')" />
   </Target>
   <Target Name="CleanCustomDirectories" AfterTargets="Clean">
     <ItemGroup>
-      <BinFiles Include="$(MSBuildProjectDirectory)\..\bin\*.*" />
+      <BinFiles Include="$(MSBuildProjectDirectory)\..\artifacts\*.*" />
     </ItemGroup>
     <Delete Files="@(BinFiles)" />
-    <RemoveDir Directories="$(MSBuildProjectDirectory)\..\bin" Condition="Exists('$(MSBuildProjectDirectory)\..\bin')" />
+    <RemoveDir Directories="$(MSBuildProjectDirectory)\..\artifacts" Condition="Exists('$(MSBuildProjectDirectory)\..\artifacts')" />
     <Message Text="Cleaned all build artifacts directory" Importance="high" />
   </Target>
 </Project>

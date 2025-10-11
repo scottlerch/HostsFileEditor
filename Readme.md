@@ -11,10 +11,18 @@ Release binaries can be downloaded from [GitHub](https://github.com/scottlerch/H
  * Archive and restore various hostsfile configurations when switching between environments
  * Automatically ping endpoints to check availability
 
-![Main screen](https://cloud.githubusercontent.com/assets/1789883/24075121/a68ddcc8-0bd2-11e7-9eed-c53d02a08930.png)  
-*main editor screen with optional archive visible on right*
+<img src="images/modern.png" alt="Main screen modern light" width="673">
 
-![Tray](https://cloud.githubusercontent.com/assets/1789883/24075122/a98c7628-0bd2-11e7-845d-0e52a5e2cc7d.png)  
+*main modern editor (light)*
+
+<img src="images/modern_dark.png" alt="Main screen modern dark" width="673">
+
+*main modern editor (dark)*
+
+![Main screen classic](images/classic.png)  
+*main classic editor with optional archive visible on right*
+
+![Tray](images/classic_tray.png)  
 *tray icon with context menu*
 
 ### Usage Notes
@@ -44,7 +52,7 @@ dotnet publish -c Release
 # Build and publish with binary logging (recommended for troubleshooting)
 dotnet publish -c Release -bl:logs/publish.binlog
 
-# Clean project build artifacts, bin directory, and logs directory
+# Clean project build artifacts and logs directory
 dotnet clean
 ```
 

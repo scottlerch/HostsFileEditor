@@ -21,7 +21,7 @@
     <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081</NoWarn>
     <ApplicationIcon>Assets\HostsFileEditor.ico</ApplicationIcon>
     <PackagingFlavor>modern</PackagingFlavor>
-    <OutputPackagingDir>$(MSBuildProjectDirectory)\..\bin\modern\</OutputPackagingDir>
+    <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\modern\</OutputPackagingDir>
     <CreatePublishZip>false</CreatePublishZip>
   </PropertyGroup>
   <ItemGroup>
