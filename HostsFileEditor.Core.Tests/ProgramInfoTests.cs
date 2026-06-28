@@ -4,8 +4,5 @@ namespace HostsFileEditor.Core.Tests;
 public class ProgramInfoTests
 {
     [TestMethod]
-    public void AssemblyGuid_Format()
-    {
-        Guid.TryParse(ProgramInfo.AssemblyGuid, out var g).ShouldBeTrue();
-    }
+    public void AssemblyGuid_Format() => Guid.TryParse(ProgramInfo.AssemblyGuid, out _).ShouldBeTrue();
 }

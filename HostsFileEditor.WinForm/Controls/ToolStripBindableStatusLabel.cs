@@ -8,12 +8,8 @@ namespace HostsFileEditor.Controls;
 /// </summary>
 [ToolStripItemDesignerAvailability(ToolStripItemDesignerAvailability.StatusStrip)]
 [ToolboxBitmap(typeof(ToolStripStatusLabel))]
-internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableComponent
+internal sealed class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableComponent
 {
-    /// <summary>
-    /// Binding context.
-    /// </summary>
-    private BindingContext? _bindingContext;
 
     /// <summary>
     /// Data bindings.
@@ -33,14 +29,14 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
     {
         get
         {
-            _bindingContext ??= Owner?.BindingContext != null
+            field ??= Owner?.BindingContext != null
                     ? Owner.BindingContext
                     : Parent?.BindingContext != null ? Parent.BindingContext : new BindingContext();
 
-            return _bindingContext;
+            return field;
         }
 
-        set => _bindingContext = value;
+        set;
     }
 
     /// <summary>
@@ -70,14 +66,10 @@ internal class ToolStripBindableStatusLabel : ToolStripStatusLabel, IBindableCom
         if (disposing)
         {
             Events.Dispose();
+            _dataBindings?.Clear();
+            _dataBindings = null;
 
-            if (_dataBindings != null)
-            {
-                _dataBindings.Clear();
-                _dataBindings = null;
-            }
-
-            _bindingContext = null;
+            BindingContext = null;
         }
     }
 }

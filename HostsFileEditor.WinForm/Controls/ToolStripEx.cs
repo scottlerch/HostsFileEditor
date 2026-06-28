@@ -10,7 +10,7 @@ namespace HostsFileEditor.Controls;
 /// Click through feature from:
 /// http://blogs.msdn.com/b/rickbrew/archive/2006/01/09/511003.aspx
 /// </remarks>
-internal class ToolStripEx : ToolStrip
+internal sealed class ToolStripEx : ToolStrip
 {
     /// <summary>
     /// Gets or sets whether the ToolStripEx honors item clicks when 

@@ -6,26 +6,14 @@ namespace HostsFileEditor.Core.Tests;
 public class StringExtensionsTests
 {
     [TestMethod]
-    public void StripSpaces_RemovesSpaces()
-    {
-        "a b c".StripSpaces().ShouldBe("abc");
-    }
+    public void StripSpaces_RemovesSpaces() => "a b c".StripSpaces().ShouldBe("abc");
 
     [TestMethod]
-    public void StripSpaces_NoSpaces_Unchanged()
-    {
-        "abc".StripSpaces().ShouldBe("abc");
-    }
+    public void StripSpaces_NoSpaces_Unchanged() => "abc".StripSpaces().ShouldBe("abc");
 
     [TestMethod]
-    public void StripSpaces_EmptyString()
-    {
-        string.Empty.StripSpaces().ShouldBeEmpty();
-    }
+    public void StripSpaces_EmptyString() => string.Empty.StripSpaces().ShouldBeEmpty();
 
     [TestMethod]
-    public void StripSpaces_Null_Throws()
-    {
-        Should.Throw<ArgumentNullException>(() => StringExtensions.StripSpaces(null!));
-    }
+    public void StripSpaces_Null_Throws() => Should.Throw<ArgumentNullException>(() => StringExtensions.StripSpaces(null!));
 }

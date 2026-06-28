@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net9.0-windows</TargetFrameworks>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <IsPublishable>false</IsPublishable>
     <AssemblyName>HostsFileEditor.Core</AssemblyName>
     <NoWarn>$(NoWarn);CA2011;CA1401;CA1824</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="System.Resources.Extensions" Version="9.0.8" />
+    <PackageReference Include="System.Resources.Extensions" Version="10.0.9" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">

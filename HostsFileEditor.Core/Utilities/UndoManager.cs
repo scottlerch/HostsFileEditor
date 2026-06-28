@@ -39,6 +39,8 @@ public class UndoManager
 
     public void BatchActions(Action action)
     {
+        ArgumentNullException.ThrowIfNull(action);
+
         var reentered = _batchingActions;
 
         if (!reentered)
@@ -180,6 +182,8 @@ public class UndoManager
 
     public void SuspendUndo(Action action)
     {
+        ArgumentNullException.ThrowIfNull(action);
+
         _undoInProgress = true;
 
         try
@@ -194,6 +198,8 @@ public class UndoManager
 
     public void SuspendRedo(Action action)
     {
+        ArgumentNullException.ThrowIfNull(action);
+
         _redoInProgress = true;
 
         try
@@ -208,6 +214,8 @@ public class UndoManager
 
     public void SuspendUndoRedo(Action action)
     {
+        ArgumentNullException.ThrowIfNull(action);
+
         _undoInProgress = true;
         _redoInProgress = true;
 
@@ -224,25 +232,35 @@ public class UndoManager
 
     private void EnforceCapacity()
     {
-        if (_redoActions.Count > MaximumHistorySize)
-        {
-            var first = _redoActions.First!;
-            _redoActions.RemoveFirst();
-            _redoActions.RemoveFirst();
-            _redoActions.AddFirst(first);
-        }
-
-        if (_undoActions.Count > MaximumHistorySize)
-        {
-            var first = _undoActions.First!;
-            _undoActions.RemoveFirst();
-            _undoActions.RemoveFirst();
-            _undoActions.AddFirst(first);
-        }
+        TrimOldest(_undoActions, ref _undoActionsPosition);
+        TrimOldest(_redoActions, ref _redoActionsPosition);
     }
 
-    private void OnHistoryChanged()
+    // Evicts the oldest real action group (the node right after the sentinel First
+    // node) while preserving the sentinel. If the current position points at the
+    // node being evicted, it is advanced to the sentinel so navigation stays valid.
+    private static void TrimOldest(
+        LinkedList<LinkedList<Action>> actions,
+        ref LinkedListNode<LinkedList<Action>> position)
     {
-        HistoryChanged?.Invoke(this, EventArgs.Empty);
+        if (actions.Count <= MaximumHistorySize)
+        {
+            return;
+        }
+
+        var oldest = actions.First!.Next;
+        if (oldest is null)
+        {
+            return;
+        }
+
+        if (position == oldest)
+        {
+            position = actions.First!;
+        }
+
+        actions.Remove(oldest);
     }
+
+    private void OnHistoryChanged() => HistoryChanged?.Invoke(this, EventArgs.Empty);
 }

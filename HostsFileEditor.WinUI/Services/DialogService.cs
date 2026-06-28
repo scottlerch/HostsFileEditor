@@ -46,11 +46,6 @@ public class DialogService
         };
 
         var result = await dlg.ShowAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            return input.Text;
-        }
-
-        return null;
+        return result == ContentDialogResult.Primary ? input.Text : null;
     }
 }

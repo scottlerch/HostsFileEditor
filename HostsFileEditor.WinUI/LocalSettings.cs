@@ -7,7 +7,7 @@ internal static class LocalSettings
     private static readonly string _settingsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HostsFileEditor");
     private static readonly string _settingsPath = Path.Combine(_settingsDirectory, "settings.json");
 
-    private static readonly object _lock = new();
+    private static readonly Lock _lock = new();
     private static readonly Dictionary<string, bool> _cache = Load();
 
     public static bool GetBool(string key, bool defaultValue)

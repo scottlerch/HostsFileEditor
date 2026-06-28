@@ -10,7 +10,7 @@ namespace HostsFileEditor.Controls;
 /// Click through feature from:
 /// http://blogs.msdn.com/b/rickbrew/archive/2006/01/09/511003.aspx
 /// </remarks>
-internal class MenuStripEx : MenuStrip
+internal sealed class MenuStripEx : MenuStrip
 {
     /// <summary>
     /// Gets or sets whether the MenuStripEx honors item clicks when 

@@ -9,7 +9,7 @@ namespace HostsFileEditor;
 /// <summary>
 /// The main form for the application.
 /// </summary>
-internal partial class MainForm : Form
+internal sealed partial class MainForm : Form
 {
     /// <summary>
     /// The filter.
@@ -172,7 +172,9 @@ internal partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
-            _clipboardEntries = [.. dataGridViewHostsEntries.SelectedHostEntries];
+            // Clone like Copy does, so the clipboard holds independent entries rather
+            // than the live instances being removed (keeps undo/paste state consistent).
+            _clipboardEntries = [.. dataGridViewHostsEntries.SelectedHostEntries.Select(entry => new HostsEntry(entry))];
 
             HostsFile.Instance.Entries.Remove(_clipboardEntries);
         }
@@ -238,7 +240,9 @@ internal partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
-            foreach (var entry in dataGridViewHostsEntries.SelectedHostEntries)
+            // Snapshot the selection first: InsertAfter mutates the bound list (and
+            // thus SelectedRows) while we enumerate, which would otherwise throw.
+            foreach (var entry in dataGridViewHostsEntries.SelectedHostEntries.ToList())
             {
                 HostsFile.Instance.Entries.InsertAfter(entry, new HostsEntry(entry));
             }
@@ -266,13 +270,15 @@ internal partial class MainForm : Form
     /// </param>
     private void OnDisableHostsClick(object sender, EventArgs e)
     {
-        bool checkState = (sender as dynamic).Checked;
+        // Source of truth: the hosts file is disabled when the live hosts file is
+        // absent (renamed to .disabled), rather than trusting the sender's checkbox.
+        var currentlyDisabled = !HostsFile.IsEnabled;
 
-        menuDisable.Checked = !checkState;
-        buttonDisable.Checked = !checkState;
-        menuContextDisable.Checked = !checkState;
+        menuDisable.Checked = !currentlyDisabled;
+        buttonDisable.Checked = !currentlyDisabled;
+        menuContextDisable.Checked = !currentlyDisabled;
 
-        if (checkState)
+        if (currentlyDisabled)
         {
             HostsFile.EnableHostsFile();
         }
@@ -306,15 +312,12 @@ internal partial class MainForm : Form
     /// </param>
     private void OnFilterCommentClick(object sender, EventArgs e)
     {
-        bool checkState = (sender as dynamic).Checked;
+        var newState = !(_filter?.Comments ?? false);
 
-        if (_filter != null)
-        {
-            _filter.Comments = !checkState;
-        }
+        _filter?.Comments = newState;
 
-        menuFilterComments.Checked = !checkState;
-        buttonFilterComment.Checked = !checkState;
+        menuFilterComments.Checked = newState;
+        buttonFilterComment.Checked = newState;
 
         _hostEntriesView?.Refresh();
     }
@@ -330,15 +333,12 @@ internal partial class MainForm : Form
     /// </param>
     private void OnFilterDisabledClick(object sender, EventArgs e)
     {
-        bool checkState = (sender as dynamic).Checked;
+        var newState = !(_filter?.Disabled ?? false);
 
-        if (_filter != null)
-        {
-            _filter.Disabled = !checkState;
-        }
+        _filter?.Disabled = newState;
 
-        menuFilterDisabled.Checked = !checkState;
-        buttonFilterDisabled.Checked = !checkState;
+        menuFilterDisabled.Checked = newState;
+        buttonFilterDisabled.Checked = newState;
 
         _hostEntriesView?.Refresh();
     }
@@ -812,12 +812,13 @@ internal partial class MainForm : Form
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
     private void OnViewArchiveClick(object sender, EventArgs e)
     {
-        bool isChecked = ((dynamic)sender).Checked;
+        // Source of truth: the archive panel's collapsed state.
+        var archiveVisible = !splitContainer.Panel2Collapsed;
 
-        menuViewArchive.Checked = !isChecked;
-        buttonViewArchive.Checked = !isChecked;
+        menuViewArchive.Checked = !archiveVisible;
+        buttonViewArchive.Checked = !archiveVisible;
 
-        splitContainer.Panel2Collapsed = isChecked;
+        splitContainer.Panel2Collapsed = archiveVisible;
     }
 
     /// <summary>
@@ -876,11 +877,11 @@ internal partial class MainForm : Form
     /// containing the event data.</param>
     private void OnPingIPsClick(object sender, EventArgs e)
     {
-        bool isChecked = (sender as dynamic).Checked;
+        var newState = !HostsEntry.AutoPingIPAddress;
 
-        HostsEntry.AutoPingIPAddress = !isChecked;
+        HostsEntry.AutoPingIPAddress = newState;
 
-        menuPingIPs.Checked = !isChecked;
+        menuPingIPs.Checked = newState;
     }
 
     /// <summary>
@@ -891,11 +892,10 @@ internal partial class MainForm : Form
     /// instance containing the event data.</param>
     private void OnRemoveDefaultTextClick(object sender, EventArgs e)
     {
-        menuRemoveDefaultText.Checked =
-            !menuRemoveDefaultText.Checked;
+        var newState = !HostsFile.RemoveDefaultText;
 
-        HostsFile.RemoveDefaultText =
-            menuRemoveDefaultText.Checked;
+        HostsFile.RemoveDefaultText = newState;
+        menuRemoveDefaultText.Checked = newState;
     }
 
     /// <summary>
@@ -914,9 +914,11 @@ internal partial class MainForm : Form
         buttonViewArchive.Checked = settings.ArchiveVisible;
         splitContainer.Panel2Collapsed = !settings.ArchiveVisible;
 
-        // Do quick check that saved location still exists for multi-monitor setups
-        if (Screen.AllScreens.Any(screen =>
-            screen.WorkingArea.Contains(settings.WindowLocation)))
+        // Restore saved bounds only if the window would actually be visible: require the
+        // saved rectangle (not merely its top-left corner) to overlap a screen work area.
+        var savedBounds = new Rectangle(settings.WindowLocation, settings.WindowSize);
+        if (!settings.WindowSize.IsEmpty &&
+            Screen.AllScreens.Any(screen => screen.WorkingArea.IntersectsWith(savedBounds)))
         {
             Location = settings.WindowLocation;
             Size = settings.WindowSize;
@@ -1039,7 +1041,11 @@ internal partial class MainForm : Form
     /// </summary>
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-    private void OnAboutClick(object sender, EventArgs e) => (new AboutForm()).ShowDialog(this);
+    private void OnAboutClick(object sender, EventArgs e)
+    {
+        using var aboutForm = new AboutForm();
+        aboutForm.ShowDialog(this);
+    }
 
     /// <summary>
     /// Called when open text editor clicked.

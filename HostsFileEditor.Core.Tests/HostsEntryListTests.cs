@@ -6,7 +6,7 @@ public class HostsEntryListTests
     [TestMethod]
     public void AddLines_SkipDefault()
     {
-        var lines = new []{"127.0.0.1 localhost", "::1 localhost"};
+        var lines = new[] { "127.0.0.1 localhost", "::1 localhost" };
         var list = new HostsEntryList(lines, filterDefault: false);
         list.Count.ShouldBe(lines.Length);
     }
@@ -29,7 +29,7 @@ public class HostsEntryListTests
         list.Add(a);
         list.Add(b);
         list.Add(c);
-        list.MoveBefore(new[]{c}, b); // should move c before b leaving a at index0
+        list.MoveBefore([c], b); // should move c before b leaving a at index0
         list[0].HostNames.ShouldBe("a");
         list[1].HostNames.ShouldBe("c");
         list[2].HostNames.ShouldBe("b");
@@ -45,7 +45,7 @@ public class HostsEntryListTests
         list.Add(a);
         list.Add(b);
         list.Add(c);
-        list.MoveAfter(new[]{a}, b); // move a after b -> order should remain a,b,c since a already before b? Actually a removed then inserted after b => b,a,c
+        list.MoveAfter([a], b); // move a after b -> order should remain a,b,c since a already before b? Actually a removed then inserted after b => b,a,c
         list[0].HostNames.ShouldBe("b");
         list[1].HostNames.ShouldBe("a");
     }
@@ -56,7 +56,7 @@ public class HostsEntryListTests
         var list = new HostsEntryList();
         var a = new HostsEntry("127.0.0.1 a");
         list.Add(a);
-        list.SetEnabled(new[]{a}, false);
+        list.SetEnabled([a], false);
         a.Enabled.ShouldBeFalse();
     }
 
@@ -87,7 +87,7 @@ public class HostsEntryListTests
         var a = new HostsEntry("127.0.0.1 a");
         var b = new HostsEntry("127.0.0.1 b");
         list.Add(a); list.Add(b);
-        list.Remove(new[]{a});
+        list.Remove([a]);
         list.ShouldNotContain(a);
     }
 }

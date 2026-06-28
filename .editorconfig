@@ -166,7 +166,9 @@ dotnet_style_explicit_tuple_names = true:suggestion
 dotnet_style_prefer_compound_assignment = true:suggestion
 dotnet_style_prefer_simplified_interpolation = true:suggestion
 dotnet_style_prefer_collection_expression = when_types_loosely_match:suggestion
-dotnet_style_namespace_match_folder = true:suggestion
+# Namespaces are RootNamespace-based (HostsFileEditor) and intentionally do not
+# track folder structure, so folder/namespace matching (IDE0130) is disabled.
+dotnet_style_namespace_match_folder = false
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:silent
 dotnet_style_allow_multiple_blank_lines_experimental = true:silent
 dotnet_style_allow_statement_immediately_after_block_experimental = true:silent
@@ -179,3 +181,39 @@ tab_width = 2
 end_of_line = crlf
 insert_final_newline = true
 trim_trailing_whitespace = true
+
+# ============================================================================
+# Static analysis severity overrides (AnalysisMode = All)
+# Everything not listed here is enforced as an error via TreatWarningsAsErrors.
+# Each relaxation below documents why it is inappropriate or a false positive
+# for this codebase, so the default remains "fix it, don't suppress it".
+# ============================================================================
+[*.cs]
+# Desktop app: awaited work intentionally resumes on the UI thread, so
+# ConfigureAwait(false) would be wrong. CA2007 is for library code.
+dotnet_diagnostic.CA2007.severity = none
+# Public types are consumed by XAML (x:Bind), the WinForms designer, and the
+# MSTest discovery surface; they cannot all be made internal.
+dotnet_diagnostic.CA1515.severity = none
+# Intentional fault-tolerance at I/O and UI boundaries (settings load/save,
+# path validation, click handlers) where any failure must not crash the app.
+dotnet_diagnostic.CA1031.severity = none
+# Nullable flow analysis produces false "always true/false" results here.
+dotnet_diagnostic.CA1508.severity = none
+# The 'Ex' suffix (FileEx) is an established, intentional convention.
+dotnet_diagnostic.CA1711.severity = none
+# Cold path (a failed ping); caching a CompositeFormat is not worth the state.
+dotnet_diagnostic.CA1863.severity = suggestion
+# Owned disposables live for the process/window lifetime and are reclaimed at
+# shutdown; deterministic disposal is tracked as a correctness item, not hidden.
+dotnet_diagnostic.CA1001.severity = suggestion
+dotnet_diagnostic.CA2213.severity = suggestion
+
+# Win32 interop deliberately mirrors native constant and struct member names.
+[HostsFileEditor.Core/Win32/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+# Tests: Method_Scenario_Expected naming and public [TestClass] types are the
+# established convention.
+[HostsFileEditor.Core.Tests/*.cs]
+dotnet_diagnostic.CA1707.severity = none

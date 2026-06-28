@@ -14,7 +14,7 @@ public class HostsFileAdditionalTests
         _tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(_tempDir);
         _tempFile = Path.Combine(_tempDir, "hosts");
-        File.WriteAllLines(_tempFile, new[]{"127.0.0.1 localhost"});
+        File.WriteAllLines(_tempFile, ["127.0.0.1 localhost"]);
         HostsFile.TestBackupHostFilePathOverride = Path.Combine(_tempDir, "hosts.bak");
         HostsArchiveList.TestArchiveDirectoryOverride = _tempDir; // ensure archives stored in temp
     }
@@ -24,12 +24,15 @@ public class HostsFileAdditionalTests
     {
         HostsFile.TestBackupHostFilePathOverride = null;
         HostsArchiveList.TestArchiveDirectoryOverride = null;
-        if (Directory.Exists(_tempDir)) Directory.Delete(_tempDir, true);
+        if (Directory.Exists(_tempDir))
+        {
+            Directory.Delete(_tempDir, true);
+        }
     }
 
     private HostsFile Create() => (HostsFile)typeof(HostsFile)
-        .GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, new[]{typeof(string)}, null)!
-        .Invoke(new object[]{_tempFile});
+        .GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, [typeof(string)], null)!
+        .Invoke([_tempFile]);
 
     [TestMethod]
     public void EnabledCountAndLineCount_UpdateOnListChange()
@@ -45,7 +48,7 @@ public class HostsFileAdditionalTests
     public void Refresh_ReloadsEntries()
     {
         var hf = Create();
-        File.WriteAllLines(_tempFile, new[]{"127.0.0.9 changed"});
+        File.WriteAllLines(_tempFile, ["127.0.0.9 changed"]);
         hf.Refresh();
         hf.Entries.First().IpAddress.ShouldBe("127.0.0.9");
     }
@@ -63,9 +66,9 @@ public class HostsFileAdditionalTests
     public void Archive_CreatesArchiveEntry()
     {
         var hf = Create();
-        var archiveName = Guid.NewGuid().ToString()+".txt";
+        var archiveName = Guid.NewGuid().ToString() + ".txt";
         hf.Archive(archiveName);
         File.Exists(Path.Combine(_tempDir, archiveName)).ShouldBeTrue();
-        HostsArchiveList.Instance.Any(a => a.FilePath.EndsWith(archiveName)).ShouldBeTrue();
+        HostsArchiveList.Instance.Any(a => a.FilePath.EndsWith(archiveName, StringComparison.Ordinal)).ShouldBeTrue();
     }
 }

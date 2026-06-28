@@ -14,7 +14,7 @@ namespace HostsFileEditor.Controls;
     ToolStripItemDesignerAvailability.MenuStrip |
     ToolStripItemDesignerAvailability.ContextMenuStrip)]
 [ToolboxBitmap(typeof(ToolStripTextBox))]
-internal class ToolStripSpringTextBox : ToolStripTextBox
+internal sealed class ToolStripSpringTextBox : ToolStripTextBox
 {
     /// <inheritdoc />
     public override Size GetPreferredSize(Size constrainingSize)

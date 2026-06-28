@@ -1,3 +1,5 @@
+using HostsFileEditor.Utilities;
+
 namespace HostsFileEditor.Core.Tests;
 
 [TestClass]
@@ -12,6 +14,28 @@ public class HostsEntryTests
         entry.IpAddress.ShouldBe("127.0.0.1");
         entry.HostNames.ShouldBe("localhost");
         entry.Comment.ShouldBe("comment");
+    }
+
+    [TestMethod]
+    public void SettingPropertyToSameValue_DoesNotRecordUndo()
+    {
+        var entry = new HostsEntry("127.0.0.1 localhost");
+        var currentEnabled = entry.Enabled;
+        var currentComment = entry.Comment;
+        UndoManager.Instance.ClearHistory();
+
+        // Re-assigning the current value of each property must not pollute undo history.
+        entry.IpAddress = "127.0.0.1";
+        entry.HostNames = "localhost";
+        entry.Enabled = currentEnabled;
+        entry.Comment = currentComment;
+        UndoManager.Instance.CanUndo.ShouldBeFalse();
+
+        // A genuine change is still recorded.
+        entry.IpAddress = "10.0.0.1";
+        UndoManager.Instance.CanUndo.ShouldBeTrue();
+
+        UndoManager.Instance.ClearHistory();
     }
 
     [TestMethod]
@@ -88,8 +112,10 @@ public class HostsEntryTests
     [TestMethod]
     public void Comment_Update()
     {
-        var entry = new HostsEntry("127.0.0.1 localhost");
-        entry.Comment = "abc";
+        var entry = new HostsEntry("127.0.0.1 localhost")
+        {
+            Comment = "abc"
+        };
         entry.UnparsedText.ShouldContain("# abc");
     }
 }

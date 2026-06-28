@@ -14,28 +14,19 @@ internal static class HostEntryBrushHelper
             return new SolidColorBrush(Colors.Transparent);
         }
 
-        if (entry.HasCommentOnly)
-        {
-            return GetFirstExistingBrush(
+        return entry.HasCommentOnly
+            ? GetFirstExistingBrush(
                 "SystemFillColorNeutralBackgroundBrush",
                 "LayerFillColorTertiaryBrush",
                 "LayerFillColorDefaultBrush")
-                ?? new SolidColorBrush(Color.FromArgb(0xFF, 0xF0, 0xF0, 0xF0));
-        }
-
-        if (entry.Valid)
-        {
-            return GetResourceBrush("LayerFillColorDefaultBrush")
-                   ?? new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF));
-        }
-
-        if (Application.Current.Resources.TryGetValue("SystemFillColorCriticalBackgroundBrush", out var critical)
-            && critical is Brush criticalBrush)
-        {
-            return criticalBrush;
-        }
-
-        return new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xE5, 0xE5));
+                ?? new SolidColorBrush(Color.FromArgb(0xFF, 0xF0, 0xF0, 0xF0))
+            : entry.Valid
+            ? GetResourceBrush("LayerFillColorDefaultBrush")
+                   ?? new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF))
+            : Application.Current.Resources.TryGetValue("SystemFillColorCriticalBackgroundBrush", out var critical)
+            && critical is Brush criticalBrush
+            ? criticalBrush
+            : new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xE5, 0xE5));
     }
 
     private static Brush? GetResourceBrush(string key) => Application.Current.Resources[key] as Brush;

@@ -3,15 +3,12 @@ using HostsFileEditor.Utilities;
 namespace HostsFileEditor.Core.Tests;
 
 [TestClass]
-public class UndoManagerTests
+public sealed class UndoManagerTests
 {
-    private class Holder { public int State; }
+    private sealed class Holder { public int State; }
 
     [TestInitialize]
-    public void Setup()
-    {
-        UndoManager.Instance.ClearHistory();
-    }
+    public void Setup() => UndoManager.Instance.ClearHistory();
 
     [TestMethod]
     public void AddActions_Undo_RestoreState()
@@ -94,5 +91,37 @@ public class UndoManagerTests
         h.State.ShouldBe(1);
         UndoManager.Instance.Redo();
         h.State.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public void EnforceCapacity_ManyActions_UndoRedoStaysConsistent()
+    {
+        var h = new Holder { State = 0 };
+
+        // Exceed the internal capacity (1000 groups) to force eviction of the oldest
+        // history. The position pointers must not be left dangling by the trimming.
+        for (var i = 1; i <= 1100; i++)
+        {
+            var prev = h.State;
+            var next = i;
+            UndoManager.Instance.AddActions(() => h.State = prev, () => h.State = next);
+            h.State = next;
+        }
+
+        Should.NotThrow(() =>
+        {
+            while (UndoManager.Instance.CanUndo)
+            {
+                UndoManager.Instance.Undo();
+            }
+
+            while (UndoManager.Instance.CanRedo)
+            {
+                UndoManager.Instance.Redo();
+            }
+        });
+
+        // Redoing all retained history returns to the most recent value.
+        h.State.ShouldBe(1100);
     }
 }

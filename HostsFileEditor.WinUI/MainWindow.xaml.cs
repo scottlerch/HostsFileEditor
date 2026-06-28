@@ -74,20 +74,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         _selectionService = new SelectionStateService(
             hasSelection: () => EntriesList is not null && EntriesList.SelectedItems.Count > 0,
-            setRemoveEnabled: v => { if (RemoveButton is not null) RemoveButton.IsEnabled = v; },
-            setDuplicateEnabled: v => { if (DuplicateButton is not null) DuplicateButton.IsEnabled = v; },
-            setMoveUpEnabled: v => { if (MoveUpButton is not null) MoveUpButton.IsEnabled = v; },
-            setMoveDownEnabled: v => { if (MoveDownButton is not null) MoveDownButton.IsEnabled = v; },
-            setToggleEnabled: v => { if (ToggleButton is not null) ToggleButton.IsEnabled = v; },
-            setCtxCopyVis: v => { if (CtxCopy is not null) CtxCopy.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
-            setCtxCutVis: v => { if (CtxCut is not null) CtxCut.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
-            setCtxPasteVis: v => { if (CtxPaste is not null) CtxPaste.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
-            setCtxAddAboveVis: v => { if (CtxAddAbove is not null) CtxAddAbove.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
-            setCtxAddBelowVis: v => { if (CtxAddBelow is not null) CtxAddBelow.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setRemoveEnabled: v => { RemoveButton?.IsEnabled = v; },
+            setDuplicateEnabled: v => { DuplicateButton?.IsEnabled = v; },
+            setMoveUpEnabled: v => { MoveUpButton?.IsEnabled = v; },
+            setMoveDownEnabled: v => { MoveDownButton?.IsEnabled = v; },
+            setToggleEnabled: v => { ToggleButton?.IsEnabled = v; },
+            setCtxCopyVis: v => { CtxCopy?.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setCtxCutVis: v => { CtxCut?.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setCtxPasteVis: v => { CtxPaste?.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setCtxAddAboveVis: v => { CtxAddAbove?.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
+            setCtxAddBelowVis: v => { CtxAddBelow?.Visibility = v ? Visibility.Visible : Visibility.Collapsed; },
             setUndoRedoVis: (undo, redo) =>
             {
-                if (CtxUndo is not null) CtxUndo.Visibility = undo ? Visibility.Visible : Visibility.Collapsed;
-                if (CtxRedo is not null) CtxRedo.Visibility = redo ? Visibility.Visible : Visibility.Collapsed;
+                CtxUndo?.Visibility = undo ? Visibility.Visible : Visibility.Collapsed;
+
+                CtxRedo?.Visibility = redo ? Visibility.Visible : Visibility.Collapsed;
             });
 
         TrySetAppWindowTitleBar();
@@ -131,11 +132,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         };
     }
 
-    private void OnCoreEntriesListChanged(object? sender, ListChangedEventArgs e)
-    {
+    private void OnCoreEntriesListChanged(object? sender, ListChangedEventArgs e) =>
         // Use dispatcher to ensure UI-thread update and preserve selection when possible
         _ = DispatcherQueue.TryEnqueue(() => RefreshEntries(preserveSelection: true));
-    }
 
     private void TrySetAppWindowTitleBar()
     {
@@ -198,10 +197,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         Activated += (s, e) =>
         {
-            if (_backdropConfiguration is not null)
-            {
-                _backdropConfiguration.IsInputActive = e.WindowActivationState != WindowActivationState.Deactivated;
-            }
+            _backdropConfiguration?.IsInputActive = e.WindowActivationState != WindowActivationState.Deactivated;
         };
 
         Closed += (s, e) =>
@@ -238,7 +234,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            await ShowErrorDialogAsync("Error Saving Hosts File", $"An error occurred while saving the hosts file:\n\n{ex.Message}");
+            await ShowErrorDialogAsync("Error Importing Hosts File", $"An error occurred while importing the hosts file:\n\n{ex.Message}");
         }
     }
 
@@ -295,25 +291,31 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             HostsFile.Instance.Entries.Add();
         }
 
-        Entries.Insert(0, HostsFile.Instance.Entries.First());
+        // RefreshEntries rebuilds the (filtered) view from the core list. Do not also
+        // insert into the view directly: that adds the entry twice and ignores filters.
+        RefreshEntries(true);
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     private void OnMoveUpClick(object sender, RoutedEventArgs e)
     {
-        if (EntriesList.SelectedItems.Count > 0 && EntriesList.SelectedItem is HostsEntry lastSel)
+        var selected = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
+        if (selected.Count > 0)
         {
-            HostsFile.Instance.Entries.MoveBefore(EntriesList.SelectedItems.Cast<HostsEntry>(), lastSel);
+            // Match the classic UI: move the selection relative to the LAST selected entry.
+            HostsFile.Instance.Entries.MoveBefore(selected, selected[^1]);
             RefreshEntries(true);
         }
     }
 
     private void OnMoveDownClick(object sender, RoutedEventArgs e)
     {
-        if (EntriesList.SelectedItems.Count > 0 && EntriesList.SelectedItem is HostsEntry firstSel)
+        var selected = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
+        if (selected.Count > 0)
         {
-            HostsFile.Instance.Entries.MoveAfter(EntriesList.SelectedItems.Cast<HostsEntry>(), firstSel);
+            // Match the classic UI: move the selection relative to the FIRST selected entry.
+            HostsFile.Instance.Entries.MoveAfter(selected, selected[0]);
             RefreshEntries(true);
         }
     }
@@ -418,10 +420,19 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
     {
         var confirmed = await ShowConfirmationAsync("Reload hosts file?", "You will lose any unsaved changes. Continue?");
-        if (confirmed)
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
         {
             HostsFile.Instance.Refresh();
             RefreshEntries();
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorDialogAsync("Error Reloading Hosts File", $"An error occurred while reloading the hosts file:\n\n{ex.Message}");
         }
     }
 
@@ -524,10 +535,19 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             ? await _dialogService.ShowInputAsync(Content.XamlRoot, "Create Archive", "Archive name", "OK", "Cancel")
             : null;
 
-        if (!string.IsNullOrWhiteSpace(name))
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
+        try
         {
             HostsFile.Instance.Archive(name.Trim());
             RefreshArchives();
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorDialogAsync("Error Creating Archive", $"An error occurred while creating the archive:\n\n{ex.Message}");
         }
     }
 
@@ -589,7 +609,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         HashSet<HostsEntry>? selectedSnapshot = null;
         if (preserveSelection && EntriesList.SelectedItems.Count > 0)
         {
-            selectedSnapshot = EntriesList.SelectedItems.Cast<HostsEntry>().ToHashSet();
+            selectedSnapshot = [.. EntriesList.SelectedItems.Cast<HostsEntry>()];
         }
 
         // 3. Build target filtered list
@@ -597,9 +617,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         foreach (var e in HostsFile.Instance.Entries)
         {
             if (IsFilterCommentsHidden && e.HasCommentOnly)
+            {
                 continue;
+            }
+
             if (IsFilterDisabledHidden && !e.Enabled && !e.HasCommentOnly)
+            {
                 continue;
+            }
 
             if (string.IsNullOrEmpty(text) || e.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
             {
@@ -610,14 +635,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // 4. Fast path: identical sequence -> only adjust selection/properties
         var same =
             Entries.Count == newList.Count &&
-            Entries.Zip(newList, (a, b) => ReferenceEquals(a, b)).All(eq => eq);
+            Entries.Zip(newList, ReferenceEquals).All(eq => eq);
 
         if (!same)
         {
             // 5. Minimal diff updates
             // Build index lookup for faster future searches if needed
             // (We rebuild on-the-fly because collection changes shift indices)
-            for (int i = 0; i < newList.Count; i++)
+            for (var i = 0; i < newList.Count; i++)
             {
                 var desired = newList[i];
 
@@ -631,7 +656,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 {
                     // Try to find desired later in the list to move it
                     var existingIndex = -1;
-                    for (int j = i + 1; j < Entries.Count; j++)
+                    for (var j = i + 1; j < Entries.Count; j++)
                     {
                         if (ReferenceEquals(Entries[j], desired))
                         {
@@ -669,7 +694,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             var toSelect = Entries.Where(selectedSnapshot.Contains).ToList();
 
             // Avoid unnecessary churn if already matches
-            bool selectionDiffers =
+            var selectionDiffers =
                 EntriesList.SelectedItems.Count != toSelect.Count ||
                 EntriesList.SelectedItems.Cast<HostsEntry>().Except(toSelect).Any();
 
@@ -723,7 +748,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (Content is FrameworkElement root && root.FindName("FilterUnderline") is Border underline)
         {
-            underline.Background = new SolidColorBrush(Colors.White);
+            // Restore the resting underline using a theme-aware brush (was hardcoded
+            // white, which is invisible on light themes).
+            underline.Background = Application.Current.Resources["ControlStrokeColorDefaultBrush"] as Brush ?? new SolidColorBrush(Colors.Gray);
         }
     }
 
@@ -734,7 +761,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         ApplyToggleSetting("RemoveDefaultText", v => { IsRemoveDefaultText = v; HostsFile.RemoveDefaultText = v; }, nameof(IsRemoveDefaultText), sender);
 
     private void OnUndoHistoryChanged(object? sender, EventArgs e) =>
-        _ = DispatcherQueue.TryEnqueue(() => _selectionService.UpdateContextMenuItems());
+        _ = DispatcherQueue.TryEnqueue(_selectionService.UpdateContextMenuItems);
 
     private void OnEntriesSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -747,8 +774,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (ArchiveList is not null)
         {
             var hasSelection = ArchiveList.SelectedItem is HostsArchive;
-            if (ArchiveLoadButton is not null) ArchiveLoadButton.IsEnabled = hasSelection;
-            if (ArchiveDeleteButton is not null) ArchiveDeleteButton.IsEnabled = hasSelection;
+            ArchiveLoadButton?.IsEnabled = hasSelection;
+
+            ArchiveDeleteButton?.IsEnabled = hasSelection;
         }
     }
 }

@@ -6,39 +6,51 @@ public class HostsArchiveTests
     [TestMethod]
     public void FileName_ReturnsLastSegment()
     {
-        var archive = new HostsArchive();
-        archive.FilePath = Path.Combine("a","b","c.txt");
+        var archive = new HostsArchive
+        {
+            FilePath = Path.Combine("a", "b", "c.txt")
+        };
         archive.FileName.ShouldBe("c.txt");
     }
 
     [TestMethod]
     public void Validate_NonExistingFileName_IsValid()
     {
-        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()+".txt");
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".txt");
         HostsArchive.Validate(path, out var error).ShouldBeTrue();
         error.ShouldBeEmpty();
     }
 
     [TestMethod]
-    public void Validate_PathExistsInArchive_ReturnsArchiveExists()
+    public void Validate_ExistingNameInArchive_ReturnsArchiveExists()
     {
-        // create temp archive dir
         var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(dir);
-        var prev = HostsArchiveList.ArchiveDirectory;
         try
         {
-            // create file in archive directory
-            var fileName = "dup.txt";
-            var filePath = Path.Combine(dir, fileName);
-            File.WriteAllText(filePath, "x");
-            // simulate archive directory by copying file name list condition
-            // Validation expects filePath parameter to be just name when comparing Contains
-            HostsArchive.Validate(fileName, out var error).ShouldBeTrue(); // since directory mismatch
-            // Cannot reliably force ArchiveExists without altering implementation; accept success
+            HostsArchiveList.TestArchiveDirectoryOverride = dir;
+
+            const string fileName = "dup.txt";
+            File.WriteAllText(Path.Combine(dir, fileName), "x");
+
+            // A name that already exists in the (effective) archive directory is rejected,
+            // case-insensitively, regardless of whether a bare name or full path is passed.
+            HostsArchive.Validate(fileName, out var error).ShouldBeFalse();
+            error.ShouldNotBeNullOrEmpty();
+
+            HostsArchive.Validate("DUP.TXT", out var errorUpper).ShouldBeFalse();
+            errorUpper.ShouldNotBeNullOrEmpty();
+
+            HostsArchive.Validate(Path.Combine(dir, fileName), out var errorFull).ShouldBeFalse();
+            errorFull.ShouldNotBeNullOrEmpty();
+
+            // A different name is accepted.
+            HostsArchive.Validate("brandnew.txt", out var errorNew).ShouldBeTrue();
+            errorNew.ShouldBeEmpty();
         }
         finally
         {
+            HostsArchiveList.TestArchiveDirectoryOverride = null;
             Directory.Delete(dir, true);
         }
     }

@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace HostsFileEditor.Utilities;
 
-public class FileOpener
+public static class FileOpener
 {
     public static void OpenTextFile(string path)
     {
@@ -34,8 +34,8 @@ public class FileOpener
         }
 
         registeredApp = openCommand
-            .Replace("%1", string.Empty)
-            .Replace("\"", string.Empty)
+            .Replace("%1", string.Empty, StringComparison.Ordinal)
+            .Replace("\"", string.Empty, StringComparison.Ordinal)
             .Trim();
 
         return true;

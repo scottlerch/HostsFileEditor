@@ -1,6 +1,7 @@
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -8,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace HostsFileEditor;
 
-public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDisposable
+public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 {
     private const string Address = "ipaddress";
     private const string AfterComment = "aftercomment";
@@ -16,15 +17,6 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
     private const string Disabled = "disabled";
     private const string Hostname = "hostname";
     private const string LineComment = "comment";
-
-    private const string MatchGroupBlank = @"(?<" + Blank + @">\s*)";
-    private const string MatchGroupComment = @"(\s*#+\s?(?<" + LineComment + @">.*))";
-    private const string MatchGroupValidEntry =
-        @"((?<" + Disabled + @">#+)?\s*(?<" + Address + @">" + MatchIpAddress + @")\s+(?<" + Hostname + @">"
-        + MatchHostnames + @")\s*(#+(?<" + AfterComment + @">.*))?)";
-
-    private const string MatchHostnames = @"([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*";
-    private const string MatchIpAddress = @"[^\s]+";
 
     private static readonly Regex _matchValidHostEntry = ValidHostsRegex();
 
@@ -39,7 +31,6 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
     private bool _valid;
     private bool _ipAddressValid;
     private bool _hostnamesValid;
-    private Ping? _ping;
 
     public HostsEntry()
     {
@@ -49,9 +40,6 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         _hostnames = string.Empty;
         _ipAddress = string.Empty;
         _unparsedText = string.Empty;
-
-        _ping = new Ping();
-        _ping.PingCompleted += OnPingCompleted;
     }
 
     public HostsEntry(string unparsedTextLine) : this()
@@ -111,6 +99,8 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
 
     public HostsEntry(HostsEntry entry)
     {
+        ArgumentNullException.ThrowIfNull(entry);
+
         _comment = entry._comment;
         _enabled = entry._enabled;
         _hostnames = entry._hostnames;
@@ -136,6 +126,11 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         {
             ArgumentNullException.ThrowIfNull(value);
 
+            if (string.Equals(_comment, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             var local = _comment;
             UndoManager.Instance.AddActions(
                 undoAction: () => Comment = local,
@@ -152,6 +147,11 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         get => _enabled;
         set
         {
+            if (_enabled == value)
+            {
+                return;
+            }
+
             var local = _enabled;
             UndoManager.Instance.AddActions(
                 undoAction: () => Enabled = local,
@@ -168,12 +168,18 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         {
             ArgumentNullException.ThrowIfNull(value);
 
+            var trimmed = value.Trim();
+            if (string.Equals(_hostnames, trimmed, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             var local = _hostnames;
             UndoManager.Instance.AddActions(
                 undoAction: () => HostNames = local,
-                redoAction: () => HostNames = value.Trim());
+                redoAction: () => HostNames = trimmed);
 
-            Update(ref _hostnames, value.Trim(), nameof(HostNames), ValidateHostnames);
+            Update(ref _hostnames, trimmed, nameof(HostNames), ValidateHostnames);
         }
     }
 
@@ -184,12 +190,18 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
         {
             ArgumentNullException.ThrowIfNull(value);
 
+            var trimmed = value.Trim();
+            if (string.Equals(_ipAddress, trimmed, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             var local = _ipAddress;
             UndoManager.Instance.AddActions(
                 undoAction: () => IpAddress = local,
-                redoAction: () => IpAddress = value.Trim());
+                redoAction: () => IpAddress = trimmed);
 
-            Update(ref _ipAddress, value.Trim(), nameof(IpAddress), ValidateIpAddress);
+            Update(ref _ipAddress, trimmed, nameof(IpAddress), ValidateIpAddress);
         }
     }
 
@@ -201,12 +213,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
             {
                 _unparsedText = HasCommentOnly
                     ? $"# {_comment}"
-                    : string.Format(
-                        "{0}{1} {2}{3}",
-                        !Enabled ? "# " : string.Empty,
-                        IpAddress,
-                        HostNames,
-                        Comment.Trim() != string.Empty ? " # " + Comment : string.Empty);
+                    : $"{(!Enabled ? "# " : string.Empty)}{IpAddress} {HostNames}{(Comment.Trim().Length != 0 ? " # " + Comment : string.Empty)}";
 
                 if (!_valid)
                 {
@@ -236,49 +243,55 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo, IDispo
 
     public override string ToString() => $"{IpAddress} {HostNames} {Comment}";
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
     public void Ping()
     {
-        _ping?.SendAsyncCancel();
-        _ping?.SendAsync(_ipAddress, SynchronizationContext.Current);
-    }
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
+        // Only ping addresses that parse. The Ping is created on demand and disposed
+        // deterministically when the async operation completes (see PingAsync), so
+        // HostsEntry instances do not need to be IDisposable or hold native resources.
+        if (!IPAddress.TryParse(_ipAddress, out _))
         {
-            if (_ping != null)
-            {
-                _ping.PingCompleted -= OnPingCompleted;
-                _ping.SendAsyncCancel();
-                _ping.Dispose();
-                _ping = null;
-            }
+            return;
         }
+
+        // Capture the current synchronization context (if any) so the result is
+        // marshaled back to the originating (UI) thread.
+        _ = PingAsync(_ipAddress, SynchronizationContext.Current);
     }
 
-    private void OnPingCompleted(object? sender, PingCompletedEventArgs e)
+    private async Task PingAsync(string address, SynchronizationContext? syncContext)
     {
-        if (!e.Cancelled && e.Reply != null)
-        {
-            if (e.Reply.Status != IPStatus.Success)
-            {
-                var syncContext = e.UserState as SynchronizationContext;
-                syncContext?.Post(
-                    state =>
-                    {
-                        _errors[nameof(IpAddress)] =
-                            string.Format(Resources.PingFailed, e.Reply.Status.ToString());
+        IPStatus status;
 
-                        OnPropertyChanged(nameof(IpAddress));
-                    },
-                    null);
-            }
+        try
+        {
+            using var ping = new Ping();
+            var reply = await ping.SendPingAsync(address);
+            status = reply.Status;
+        }
+        catch (Exception)
+        {
+            // A failed/cancelled/invalid ping must not crash the fire-and-forget caller.
+            return;
+        }
+
+        if (status == IPStatus.Success)
+        {
+            return;
+        }
+
+        void ReportFailure()
+        {
+            _errors[nameof(IpAddress)] = string.Format(CultureInfo.CurrentCulture, Resources.PingFailed, status);
+            OnPropertyChanged(nameof(IpAddress));
+        }
+
+        if (syncContext is not null)
+        {
+            syncContext.Post(_ => ReportFailure(), null);
+        }
+        else
+        {
+            ReportFailure();
         }
     }
 

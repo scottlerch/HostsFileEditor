@@ -6,10 +6,7 @@ namespace HostsFileEditor.Core.Tests;
 public class UndoManagerAdditionalTests
 {
     [TestInitialize]
-    public void Setup()
-    {
-        UndoManager.Instance.ClearHistory();
-    }
+    public void Setup() => UndoManager.Instance.ClearHistory();
 
     [TestMethod]
     public void HistoryChanged_RaisedOnAddUndoRedoClear()
@@ -74,6 +71,8 @@ public class UndoManagerAdditionalTests
         applied.ShouldBe(-5);
     }
 
+    private static readonly int[] expected = [3, 1];
+
     [TestMethod]
     public void NestedBatchActions_SingleGroup()
     {
@@ -88,7 +87,7 @@ public class UndoManagerAdditionalTests
         });
         seq.ShouldBeEmpty();
         UndoManager.Instance.Undo(); // executes undo actions: outer adds first undo (1) then inner (3)
-        seq.ShouldBe(new[]{3,1});
+        seq.ShouldBe(expected);
     }
 
     [TestMethod]
@@ -101,13 +100,13 @@ public class UndoManagerAdditionalTests
     [TestMethod]
     public void EnforceCapacity_PrunesOldEntries()
     {
-        for (int i = 0; i < 1005; i++)
+        for (var i = 0; i < 1005; i++)
         {
-            int local = i;
+            var local = i;
             UndoManager.Instance.AddActions(() => { var _ = local; }, () => { var __ = local; });
         }
         UndoManager.Instance.CanUndo.ShouldBeTrue();
-        for (int i = 0; i < 10; i++)
+        for (var i = 0; i < 10; i++)
         {
             UndoManager.Instance.Undo();
         }
@@ -115,14 +114,8 @@ public class UndoManagerAdditionalTests
     }
 
     [TestMethod]
-    public void Undo_NoActions_DoesNothing()
-    {
-        UndoManager.Instance.Undo();
-    }
+    public void Undo_NoActions_DoesNothing() => UndoManager.Instance.Undo();
 
     [TestMethod]
-    public void Redo_NoActions_DoesNothing()
-    {
-        UndoManager.Instance.Redo();
-    }
+    public void Redo_NoActions_DoesNothing() => UndoManager.Instance.Redo();
 }

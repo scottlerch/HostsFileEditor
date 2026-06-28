@@ -14,9 +14,5 @@ public class NativeMethodsTests
     }
 
     [TestMethod]
-    public void FlushDns_DoesNotThrow()
-    {
-        NativeMethods.FlushDns();
-        // If we reach here, test passes.
-    }
+    public void FlushDns_DoesNotThrow() => NativeMethods.FlushDns();// If we reach here, test passes.
 }

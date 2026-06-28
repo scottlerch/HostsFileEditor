@@ -11,12 +11,12 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// <summary>
     /// Current sort state used to determine when to remove sort.
     /// </summary>
-    private int _currentSortState = 0;
+    private int _currentSortState;
 
     /// <summary>
     /// Last sorted column.
     /// </summary>
-    private DataGridViewColumn? _lastSortedColumn = null;
+    private DataGridViewColumn? _lastSortedColumn;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HostsEntryDataGridView"/> class.

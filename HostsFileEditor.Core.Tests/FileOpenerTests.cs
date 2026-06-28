@@ -10,7 +10,7 @@ public class FileOpenerTests
     public void TryGetRegisteredApplication_ReturnsFalseForUnknown()
     {
         var method = typeof(FileOpener).GetMethod("TryGetRegisteredApplication", BindingFlags.NonPublic | BindingFlags.Static);
-        var parameters = new object?[]{".unlikelyext", null};
+        var parameters = new object?[] { ".unlikelyext", null };
         var result = (bool)method!.Invoke(null, parameters)!;
         result.ShouldBeFalse();
     }
@@ -19,7 +19,7 @@ public class FileOpenerTests
     public void GetClassesRootKeyDefaultValue_NullForInvalid()
     {
         var method = typeof(FileOpener).GetMethod("GetClassesRootKeyDefaultValue", BindingFlags.NonPublic | BindingFlags.Static);
-        var value = method!.Invoke(null, new object?[]{".unlikelyext\\doesnotexist"});
+        var value = method!.Invoke(null, [".unlikelyext\\doesnotexist"]);
         value.ShouldBeNull();
     }
 }

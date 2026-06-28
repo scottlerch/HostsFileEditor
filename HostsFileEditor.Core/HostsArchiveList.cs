@@ -28,6 +28,8 @@ public class HostsArchiveList : BindingList<HostsArchive>
 
     public void Delete(HostsArchive archive)
     {
+        ArgumentNullException.ThrowIfNull(archive);
+
         using (FileEx.DisableAttributes(archive.FilePath, FileAttributes.ReadOnly))
         {
             File.Delete(archive.FilePath);

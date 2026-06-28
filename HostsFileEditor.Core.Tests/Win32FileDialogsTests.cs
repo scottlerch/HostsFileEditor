@@ -12,7 +12,7 @@ public class Win32FileDialogsTests
     {
         // Using reflection to access private method BuildFilter
         var method = typeof(Win32FileDialogs).GetMethod("BuildFilter", BindingFlags.NonPublic | BindingFlags.Static);
-        var result = (string)method!.Invoke(null, new object?[]{""})!;
+        var result = (string)method!.Invoke(null, [""])!;
         result.ShouldContain("All Files");
         result.ShouldEndWith("\0");
     }
@@ -22,7 +22,7 @@ public class Win32FileDialogsTests
     {
         var method = typeof(Win32FileDialogs).GetMethod("BuildFilter", BindingFlags.NonPublic | BindingFlags.Static);
         var filter = "Text Files|*.txt|Image Files|*.png";
-        var result = (string)method!.Invoke(null, new object?[]{filter})!;
+        var result = (string)method!.Invoke(null, [filter])!;
         result.ShouldContain("Text Files");
         result.ShouldContain("*.png");
         result.ShouldEndWith("\0");
@@ -36,7 +36,7 @@ public class Win32FileDialogsTests
         try
         {
             Marshal.WriteInt32(ptr, unchecked((int)0xFFFFFFFF));
-            clearMethod!.Invoke(null, new object?[]{ptr, 4});
+            clearMethod!.Invoke(null, [ptr, 4]);
             var bytes = new byte[4];
             Marshal.Copy(ptr, bytes, 0, 4);
             bytes.ShouldAllBe(b => b == 0);
@@ -52,7 +52,7 @@ public class Win32FileDialogsTests
     {
         var method = typeof(Win32FileDialogs).GetMethod("BuildFilter", BindingFlags.NonPublic | BindingFlags.Static);
         var filter = "Text|*.txt|Dangling"; // odd count -> last part ignored
-        var result = (string)method!.Invoke(null, new object?[]{filter})!;
+        var result = (string)method!.Invoke(null, [filter])!;
         result.ShouldContain("Text");
         result.ShouldContain("*.txt");
     }

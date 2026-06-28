@@ -18,12 +18,20 @@ public static class SharedColumnWidth
 {
     private static readonly ConcurrentDictionary<string, List<WeakReference<FrameworkElement>>> _elements = new();
     private static readonly HashSet<string> _pendingRecalc = [];
-    private static readonly object _pendingLock = new();
+    private static readonly Lock _pendingLock = new();
     private static int _suppressEvents; // >0 when recalculating
 
-    public static string? GetColumnKey(DependencyObject obj) => (string?)obj.GetValue(ColumnKeyProperty);
+    public static string? GetColumnKey(DependencyObject obj)
+    {
+        ArgumentNullException.ThrowIfNull(obj);
+        return (string?)obj.GetValue(ColumnKeyProperty);
+    }
 
-    public static void SetColumnKey(DependencyObject obj, string? value) => obj.SetValue(ColumnKeyProperty, value);
+    public static void SetColumnKey(DependencyObject obj, string? value)
+    {
+        ArgumentNullException.ThrowIfNull(obj);
+        obj.SetValue(ColumnKeyProperty, value);
+    }
 
     public static readonly DependencyProperty ColumnKeyProperty = DependencyProperty.RegisterAttached(
         "ColumnKey",

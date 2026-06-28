@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
@@ -34,9 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Equin.ApplicationFramework.BindingListView" Version="1.4.5222.35545" />
-    <PackageReference Include="System.Resources.ResourceManager" Version="4.3.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HostsFileEditor.Core\HostsFileEditor.Core.csproj" />

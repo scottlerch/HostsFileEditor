@@ -5,7 +5,7 @@ namespace HostsFileEditor;
 /// <summary>
 /// This class represents 
 /// </summary>
-internal class HostsFilter : CompositeItemFilter<HostsEntry>
+internal sealed class HostsFilter : CompositeItemFilter<HostsEntry>
 {
     /// <summary>
     /// The comment filter.
@@ -21,16 +21,6 @@ internal class HostsFilter : CompositeItemFilter<HostsEntry>
     /// The custom filter.
     /// </summary>
     private readonly PredicateItemFilter<HostsEntry> _customFilter;
-
-    /// <summary>
-    /// The disabled filtered enabled setting.
-    /// </summary>
-    private bool _disabled;
-
-    /// <summary>
-    /// The comments filtered enabled setting.
-    /// </summary>
-    private bool _comments;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HostsFilter"/> class.
@@ -54,14 +44,14 @@ internal class HostsFilter : CompositeItemFilter<HostsEntry>
     /// </summary>
     public bool Disabled
     {
-        get => _disabled;
+        get;
         set
         {
-            if (_disabled != value)
+            if (field != value)
             {
-                _disabled = value;
+                field = value;
 
-                if (_disabled)
+                if (field)
                 {
                     AddFilter(_disabledFilter);
                 }
@@ -78,14 +68,14 @@ internal class HostsFilter : CompositeItemFilter<HostsEntry>
     /// </summary>
     public bool Comments
     {
-        get => _comments;
+        get;
         set
         {
-            if (_comments != value)
+            if (field != value)
             {
-                _comments = value;
+                field = value;
 
-                if (_comments)
+                if (field)
                 {
                     AddFilter(_commentFilter);
                 }

@@ -78,7 +78,10 @@ public class HostsEntryList : BindingList<HostsEntry>
             // Compute insertion index after removals: shift left by how many moving items were before the target
             var removedBefore = moving.Count(e => originalIndices[e] < beforeIndex);
             var insertIndex = beforeIndex - removedBefore;
-            if (insertIndex < 0) insertIndex = 0;
+            if (insertIndex < 0)
+            {
+                insertIndex = 0;
+            }
 
             UndoManager.Instance.BatchActions(() =>
             {
@@ -86,10 +89,16 @@ public class HostsEntryList : BindingList<HostsEntry>
                 foreach (var e in moving)
                 {
                     // If already removed (duplicate in list not expected) skip
-                    if (Contains(e)) base.Remove(e);
+                    if (Contains(e))
+                    {
+                        base.Remove(e);
+                    }
                 }
 
-                if (insertIndex > Count) insertIndex = Count;
+                if (insertIndex > Count)
+                {
+                    insertIndex = Count;
+                }
 
                 foreach (var entry in moving)
                 {
@@ -129,11 +138,21 @@ public class HostsEntryList : BindingList<HostsEntry>
             {
                 foreach (var e in moving)
                 {
-                    if (Contains(e)) base.Remove(e);
+                    if (Contains(e))
+                    {
+                        base.Remove(e);
+                    }
                 }
 
-                if (insertIndex > Count) insertIndex = Count;
-                if (insertIndex < 0) insertIndex = 0;
+                if (insertIndex > Count)
+                {
+                    insertIndex = Count;
+                }
+
+                if (insertIndex < 0)
+                {
+                    insertIndex = 0;
+                }
 
                 foreach (var entry in moving)
                 {

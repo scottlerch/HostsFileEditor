@@ -4,8 +4,6 @@ namespace HostsFileEditor;
 
 public class HostsArchive
 {
-    private string _filePath = string.Empty;
-
     public HostsArchive()
     {
         FilePath = string.Empty;
@@ -21,48 +19,44 @@ public class HostsArchive
 
     public string FilePath
     {
-        get => _filePath;
+        get;
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            _filePath = value;
+            field = value;
         }
-    }
+    } = string.Empty;
 
-    public string FileName => FilePath
-        .Split(Path.DirectorySeparatorChar)
-        .LastOrDefault() ?? string.Empty;
+    public string FileName => Path.GetFileName(FilePath);
 
     public static bool Validate(string filePath, out string error)
     {
-        var isValid = false;
-
         error = string.Empty;
 
         try
         {
             _ = new FileInfo(filePath);
-            isValid = true;
         }
         catch (Exception ex)
         {
             error = ex.Message;
+            return false;
         }
 
-        if (isValid)
+        // Compare by file name (case-insensitive, like the Windows file system) against
+        // the effective archive directory so the test override is honored and a bare name
+        // or a full path both validate correctly.
+        var fileName = Path.GetFileName(filePath);
+        var archiveDirectory = HostsArchiveList.EffectiveArchiveDirectory;
+
+        if (Directory.Exists(archiveDirectory)
+            && Directory.EnumerateFiles(archiveDirectory)
+                .Any(existing => string.Equals(Path.GetFileName(existing), fileName, StringComparison.OrdinalIgnoreCase)))
         {
-            if (Directory.Exists(HostsArchiveList.ArchiveDirectory))
-            {
-                if (Directory.GetFiles(HostsArchiveList.ArchiveDirectory)
-                    .Select(fullFilePath => Path.GetFileName(fullFilePath))
-                    .Contains(filePath))
-                {
-                    isValid = false;
-                    error = Resources.ArchiveExists;
-                }
-            }
+            error = Resources.ArchiveExists;
+            return false;
         }
 
-        return isValid;
+        return true;
     }
 }

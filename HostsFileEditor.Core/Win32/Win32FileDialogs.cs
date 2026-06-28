@@ -40,10 +40,12 @@ public static partial class Win32FileDialogs
     private const int OFN_OVERWRITEPROMPT = 0x00000002;
 
     [LibraryImport("comdlg32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool GetOpenFileName(ref OPENFILENAME ofn);
 
     [LibraryImport("comdlg32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool GetSaveFileName(ref OPENFILENAME ofn);
 
