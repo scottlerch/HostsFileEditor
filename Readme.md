@@ -76,3 +76,7 @@ _Equin.ApplicationFramework.BindingListView_ is by Andrew Davey and license
 terms can be found at <http://blw.sourceforge.net/>.
 
 Icons are from the _Open Icon Library_ and their license and terms can be found at <http://openiconlibrary.sourceforge.net/>.
+
+---
+
+Made by [Scott Lerch](https://scottlerch.com)

@@ -3,3 +3,9 @@ baseurl: "/"
 title: Hosts File Editor
 description: Easily edit and manage the hosts file for Windows.
 show_downloads: false
+
+# Don't derive the page <title>/H1 from the first README heading (e.g. "## Download").
+# Without this, GitHub Pages' jekyll-titles-from-headings plugin overrides the site
+# title, so the homepage showed "Download" instead of "Hosts File Editor".
+titles_from_headings:
+  enabled: false
