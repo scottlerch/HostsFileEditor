@@ -168,6 +168,19 @@
     <!-- Ensure manifest is present (redundant if CopyToPublishDirectory worked, but defensive) -->
     <Copy SourceFiles="$(ProjectDir)AppxManifest.xml" DestinationFolder="$(_EffectivePublishDir)" SkipUnchangedFiles="true" Condition="Exists('$(ProjectDir)AppxManifest.xml')" />
 
+    <!-- Stamp Identity/@ProcessorArchitecture to match the publish RID. The hand-written
+         manifest carries x64; this rewrites it for arm64 (or x86) builds so a correct
+         per-architecture package is produced. -->
+    <PropertyGroup>
+      <_PackageArchitecture>x64</_PackageArchitecture>
+      <_PackageArchitecture Condition="$(RuntimeIdentifier.EndsWith('arm64'))">arm64</_PackageArchitecture>
+      <_PackageArchitecture Condition="$(RuntimeIdentifier.EndsWith('x86'))">x86</_PackageArchitecture>
+    </PropertyGroup>
+    <XmlPoke XmlInputPath="$(_EffectivePublishDir)AppxManifest.xml"
+             Query="/*[local-name()='Package']/*[local-name()='Identity']/@ProcessorArchitecture"
+             Value="$(_PackageArchitecture)"
+             Condition="Exists('$(_EffectivePublishDir)AppxManifest.xml')" />
+
     <!-- Sign EXE if enabled and exists -->
     <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(_EffectivePublishDir)$(AssemblyName).exe')" Command="&quot;$(SignToolExe)&quot; sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(_EffectivePublishDir)$(AssemblyName).exe&quot;" />
 
