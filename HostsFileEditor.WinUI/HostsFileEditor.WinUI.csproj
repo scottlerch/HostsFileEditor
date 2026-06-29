@@ -51,6 +51,21 @@
     <Copy SourceFiles="@(_ElevateHelperFiles)" DestinationFolder="$(OutDir)Elevate" SkipUnchangedFiles="true" />
     <Message Importance="high" Text="Copied elevation helper to $(OutDir)Elevate" />
   </Target>
+
+  <!-- Publish the elevation helper (AOT, self-contained native exe) for this app's RID and
+       bundle it under Elevate\ in the publish output so the MSIX package includes it. -->
+  <Target Name="PublishElevateHelper" AfterTargets="Publish" BeforeTargets="SignAndPackage">
+    <PropertyGroup>
+      <_ElevateRid Condition="'$(_ElevateRid)' == ''">$(RuntimeIdentifier)</_ElevateRid>
+      <_ElevateRid Condition="'$(_ElevateRid)' == ''">win-x64</_ElevateRid>
+      <_ElevateStaging>$(MSBuildProjectDirectory)\obj\elevate\$(Configuration)\$(_ElevateRid)\</_ElevateStaging>
+    </PropertyGroup>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\HostsFileEditor.Elevate\HostsFileEditor.Elevate.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(_ElevateRid);PublishDir=$(_ElevateStaging)" />
+    <Copy SourceFiles="$(_ElevateStaging)HostsFileEditor.Elevate.exe" DestinationFolder="$(PublishDir)Elevate" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Bundled elevation helper into $(PublishDir)Elevate" />
+  </Target>
   <ItemGroup>
     <None Include="app.manifest" />
     <Content Include="AppxManifest.xml">

@@ -4,12 +4,12 @@
          xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
          IgnorableNamespaces="uap mp rescap">
-  <Identity Name="ScottLerch.HostsFileEditor"
-            Publisher="CN=Scott Lerch"
+  <Identity Name="11033ScottLerch.HostsFileEditormodern"
+            Publisher="CN=427E0D6A-DF11-4676-8850-592258173525"
             Version="1.0.0.0"
             ProcessorArchitecture="x64" />
   <Properties>
-    <DisplayName>Hosts File Editor</DisplayName>
+    <DisplayName>Hosts File Editor (modern)</DisplayName>
     <PublisherDisplayName>Scott Lerch</PublisherDisplayName>
     <Description>Hosts File Editor</Description>
     <Logo>Assets\HostsFileEditor.png</Logo>
@@ -26,7 +26,7 @@
                  Executable="HostsFileEditor.exe"
                  EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Hosts File Editor"
+        DisplayName="Hosts File Editor (modern)"
         Description="Edit your hosts file with ease"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"

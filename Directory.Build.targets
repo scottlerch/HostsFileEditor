@@ -146,6 +146,7 @@
 
   <!-- Main packaging target now incremental: Inputs/Outputs allow MSBuild to skip when unchanged. -->
   <Target Name="SignAndPackage"
+          Condition="Exists('$(MSBuildProjectDirectory)\AppxManifest.xml')"
           DependsOnTargets="_ResolvePackagingTools"
           AfterTargets="Publish"
           Inputs="@(ResolvedFileToPublish)"
