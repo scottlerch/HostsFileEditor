@@ -15,11 +15,9 @@
     <Logo>Assets\HostsFileEditor.png</Logo>
   </Properties>
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
-    <PackageDependency
-      Name="Microsoft.NET.CoreRuntime.9.0"
-      Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
-      MinVersion="9.0.0.0" />
+    <!-- The app is published self-contained (bundles the .NET runtime), so it declares no
+         external .NET runtime framework dependency. -->
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
   <Resources>
     <Resource Language="en-us"/>

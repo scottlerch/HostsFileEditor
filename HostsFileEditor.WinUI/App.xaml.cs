@@ -14,6 +14,10 @@ public partial class App : Application
     {
         InitializeComponent();
 
+        // Run as a standard user (asInvoker) and elevate only the privileged hosts-file
+        // operations on demand via the bundled helper. Required for the Microsoft Store.
+        Elevation.PrivilegedFileOperations.UseElevationHelper();
+
         var services = new ServiceCollection();
         services.AddSingleton<DialogService>();
         services.AddSingleton<AnimationService>();

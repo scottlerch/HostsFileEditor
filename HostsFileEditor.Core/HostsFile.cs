@@ -1,3 +1,4 @@
+using HostsFileEditor.Elevation;
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
@@ -13,11 +14,19 @@ public class HostsFile : INotifyPropertyChanged
             Environment.GetFolderPath(Environment.SpecialFolder.Windows),
             @"System32\drivers\etc");
 
+    // Per-user application data directory (writable without administrator rights). The
+    // hosts-file backup and archives live here so loading and archiving never need
+    // elevation — only writing the live hosts file or enabling/disabling it does.
+    public static readonly string AppDataDirectory =
+        Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "HostsFileEditor");
+
     public static readonly string DefaultHostFilePath =
         Path.Combine(DefaultHostFileDirectory, @"hosts");
 
     public static readonly string DefaultBackupHostFilePath =
-        DefaultHostFilePath + ".bak";
+        Path.Combine(AppDataDirectory, "hosts.bak");
 
     public static readonly string DefaultDisabledHostFilePath =
         DefaultHostFilePath + ".disabled";
@@ -46,6 +55,7 @@ public class HostsFile : INotifyPropertyChanged
         else
         {
             var backupPath = TestBackupHostFilePathOverride ?? DefaultBackupHostFilePath;
+            Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
             using (FileEx.DisableAttributes(backupPath, FileAttributes.ReadOnly))
             {
                 File.Copy(filePath, backupPath, true);
@@ -73,20 +83,14 @@ public class HostsFile : INotifyPropertyChanged
 
     public static void DisableHostsFile()
     {
-        using (FileEx.DisableAttributes(DefaultHostFilePath, FileAttributes.ReadOnly))
-        {
-            File.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
-            NativeMethods.FlushDns();
-        }
+        PrivilegedFileOperations.Current.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
+        NativeMethods.FlushDns();
     }
 
     public static void EnableHostsFile()
     {
-        using (FileEx.DisableAttributes(DefaultDisabledHostFilePath, FileAttributes.ReadOnly))
-        {
-            File.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
-            NativeMethods.FlushDns();
-        }
+        PrivilegedFileOperations.Current.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
+        NativeMethods.FlushDns();
     }
 
     public void Import(string importFilePath)
@@ -141,12 +145,9 @@ public class HostsFile : INotifyPropertyChanged
             Directory.CreateDirectory(info.DirectoryName);
         }
 
-        using (FileEx.DisableAttributes(saveFilePath, FileAttributes.ReadOnly))
-        {
-            File.WriteAllLines(
-                saveFilePath,
-                Entries.Select(entry => entry.UnparsedText));
-        }
+        PrivilegedFileOperations.Current.WriteAllLines(
+            saveFilePath,
+            Entries.Select(entry => entry.UnparsedText));
     }
 
     public void Refresh(bool removeDefault = true)

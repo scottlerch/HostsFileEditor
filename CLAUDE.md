@@ -28,7 +28,8 @@ asked otherwise.
 | `HostsFileEditor.Core` | Class library | `net10.0-windows` | Domain model, file I/O, undo/redo, Win32 interop. No UI dependencies. The important code lives here. |
 | `HostsFileEditor.Core.Tests` | MSTest | `net10.0-windows` | Tests for Core. Uses MSTest + Shouldly. `InternalsVisibleTo` grants access to internals. |
 | `HostsFileEditor.WinUI` | WinUI 3 app | `net10.0-windows10.0.19041.0` | "Modern" UI. DI via `Microsoft.Extensions.DependencyInjection`, MSIX/AOT/trimmed publish, x64+arm64. |
-| `HostsFileEditor.WinForm` | WinForms app | `net10.0-windows` | "Classic" UI. Single-file publish, ReadyToRun, win-x64. Uses `Equin.ApplicationFramework.BindingListView`. |
+| `HostsFileEditor.WinForm` | WinForms app | `net10.0-windows` | "Classic" UI. Self-contained, ReadyToRun, win-x64. Uses `Equin.ApplicationFramework.BindingListView`. |
+| `HostsFileEditor.Elevate` | Helper exe (no window) | `net10.0-windows` | Tiny `asInvoker` exe launched with the `runas` verb to perform privileged hosts-file writes/moves on demand. Copied into an `Elevate\` subfolder beside each app (AOT-published for packages). |
 
 Solution file is **`HostsFileEditor.slnx`** (the new XML solution format). The WinUI project is pinned
 to the `x64` platform in the solution.
@@ -58,9 +59,11 @@ The WinUI project requires an explicit platform/RID; defaults are `x64` / `win-x
 `dotnet build` of the solution complains about platform, build the WinUI csproj with
 `-p:Platform=x64`.
 
-Running the app to actually edit the real hosts file requires **administrator elevation** (both
-app manifests request `requireAdministrator`). Tests never touch the real hosts file — see the test
-hooks below.
+Both apps run as a standard user (`asInvoker`) — required for the Microsoft Store. Editing the real
+hosts file (save / enable / disable) needs admin, so those operations **elevate on demand** by
+launching the `HostsFileEditor.Elevate` helper with the `runas` verb (a UAC prompt at save time).
+Everything else — viewing, archiving, backups — is per-user (`%LocalAppData%\HostsFileEditor`) and
+needs no elevation. Tests never touch the real hosts file — see the test hooks below.
 
 ## Conventions (enforced by build)
 
@@ -84,17 +87,24 @@ safe to remove.
 ## Core domain model — the important parts
 
 - **`HostsFile`** (`HostsFile.cs`) — central model, exposed as a lazy singleton `HostsFile.Instance`.
-  Reads/writes the hosts file, makes a `.bak` backup on load, enable/disable the whole file by
-  renaming to `hosts.disabled`, import/export, archive, restore-default. Raises `PropertyChanged`
-  for `LineCount`/`EnabledCount`. Calls `NativeMethods.FlushDns()` after mutating the live file.
+  Reads/writes the hosts file, backs it up on load to `%LocalAppData%\HostsFileEditor\hosts.bak`,
+  enable/disable the whole file by renaming to `hosts.disabled`, import/export, archive,
+  restore-default. Privileged writes/renames go through `Elevation.PrivilegedFileOperations.Current`
+  (not `File.*` directly). Calls `NativeMethods.FlushDns()` after mutating the live file.
+- **`Elevation/`** — `IPrivilegedFileOperations` with two implementations: `InProcess…` (direct
+  `File` ops) and `ElevatedHelper…` (tries direct first, falls back to the `runas` helper on
+  access-denied). `PrivilegedFileOperations.Current` is the process-wide gateway; apps call
+  `UseElevationHelper()` at startup. `ElevationCancelledException` signals a declined UAC prompt.
 - **`HostsEntry`** (`HostsEntry.cs`) — one line of the hosts file. Regex-parsed into
-  ip/hostnames/comment/enabled/valid. Implements `INotifyPropertyChanged`, `IDataErrorInfo`,
-  `IDisposable` (owns a `System.Net.NetworkInformation.Ping`). Property setters push undo/redo
-  actions onto `UndoManager`. `UnparsedText` lazily re-serializes when fields change.
+  ip/hostnames/comment/enabled/valid. Implements `INotifyPropertyChanged` and `IDataErrorInfo`.
+  Property setters push undo/redo actions onto `UndoManager` (only when the value actually changes).
+  `Ping()` runs on demand and disposes its `Ping` itself, so entries are not `IDisposable`.
+  `UnparsedText` lazily re-serializes when fields change.
 - **`HostsEntryList`** (`HostsEntryList.cs`) — `BindingList<HostsEntry>` with move/insert/remove/
   enable batch operations, all undo-aware. `InsertItem`/`RemoveItem` overrides register undo actions.
-- **`HostsArchive` / `HostsArchiveList`** — named snapshots stored as files under
-  `…\drivers\etc\archive`. `HostsArchiveList.Instance` is a singleton `BindingList`.
+- **`HostsArchive` / `HostsArchiveList`** — named snapshots stored under
+  `%LocalAppData%\HostsFileEditor\archive` (migrated once from the legacy `…\drivers\etc\archive`).
+  `HostsArchiveList.Instance` is a singleton `BindingList`.
 - **`UndoManager`** (`Utilities/UndoManager.cs`) — singleton `UndoManager.Instance`. Linked-list of
   linked-lists of `Action`. Supports batching (`BatchActions`), suspension (`SuspendUndo/Redo/
   UndoRedo`), capped history (`MaximumHistorySize`), and raises `HistoryChanged`.
@@ -150,5 +160,6 @@ local/dev only.
 - **AOT/trimming (WinUI) + reflection.** The WinUI app is trimmed and AOT-published; anything
   reflective (JSON, `BindingList` property descriptors) needs source generation or a documented
   `UnconditionalSuppressMessage`. Several already exist in Core — keep them.
-- **`hosts` file specifics.** Often read-only; wrap writes in `FileEx.DisableAttributes`. Flush DNS
-  after changing the live file. Never write the real hosts file from tests.
+- **`hosts` file specifics.** Often read-only and admin-owned; don't write it with `File.*` directly —
+  go through `Elevation.PrivilegedFileOperations.Current` so it elevates on demand. Flush DNS after
+  changing the live file. Never write the real hosts file from tests.

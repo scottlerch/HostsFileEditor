@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>HostsFileEditor.Elevate</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      Published self-contained + AOT so the helper is a single native exe with no runtime
+      dependency, and therefore drops cleanly into either app package (including the
+      self-contained WinUI one). A plain Debug build stays framework-dependent for a fast
+      inner loop. RIDs cover both architectures the apps target.
+    -->
+    <PublishAot>true</PublishAot>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+</Project>

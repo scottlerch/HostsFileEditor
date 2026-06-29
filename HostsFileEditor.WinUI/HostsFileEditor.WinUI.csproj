@@ -33,6 +33,24 @@
   <ItemGroup>
     <ProjectReference Include="..\HostsFileEditor.Core\HostsFileEditor.Core.csproj" />
   </ItemGroup>
+  <!-- Build the elevation helper and copy its output next to the app exe so the app can
+       launch it on demand (see PrivilegedFileOperations.UseElevationHelper). -->
+  <Target Name="CopyElevateHelper" AfterTargets="Build">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\HostsFileEditor.Elevate\HostsFileEditor.Elevate.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=AnyCPU"
+             RemoveProperties="RuntimeIdentifier">
+      <Output TaskParameter="TargetOutputs" ItemName="_ElevateHelperPrimaryOutput" />
+    </MSBuild>
+    <PropertyGroup>
+      <_ElevateHelperDir>%(_ElevateHelperPrimaryOutput.RootDir)%(_ElevateHelperPrimaryOutput.Directory)</_ElevateHelperDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_ElevateHelperFiles Include="$(_ElevateHelperDir)*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_ElevateHelperFiles)" DestinationFolder="$(OutDir)Elevate" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Copied elevation helper to $(OutDir)Elevate" />
+  </Target>
   <ItemGroup>
     <None Include="app.manifest" />
     <Content Include="AppxManifest.xml">

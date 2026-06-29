@@ -26,6 +26,10 @@ internal static class Program
             Application.SetCompatibleTextRenderingDefault(false);
             Application.ThreadException += OnApplicationThreadException;
 
+            // Run as a standard user (asInvoker) and elevate only the privileged hosts-file
+            // operations on demand via the bundled helper. Required for the Microsoft Store.
+            Elevation.PrivilegedFileOperations.UseElevationHelper();
+
             _mainForm = new MainForm();
             Application.Run(_mainForm);
         }

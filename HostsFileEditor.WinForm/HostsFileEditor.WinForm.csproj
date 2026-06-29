@@ -18,7 +18,9 @@
     <!--<PublishAot>true</PublishAot>-->
     <PublishSingleFile>true</PublishSingleFile>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <SelfContained>false</SelfContained>
+    <!-- Self-contained for Store compatibility: bundle the .NET runtime so the MSIX needs no
+         external runtime framework package (there is no reliable .NET runtime MSIX dependency). -->
+    <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <StripSymbols>true</StripSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
@@ -48,6 +50,25 @@
     </Content>
     <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
+  <!-- Build the elevation helper and copy its output next to the app exe so the app can
+       launch it on demand (see PrivilegedFileOperations.UseElevationHelper). -->
+  <Target Name="CopyElevateHelper" AfterTargets="Build">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\HostsFileEditor.Elevate\HostsFileEditor.Elevate.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration);Platform=AnyCPU"
+             RemoveProperties="RuntimeIdentifier">
+      <Output TaskParameter="TargetOutputs" ItemName="_ElevateHelperPrimaryOutput" />
+    </MSBuild>
+    <PropertyGroup>
+      <_ElevateHelperDir>%(_ElevateHelperPrimaryOutput.RootDir)%(_ElevateHelperPrimaryOutput.Directory)</_ElevateHelperDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_ElevateHelperFiles Include="$(_ElevateHelperDir)*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_ElevateHelperFiles)" DestinationFolder="$(OutDir)Elevate" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Copied elevation helper to $(OutDir)Elevate" />
+  </Target>
+
   <Target Name="CreateBuildDirectories" BeforeTargets="BeforeBuild">
     <MakeDir Directories="$(MSBuildProjectDirectory)\..\artifacts" Condition="!Exists('$(MSBuildProjectDirectory)\..\artifacts')" />
   </Target>

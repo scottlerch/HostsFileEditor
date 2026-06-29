@@ -8,6 +8,11 @@ namespace HostsFileEditor;
 public class HostsArchiveList : BindingList<HostsArchive>
 {
     public static readonly string ArchiveDirectory =
+        Path.Combine(HostsFile.AppDataDirectory, "archive");
+
+    // Previous location (under the protected hosts directory). Archives created by older
+    // versions are migrated from here to the per-user directory on first use.
+    private static readonly string LegacyArchiveDirectory =
         Path.Combine(HostsFile.DefaultHostFileDirectory, "archive");
 
     // Test hook to override archive directory for safe unit testing
@@ -21,6 +26,7 @@ public class HostsArchiveList : BindingList<HostsArchive>
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList used only for simple collection change notifications; PropertyDescriptor reflection not exercised.")]
     private HostsArchiveList()
     {
+        MigrateLegacyArchives();
         Refresh();
     }
 
@@ -55,5 +61,39 @@ public class HostsArchiveList : BindingList<HostsArchive>
                 }
             }
         });
+    }
+
+    // Best-effort, no-admin migration of archives from the legacy System32 location to the
+    // per-user directory. Reading the legacy directory and writing the per-user directory
+    // both work without elevation. Skipped when a test override is active.
+    private static void MigrateLegacyArchives()
+    {
+        if (TestArchiveDirectoryOverride is not null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!Directory.Exists(LegacyArchiveDirectory) || Directory.Exists(ArchiveDirectory))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(ArchiveDirectory);
+
+            foreach (var file in Directory.GetFiles(LegacyArchiveDirectory))
+            {
+                var destination = Path.Combine(ArchiveDirectory, Path.GetFileName(file));
+                if (!File.Exists(destination))
+                {
+                    File.Copy(file, destination);
+                }
+            }
+        }
+        catch (Exception)
+        {
+            // Migration is best-effort and must never block startup.
+        }
     }
 }
