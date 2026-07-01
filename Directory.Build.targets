@@ -4,8 +4,24 @@
     <!-- Default certificate values (can be overridden per invocation) -->
     <CertFile Condition="'$(CertFile)'==''">$(MSBuildThisFileDirectory)HostsFileEditorTestCert.pfx</CertFile>
     <CertPassword Condition="'$(CertPassword)'==''">test</CertPassword>
-    <!-- Whether to sign published exe/msix -->
+    <!-- Whether to Authenticode-sign the published binaries (app exe + elevation helper). -->
     <EnableSigning>true</EnableSigning>
+    <!--
+      Code-signing mode is auto-selected from whichever is set (first match wins):
+        1. Azure Trusted Signing:  SigningDlib + SigningMetadata (signtool /dlib + /dmdf json)
+        2. Certificate in the cert store (token/HSM):  SigningCertThumbprint
+        3. PFX file:  CertFile (+ CertPassword)   [default: the local test cert]
+      Signing the app exe and the elevation helper gives a verified publisher on the UAC
+      prompt and SmartScreen. Timestamping is always applied (required for short-lived certs
+      such as Trusted Signing). Trusted Signing typically uses http://timestamp.acs.microsoft.com.
+    -->
+    <SigningTimestampUrl Condition="'$(SigningTimestampUrl)'==''">http://timestamp.digicert.com</SigningTimestampUrl>
+    <!--
+      MSIX package signing is OFF by default: the Microsoft Store re-signs the package on
+      ingestion, and a Store-identity package can't be signed with a normal cert anyway.
+      Set SignPackage=true only for local sideload testing with a matching certificate.
+    -->
+    <SignPackage Condition="'$(SignPackage)'==''">false</SignPackage>
     <!-- Marker directory for copied publish outputs -->
     <_PackagedOutputStampDir>$(BaseIntermediateOutputPath)packaging\</_PackagedOutputStampDir>
   </PropertyGroup>
@@ -181,14 +197,30 @@
              Value="$(_PackageArchitecture)"
              Condition="Exists('$(_EffectivePublishDir)AppxManifest.xml')" />
 
-    <!-- Sign EXE if enabled and exists -->
-    <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(_EffectivePublishDir)$(AssemblyName).exe')" Command="&quot;$(SignToolExe)&quot; sign /fd SHA256 /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; /t http://timestamp.digicert.com &quot;$(_EffectivePublishDir)$(AssemblyName).exe&quot;" />
+    <!-- Resolve signtool signing arguments from the configured mode (first match wins). -->
+    <PropertyGroup>
+      <_SignCommon>/fd SHA256 /tr "$(SigningTimestampUrl)" /td SHA256</_SignCommon>
+      <_SignArgs Condition="'$(SigningDlib)' != '' and '$(SigningMetadata)' != ''">$(_SignCommon) /dlib "$(SigningDlib)" /dmdf "$(SigningMetadata)"</_SignArgs>
+      <_SignArgs Condition="'$(_SignArgs)' == '' and '$(SigningCertThumbprint)' != ''">$(_SignCommon) /sha1 $(SigningCertThumbprint)</_SignArgs>
+      <_SignArgs Condition="'$(_SignArgs)' == '' and '$(CertFile)' != ''">$(_SignCommon) /f "$(CertFile)" /p "$(CertPassword)"</_SignArgs>
+    </PropertyGroup>
+
+    <!-- Sign the app exe and the elevation helper before packaging (verified publisher on
+         the UAC prompt and SmartScreen). The package itself is re-signed by the Store, so it
+         is not signed here unless SignPackage=true (local sideload only). -->
+    <ItemGroup>
+      <_FilesToSign Include="$(_EffectivePublishDir)$(AssemblyName).exe" Condition="Exists('$(_EffectivePublishDir)$(AssemblyName).exe')" />
+      <_FilesToSign Include="$(_EffectivePublishDir)Elevate\HostsFileEditor.Elevate.exe" Condition="Exists('$(_EffectivePublishDir)Elevate\HostsFileEditor.Elevate.exe')" />
+    </ItemGroup>
+    <Exec Condition="'$(EnableSigning)'=='true' and '$(_SignArgs)' != '' and '@(_FilesToSign)' != ''"
+          Command="&quot;$(SignToolExe)&quot; sign $(_SignArgs) @(_FilesToSign->'&quot;%(FullPath)&quot;', ' ')" />
 
     <!-- Create MSIX -->
     <Exec Condition="Exists('$(_EffectivePublishDir)')" Command="&quot;$(MakeAppxExe)&quot; pack /d &quot;$(_EffectivePublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
 
-    <!-- Sign MSIX -->
-    <Exec Condition="'$(EnableSigning)'=='true' AND Exists('$(MsixFile)')" Command="&quot;$(SignToolExe)&quot; sign /fd SHA256 /a /f &quot;$(CertFile)&quot; /p &quot;$(CertPassword)&quot; &quot;$(MsixFile)&quot;" />
+    <!-- Sign MSIX (local sideload only; the Store re-signs on ingestion). -->
+    <Exec Condition="'$(EnableSigning)'=='true' and '$(SignPackage)'=='true' and '$(_SignArgs)' != '' and Exists('$(MsixFile)')"
+          Command="&quot;$(SignToolExe)&quot; sign $(_SignArgs) &quot;$(MsixFile)&quot;" />
 
     <!-- Optionally ZIP (only when CreatePublishZip true) -->
     <Exec Condition="'$(CreatePublishZip)'=='true'" Command="cd /d &quot;$(_EffectivePublishDir)&quot; &amp;&amp; &quot;$(Pkg7ZipCLI)\tools\7za.exe&quot; a -tzip -aoa &quot;$(PublishZipFile)&quot; *.exe" />
