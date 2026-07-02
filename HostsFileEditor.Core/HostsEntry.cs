@@ -95,6 +95,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
                 _comment = _comment[1..];
             }
         }
+        else
+        {
+            // The line matched no pattern (e.g. an IP with a trailing port/path, or other
+            // malformed content). Preserve the raw text as a comment so it round-trips intact
+            // instead of rendering as an empty, uneditable row. _valid/_enabled are already
+            // false and the ip/hostname fields empty.
+            _comment = _unparsedText.TrimStart(' ', '\t', '#');
+        }
     }
 
     public HostsEntry(HostsEntry entry)
@@ -347,8 +355,12 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     {
         if (string.IsNullOrWhiteSpace(_ipAddress) && !_enabled)
         {
+            // A disabled entry with a blank IP is being edited, not an error. Mirror
+            // ValidateHostnames (which sets _hostnamesValid = true here): set the flag the
+            // final _valid recompute reads, instead of writing _valid directly — that write
+            // was dead code, immediately overwritten using the stale _ipAddressValid below.
             _errors[nameof(IpAddress)] = string.Empty;
-            _valid = false;
+            _ipAddressValid = true;
         }
         else
         {
@@ -378,6 +390,11 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     [GeneratedRegex(@"^([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*$")]
     private static partial Regex HostNameRegex();
 
-    [GeneratedRegex(@"^((?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*)\s*(#+(?<aftercomment>.*))?)|(\s*#+\s?(?<comment>.*))|(?<blank>\s*)$", RegexOptions.Compiled)]
+    // Each alternative is anchored with ^...$ so a line must match a pattern in full. Without
+    // the per-alternative anchors, ^ bound only to the entry alternative and $ only to the
+    // blank one, so trailing junk (e.g. a port after the hostname) was silently dropped and
+    // an unmatched remainder still "parsed". Lines matching nothing are preserved as comments
+    // by the constructor.
+    [GeneratedRegex(@"^((?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$", RegexOptions.Compiled)]
     private static partial Regex ValidHostsRegex();
 }

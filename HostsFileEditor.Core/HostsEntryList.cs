@@ -166,16 +166,18 @@ public class HostsEntryList : BindingList<HostsEntry>
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        var insertIndex = IndexOf(entry);
-        Insert(insertIndex, newEntry ?? new HostsEntry());
+        // A UI "new row" placeholder (e.g. the grid's uncommitted add-row) isn't in the list
+        // yet, so IndexOf returns -1; fall back to appending rather than Insert(-1, ...) throwing.
+        var index = IndexOf(entry);
+        Insert(index < 0 ? Count : index, newEntry ?? new HostsEntry());
     }
 
     public void InsertAfter(HostsEntry entry, HostsEntry? newEntry = null)
     {
         ArgumentNullException.ThrowIfNull(entry);
 
-        var insertIndex = IndexOf(entry) + 1;
-        Insert(insertIndex, newEntry ?? new HostsEntry());
+        var index = IndexOf(entry);
+        Insert(index < 0 ? Count : index + 1, newEntry ?? new HostsEntry());
     }
 
     public void Insert(HostsEntry entry, IEnumerable<HostsEntry> entries)
@@ -184,6 +186,10 @@ public class HostsEntryList : BindingList<HostsEntry>
         ArgumentNullException.ThrowIfNull(entries);
 
         var insertIndex = IndexOf(entry);
+        if (insertIndex < 0)
+        {
+            insertIndex = Count;
+        }
 
         UndoManager.Instance.BatchActions(() =>
         {

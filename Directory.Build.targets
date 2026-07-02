@@ -231,6 +231,14 @@
              Value="$(_PackageArchitecture)"
              Condition="Exists('$(_EffectivePublishDir)AppxManifest.xml')" />
 
+    <!-- Stamp Identity/@Version from the project's single version source ($(Version), a 4-part
+         x.x.x.x value) so the MSIX version follows the app version instead of being maintained
+         by hand in the manifest. Each app keeps its own version stream. -->
+    <XmlPoke XmlInputPath="$(_EffectivePublishDir)AppxManifest.xml"
+             Query="/*[local-name()='Package']/*[local-name()='Identity']/@Version"
+             Value="$(Version)"
+             Condition="'$(Version)' != '' and Exists('$(_EffectivePublishDir)AppxManifest.xml')" />
+
     <!-- Resolve signtool signing arguments from the configured mode (first match wins). -->
     <PropertyGroup>
       <_SignCommon>/fd SHA256 /tr "$(SigningTimestampUrl)" /td SHA256</_SignCommon>

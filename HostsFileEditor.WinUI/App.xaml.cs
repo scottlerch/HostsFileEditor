@@ -32,14 +32,24 @@ public partial class App : Application
         var keyInstance = AppInstance.FindOrRegisterForKey("HostsFileEditor.SingleInstance");
         if (!keyInstance.IsCurrent)
         {
-            _ = keyInstance.RedirectActivationToAsync(AppInstance.GetCurrent().GetActivatedEventArgs());
+            // Hand this activation to the already-running instance, then exit. Wait for the
+            // redirect to complete instead of racing it with Environment.Exit (fire-and-forget).
+            keyInstance.RedirectActivationToAsync(AppInstance.GetCurrent().GetActivatedEventArgs())
+                .AsTask().GetAwaiter().GetResult();
             Environment.Exit(0);
             return;
         }
+
+        // Bring our window to the foreground when another instance is launched and redirects to us.
+        keyInstance.Activated += OnInstanceActivated;
 
         var mw = Services.GetRequiredService<MainWindow>();
 
         _window = mw;
         _window.Activate();
     }
+
+    private void OnInstanceActivated(object? sender, AppActivationArguments e) =>
+        // Raised on a background thread; marshal to the UI thread to activate the window.
+        _window?.DispatcherQueue.TryEnqueue(() => _window?.Activate());
 }

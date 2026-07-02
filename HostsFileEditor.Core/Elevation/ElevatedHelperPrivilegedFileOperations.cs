@@ -20,6 +20,14 @@ public sealed class ElevatedHelperPrivilegedFileOperations : IPrivilegedFileOper
     /// <summary>ERROR_CANCELLED — returned by ShellExecute when the user declines the UAC prompt.</summary>
     private const int ErrorCancelled = 1223;
 
+    /// <summary>
+    /// Upper bound on the elevated operation itself. The UAC prompt is answered inside
+    /// Process.Start (before WaitForExit), so this only bounds the copy/move + DNS flush,
+    /// which take well under a second; a longer wait means the helper has wedged (e.g. a
+    /// locked file) and we surface an error rather than hang the UI thread forever.
+    /// </summary>
+    private const int HelperTimeoutMilliseconds = 30_000;
+
     private readonly InProcessPrivilegedFileOperations _direct = new();
     private readonly string _helperPath;
 
@@ -49,9 +57,10 @@ public sealed class ElevatedHelperPrivilegedFileOperations : IPrivilegedFileOper
                 Path.GetTempPath(),
                 "HostsFileEditor_" + Guid.NewGuid().ToString("N") + ".tmp");
 
-            File.WriteAllLines(payloadPath, materialized);
             try
             {
+                // Write inside the try so a failure mid-write still removes the partial file.
+                File.WriteAllLines(payloadPath, materialized);
                 RunHelper("write", path, payloadPath);
             }
             finally
@@ -105,7 +114,24 @@ public sealed class ElevatedHelperPrivilegedFileOperations : IPrivilegedFileOper
 
         using (process)
         {
-            process.WaitForExit();
+            if (!process.WaitForExit(HelperTimeoutMilliseconds))
+            {
+                // The elevated op wedged (e.g. a locked file). Best-effort kill (may be denied
+                // since the child is higher-integrity) and surface an error so the UI recovers.
+                try
+                {
+                    process.Kill();
+                }
+                catch (Exception)
+                {
+                    // Ignore — we still report the timeout below.
+                }
+
+                throw new IOException(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "The elevated file operation '{0}' timed out.",
+                    command));
+            }
 
             if (process.ExitCode != 0)
             {

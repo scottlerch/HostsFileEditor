@@ -112,6 +112,28 @@ public class HostsEntryListTests
     }
 
     [TestMethod]
+    public void InsertBefore_AnchorNotInList_AppendsWithoutThrowing()
+    {
+        var list = new HostsEntryList();
+        list.Add(new HostsEntry("127.0.0.1 a"));
+        var orphan = new HostsEntry("127.0.0.1 orphan"); // never added (mimics a pending new-row)
+
+        Should.NotThrow(() => list.InsertBefore(orphan, new HostsEntry("127.0.0.1 b")));
+        list.Count.ShouldBe(2);
+    }
+
+    [TestMethod]
+    public void Insert_AnchorNotInList_AppendsWithoutThrowing()
+    {
+        var list = new HostsEntryList();
+        list.Add(new HostsEntry("127.0.0.1 a"));
+        var orphan = new HostsEntry("127.0.0.1 orphan");
+
+        Should.NotThrow(() => list.Insert(orphan, [new HostsEntry("127.0.0.1 b"), new HostsEntry("127.0.0.1 c")]));
+        list.Count.ShouldBe(3);
+    }
+
+    [TestMethod]
     public void SetEnabled_DisablesEntries()
     {
         var list = new HostsEntryList();

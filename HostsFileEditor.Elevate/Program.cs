@@ -34,20 +34,40 @@ internal static partial class Program
         var first = args[1];
         var second = args[2];
 
+        // This helper runs elevated (launched via runas). Restrict it to exactly the operations
+        // the app needs on the known hosts-file paths so it cannot be abused as a general-purpose
+        // "write/move any file as administrator" tool. Anything else is rejected before any I/O.
+        var etcDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+            @"System32\drivers\etc");
+        var hostsPath = Path.Combine(etcDirectory, "hosts");
+        var disabledPath = hostsPath + ".disabled";
+
         try
         {
             switch (command)
             {
                 case "write":
-                    // first = destination (e.g. the hosts file), second = staged new content.
-                    ClearReadOnly(first);
+                    // first = destination (the hosts or hosts.disabled file);
+                    // second = the staged new content (must be an absolute path).
+                    if (!IsHostsPath(first, hostsPath, disabledPath) || !Path.IsPathFullyQualified(second))
+                    {
+                        return InvalidArguments;
+                    }
+
+                    ClearBlockingAttributes(first);
                     File.Copy(second, first, overwrite: true);
                     break;
 
                 case "move":
-                    // first = source, second = destination (enable/disable rename).
-                    ClearReadOnly(first);
-                    File.Move(first, second);
+                    // Only the enable/disable rename between hosts and hosts.disabled is allowed.
+                    if (!IsEnableDisableRename(first, second, hostsPath, disabledPath))
+                    {
+                        return InvalidArguments;
+                    }
+
+                    ClearBlockingAttributes(first);
+                    File.Move(first, second, overwrite: true);
                     break;
 
                 default:
@@ -63,17 +83,40 @@ internal static partial class Program
         }
     }
 
-    private static void ClearReadOnly(string path)
+    private static bool IsHostsPath(string path, string hostsPath, string disabledPath) =>
+        PathEquals(path, hostsPath) || PathEquals(path, disabledPath);
+
+    private static bool IsEnableDisableRename(string source, string destination, string hostsPath, string disabledPath) =>
+        (PathEquals(source, hostsPath) && PathEquals(destination, disabledPath)) ||
+        (PathEquals(source, disabledPath) && PathEquals(destination, hostsPath));
+
+    private static bool PathEquals(string path, string expected)
+    {
+        // Reject relative paths outright — a runas-launched process starts in System32, so a
+        // relative path would resolve there. Compare fully-normalized, case-insensitively.
+        if (string.IsNullOrEmpty(path) || !Path.IsPathFullyQualified(path))
+        {
+            return false;
+        }
+
+        return string.Equals(
+            Path.GetFullPath(path),
+            Path.GetFullPath(expected),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void ClearBlockingAttributes(string path)
     {
         if (!File.Exists(path))
         {
             return;
         }
 
+        const FileAttributes blocking = FileAttributes.ReadOnly | FileAttributes.Hidden | FileAttributes.System;
         var attributes = File.GetAttributes(path);
-        if (attributes.HasFlag(FileAttributes.ReadOnly))
+        if ((attributes & blocking) != 0)
         {
-            File.SetAttributes(path, attributes & ~FileAttributes.ReadOnly);
+            File.SetAttributes(path, attributes & ~blocking);
         }
     }
 

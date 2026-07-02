@@ -21,7 +21,11 @@ public static class FileEx
             if (File.Exists(filePath))
             {
                 _originalAttributes = File.GetAttributes(filePath);
-                _areAttributesDisabled = _originalAttributes.HasFlag(disableAttributes);
+
+                // Clear if ANY of the requested flags are present. HasFlag(combined) would
+                // require every flag in the mask to be set, so a ReadOnly-only file would not
+                // be cleared when the mask also includes Hidden/System.
+                _areAttributesDisabled = (_originalAttributes & disableAttributes) != 0;
 
                 if (_areAttributesDisabled)
                 {

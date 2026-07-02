@@ -299,6 +299,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnAddToTop(object sender, RoutedEventArgs e)
     {
+        // A newly added entry is blank (comment-only) and matches no active filter, so it would
+        // be added invisibly and be uneditable. Clear filters first so the user can see and edit it.
+        ClearAllFilters();
+
         var first = HostsFile.Instance.Entries.FirstOrDefault();
         if (first != null)
         {
@@ -314,6 +318,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         RefreshEntries(true);
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
+    }
+
+    private void ClearAllFilters()
+    {
+        IsFilterCommentsHidden = false;
+        IsFilterDisabledHidden = false;
+
+        if (Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb)
+        {
+            ftb.Text = string.Empty;
+        }
+
+        OnPropertyChanged(nameof(IsFilterCommentsHidden));
+        OnPropertyChanged(nameof(IsFilterDisabledHidden));
+        OnPropertyChanged(nameof(ActiveFilterCount));
+        OnPropertyChanged(nameof(ActiveFiltersBadgeVisibility));
     }
 
     private void OnMoveUpClick(object sender, RoutedEventArgs e)

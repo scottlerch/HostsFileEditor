@@ -13,13 +13,18 @@ internal static class FormExtensions
     /// </param>
     public static void ShowOrActivate(this Form form)
     {
-        if (form.Visible)
-        {
-            form.Activate();
-        }
-        else
+        if (!form.Visible)
         {
             form.Show();
         }
+
+        // Activate() alone doesn't un-minimize; restore first so a tray double-click on a
+        // minimized window actually brings it back (matching the single-instance WndProc path).
+        if (form.WindowState == FormWindowState.Minimized)
+        {
+            form.WindowState = FormWindowState.Normal;
+        }
+
+        form.Activate();
     }
 }

@@ -50,7 +50,9 @@ internal sealed partial class MainForm : Form
     {
         InitializeComponent();
 
-        saveFileDialog.InitialDirectory = HostsFile.DefaultHostFilePath;
+        // Must be a directory: setting InitialDirectory to the hosts *file* path made Windows
+        // ignore it, so Save As opened in the default location instead of the etc directory.
+        saveFileDialog.InitialDirectory = HostsFile.DefaultHostFileDirectory;
 
         // Prevent data binding from setting properties to null when
         // an empty string is typed in
@@ -456,7 +458,13 @@ internal sealed partial class MainForm : Form
         dataGridViewHostsEntries.ClearSort = () =>
         {
             _hostEntriesView.RemoveSort();
+            UpdateMoveControlsEnabled();
         };
+
+        // Move Up/Down reorders the underlying file, which is meaningless (and silently
+        // destructive to resolution precedence) while a column sort is applied. Disable those
+        // controls whenever a sort is active.
+        dataGridViewHostsEntries.Sorted += (s, e) => UpdateMoveControlsEnabled();
 
         bindingSourceView.DataSource = _hostEntriesView;
 
@@ -1019,6 +1027,14 @@ internal sealed partial class MainForm : Form
         }
 
         splitContainer.SplitterDistance = settings.SplitterWidth;
+
+        // Restore a maximized window (the Size/Location above become the normal bounds it uses
+        // when un-maximized). SaveSettings persists this but it was never read back. Minimized
+        // is intentionally not restored.
+        if (settings.WindowState == FormWindowState.Maximized)
+        {
+            WindowState = FormWindowState.Maximized;
+        }
     }
 
     /// <summary>
@@ -1074,7 +1090,25 @@ internal sealed partial class MainForm : Form
     /// </summary>
     /// <param name="sender">The sender.</param>
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
-    private void OnRemoveSortClick(object sender, EventArgs e) => _hostEntriesView?.RemoveSort();
+    private void OnRemoveSortClick(object sender, EventArgs e)
+    {
+        _hostEntriesView?.RemoveSort();
+        UpdateMoveControlsEnabled();
+    }
+
+    /// <summary>
+    /// Enables the Move Up/Down commands only when no column sort is active. Moving reorders
+    /// the underlying hosts file, which the sorted view would silently hide (the grid re-sorts,
+    /// so the buttons appear dead while the real file order changes).
+    /// </summary>
+    private void UpdateMoveControlsEnabled()
+    {
+        var canMove = dataGridViewHostsEntries.SortOrder == SortOrder.None;
+        menuMoveUp.Enabled = canMove;
+        menuMoveDown.Enabled = canMove;
+        menuContextMoveUp.Enabled = canMove;
+        menuContextMoveDown.Enabled = canMove;
+    }
 
     /// <summary>
     /// Called when check clicked.
