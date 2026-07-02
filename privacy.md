@@ -47,7 +47,7 @@ Any updates will be posted on this page with a revised effective date.
 
 ## Contact
 
-Questions about this policy? Contact Scott Lerch at [scottlerch@gmail.com](mailto:scottlerch@gmail.com).
+Questions about this policy? Contact Scott Lerch at [support@hostsfileeditor.com](mailto:support@hostsfileeditor.com).
 
 ---
 
