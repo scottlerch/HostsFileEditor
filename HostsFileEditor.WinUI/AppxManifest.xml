@@ -15,8 +15,10 @@
     <Logo>Assets\HostsFileEditor.png</Logo>
   </Properties>
   <Dependencies>
+    <!-- The Windows App SDK runtime is bundled in the package (WindowsAppSDKSelfContained=true),
+         so no external Microsoft.WindowsAppRuntime.2 framework dependency is declared. A clean
+         machine without that runtime provisioned would otherwise crash the app at launch. -->
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26200.0" />
-    <PackageDependency Name="Microsoft.WindowsAppRuntime.2" MinVersion="2.2.0.0" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
   </Dependencies>
   <Resources>
     <Resource Language="en-us"/>

@@ -15,14 +15,22 @@
     <UseWindowsForms>false</UseWindowsForms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
-    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <!-- Bundle the Windows App SDK runtime in the package (self-contained) so the app launches
+         on a clean machine without the Microsoft.WindowsAppRuntime.2 framework package installed.
+         Framework-dependent deployment crashed at launch in Store certification when that runtime
+         wasn't provisioned; the AppxManifest no longer declares it as a dependency. -->
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>false</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <PublishAot>true</PublishAot>
-    <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081</NoWarn>
+    <!-- CA5392: the Windows App SDK self-contained mode compiles in a Microsoft-generated
+         UndockedRegFreeWinRT-AutoInitializer.cs whose bootstrap P/Invoke lacks
+         DefaultDllImportSearchPaths. It's third-party generated code we can't edit; our own
+         P/Invokes (in Core) remain CA5392-compliant. -->
+    <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081;CA5392</NoWarn>
     <ApplicationIcon>Assets\HostsFileEditor.ico</ApplicationIcon>
     <PackagingFlavor>modern</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\modern\</OutputPackagingDir>
