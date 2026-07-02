@@ -215,8 +215,15 @@
     <Exec Condition="'$(EnableSigning)'=='true' and '$(_SignArgs)' != '' and '@(_FilesToSign)' != ''"
           Command="&quot;$(SignToolExe)&quot; sign $(_SignArgs) @(_FilesToSign->'&quot;%(FullPath)&quot;', ' ')" />
 
-    <!-- Create MSIX -->
-    <Exec Condition="Exists('$(_EffectivePublishDir)')" Command="&quot;$(MakeAppxExe)&quot; pack /d &quot;$(_EffectivePublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
+    <!-- Remove any .msix/.zip left in the publish directory by a previous run of this same
+         RID before packing. makeappx enumerates the whole /d directory as payload, so a
+         leftover package or zip from an earlier publish would otherwise get baked inside the
+         new package as content. -->
+    <Delete Files="$(MsixFile);$(_EffectivePublishDir)$(PublishZipFile)" />
+
+    <!-- Create MSIX. /o overwrites without an interactive Y/N prompt (which would hang a
+         non-interactive build the second time a given RID is published). -->
+    <Exec Condition="Exists('$(_EffectivePublishDir)')" Command="&quot;$(MakeAppxExe)&quot; pack /o /d &quot;$(_EffectivePublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
 
     <!-- Sign MSIX (local sideload only; the Store re-signs on ingestion). -->
     <Exec Condition="'$(EnableSigning)'=='true' and '$(SignPackage)'=='true' and '$(_SignArgs)' != '' and Exists('$(MsixFile)')"
@@ -231,15 +238,19 @@
       <_PublishedFiles Include="$(_EffectivePublishDir)$(PublishZipFile)" Condition="'$(CreatePublishZip)'=='true' AND Exists('$(_EffectivePublishDir)$(PublishZipFile)')" />
     </ItemGroup>
 
-    <!-- Copy published files into flavor directory if defined -->
+    <!-- Copy published files into a per-architecture subfolder of the flavor directory, so
+         publishing win-x64 and win-arm64 back-to-back don't overwrite each other's output. -->
+    <PropertyGroup Condition=" '$(OutputPackagingDir)' != '' ">
+      <_EffectiveOutputPackagingDir>$(OutputPackagingDir)$(_PackageArchitecture)\</_EffectiveOutputPackagingDir>
+    </PropertyGroup>
     <ItemGroup Condition=" '$(OutputPackagingDir)' != '' ">
       <_CopyPublishedFiles Include="@(_PublishedFiles)" />
     </ItemGroup>
-    <Copy Condition=" '@(_CopyPublishedFiles)' != '' " SourceFiles="@(_CopyPublishedFiles)" DestinationFiles="@(_CopyPublishedFiles->'$(OutputPackagingDir)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy Condition=" '@(_CopyPublishedFiles)' != '' " SourceFiles="@(_CopyPublishedFiles)" DestinationFiles="@(_CopyPublishedFiles->'$(_EffectiveOutputPackagingDir)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
 
     <!-- Write stamp file to allow incremental up-to-date check -->
     <WriteLinesToFile File="$(_PackagedOutputStampDir)$(ProjectName).stamp" Lines="SignAndPackage completed $(_Now)" Overwrite="true" />
-    <Message Text="Packaged $(ProjectName) to $(OutputPackagingDir) (Files: @(_PublishedFiles->Count()))" Importance="high" />
+    <Message Text="Packaged $(ProjectName) to $(_EffectiveOutputPackagingDir) (Files: @(_PublishedFiles->Count()))" Importance="high" />
   </Target>
 
   <!-- Participate in Clean: remove copied outputs and stamp -->
