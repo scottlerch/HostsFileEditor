@@ -56,7 +56,7 @@ dotnet publish -c Release -bl:logs/publish.binlog
 dotnet clean
 ```
 
-Install matching Windows App SDK runtime from [here](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) so the application can run.
+The published apps are fully self-contained &mdash; the classic (WinForms) build bundles the .NET runtime and the modern (WinUI) build bundles both the .NET and Windows App SDK runtimes &mdash; so no separate runtime needs to be installed to run either one. Building and debugging the modern app from source still requires the [Windows App SDK](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) (installed with the Visual Studio "Windows application development" workload).
 
 ### Build Outputs
 
