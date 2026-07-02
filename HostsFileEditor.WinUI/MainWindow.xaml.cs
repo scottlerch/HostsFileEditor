@@ -301,23 +301,41 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnMoveUpClick(object sender, RoutedEventArgs e)
     {
         var selected = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
-        if (selected.Count > 0)
+        if (selected.Count == 0)
         {
-            // Match the classic UI: move the selection relative to the LAST selected entry.
-            HostsFile.Instance.Entries.MoveBefore(selected, selected[^1]);
-            RefreshEntries(true);
+            return;
         }
+
+        // Anchor on the entry immediately above the selection (in the visible/filtered
+        // view), not on an entry within the selection itself: MoveBefore(x, x) is a no-op.
+        var minIndex = selected.Min(Entries.IndexOf);
+        if (minIndex <= 0)
+        {
+            return;
+        }
+
+        HostsFile.Instance.Entries.MoveBefore(selected, Entries[minIndex - 1]);
+        RefreshEntries(true);
     }
 
     private void OnMoveDownClick(object sender, RoutedEventArgs e)
     {
         var selected = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
-        if (selected.Count > 0)
+        if (selected.Count == 0)
         {
-            // Match the classic UI: move the selection relative to the FIRST selected entry.
-            HostsFile.Instance.Entries.MoveAfter(selected, selected[0]);
-            RefreshEntries(true);
+            return;
         }
+
+        // Anchor on the entry immediately below the selection (in the visible/filtered
+        // view), not on an entry within the selection itself: MoveAfter(x, x) is a no-op.
+        var maxIndex = selected.Max(Entries.IndexOf);
+        if (maxIndex < 0 || maxIndex >= Entries.Count - 1)
+        {
+            return;
+        }
+
+        HostsFile.Instance.Entries.MoveAfter(selected, Entries[maxIndex + 1]);
+        RefreshEntries(true);
     }
 
     private void OnDeleteClick(object sender, RoutedEventArgs e)

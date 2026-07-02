@@ -596,25 +596,29 @@ internal sealed partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            var firstSelected = dataGridViewHostsEntries.FirstSelectedHostEntry;
+            var maxRowIndex = dataGridViewHostsEntries.SelectedRows.Cast<DataGridViewRow>().Max(row => row.Index);
+            var belowEntry = dataGridViewHostsEntries.GetHostEntry(maxRowIndex + 1);
 
-            if (firstSelected != null)
+            if (belowEntry != null)
             {
-                HostsFile.Instance.Entries.MoveAfter(
-                    dataGridViewHostsEntries.SelectedHostEntries,
-                    firstSelected);
+                HostsFile.Instance.Entries.MoveAfter(selectedEntries, belowEntry);
 
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
-        else if (dataGridViewHostsEntries.CurrentHostEntry != null)
+        else if (dataGridViewHostsEntries.CurrentHostEntry != null && dataGridViewHostsEntries.CurrentRow != null)
         {
             var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
-            var selectedEntries = new List<HostsEntry>([currentEntry]);
+            var belowEntry = dataGridViewHostsEntries.GetHostEntry(dataGridViewHostsEntries.CurrentRow.Index + 1);
 
-            HostsFile.Instance.Entries.MoveAfter([currentEntry], currentEntry);
+            if (belowEntry != null)
+            {
+                var selectedEntries = new List<HostsEntry>([currentEntry]);
 
-            dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                HostsFile.Instance.Entries.MoveAfter([currentEntry], belowEntry);
+
+                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+            }
         }
     }
 
@@ -632,25 +636,29 @@ internal sealed partial class MainForm : Form
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            var lastSelected = dataGridViewHostsEntries.LastSelectedHostEntry;
+            var minRowIndex = dataGridViewHostsEntries.SelectedRows.Cast<DataGridViewRow>().Min(row => row.Index);
+            var aboveEntry = dataGridViewHostsEntries.GetHostEntry(minRowIndex - 1);
 
-            if (lastSelected != null)
+            if (aboveEntry != null)
             {
-                HostsFile.Instance.Entries.MoveBefore(
-                     dataGridViewHostsEntries.SelectedHostEntries,
-                     lastSelected);
+                HostsFile.Instance.Entries.MoveBefore(selectedEntries, aboveEntry);
 
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
-        else if (dataGridViewHostsEntries.CurrentHostEntry != null)
+        else if (dataGridViewHostsEntries.CurrentHostEntry != null && dataGridViewHostsEntries.CurrentRow != null)
         {
             var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
-            var selectedEntries = new List<HostsEntry>([currentEntry]);
+            var aboveEntry = dataGridViewHostsEntries.GetHostEntry(dataGridViewHostsEntries.CurrentRow.Index - 1);
 
-            HostsFile.Instance.Entries.MoveBefore([currentEntry], currentEntry);
+            if (aboveEntry != null)
+            {
+                var selectedEntries = new List<HostsEntry>([currentEntry]);
 
-            dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                HostsFile.Instance.Entries.MoveBefore([currentEntry], aboveEntry);
+
+                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+            }
         }
     }
 

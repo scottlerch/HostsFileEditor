@@ -50,6 +50,67 @@ public class HostsEntryListTests
         list[1].HostNames.ShouldBe("a");
     }
 
+    // Regression coverage for the "Move Up"/"Move Down" UI actions, which anchor the move on
+    // the entry adjacent to (not inside) the selection. Anchoring on an entry that is itself
+    // part of the moving set (e.g. MoveBefore(selected, selected[^1])) is always a no-op -
+    // that was the actual bug (fixed in the WinForm/WinUI callers, not here).
+    [TestMethod]
+    public void MoveBefore_MultiSelectionAnchoredAboveSelection_ShiftsBlockUp()
+    {
+        var list = new HostsEntryList();
+        var entries = "a b c d e".Split(' ').Select(n => new HostsEntry($"127.0.0.1 {n}")).ToList();
+        foreach (var entry in entries)
+        {
+            list.Add(entry);
+        }
+
+        // Select b,c and move up: anchor is a (the entry above the selection), not b or c.
+        list.MoveBefore([entries[1], entries[2]], entries[0]);
+
+        list[0].HostNames.ShouldBe("b");
+        list[1].HostNames.ShouldBe("c");
+        list[2].HostNames.ShouldBe("a");
+        list[3].HostNames.ShouldBe("d");
+        list[4].HostNames.ShouldBe("e");
+    }
+
+    [TestMethod]
+    public void MoveAfter_MultiSelectionAnchoredBelowSelection_ShiftsBlockDown()
+    {
+        var list = new HostsEntryList();
+        var entries = "a b c d e".Split(' ').Select(n => new HostsEntry($"127.0.0.1 {n}")).ToList();
+        foreach (var entry in entries)
+        {
+            list.Add(entry);
+        }
+
+        // Select b,c and move down: anchor is d (the entry below the selection), not b or c.
+        list.MoveAfter([entries[1], entries[2]], entries[3]);
+
+        list[0].HostNames.ShouldBe("a");
+        list[1].HostNames.ShouldBe("d");
+        list[2].HostNames.ShouldBe("b");
+        list[3].HostNames.ShouldBe("c");
+        list[4].HostNames.ShouldBe("e");
+    }
+
+    [TestMethod]
+    public void MoveBefore_AnchoredOnEntryWithinSelection_IsNoOp()
+    {
+        var list = new HostsEntryList();
+        var entries = "a b c".Split(' ').Select(n => new HostsEntry($"127.0.0.1 {n}")).ToList();
+        foreach (var entry in entries)
+        {
+            list.Add(entry);
+        }
+
+        list.MoveBefore(entries, entries[^1]);
+
+        list[0].HostNames.ShouldBe("a");
+        list[1].HostNames.ShouldBe("b");
+        list[2].HostNames.ShouldBe("c");
+    }
+
     [TestMethod]
     public void SetEnabled_DisablesEntries()
     {

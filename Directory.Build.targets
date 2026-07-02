@@ -174,6 +174,12 @@
       <_Now>$([System.DateTime]::UtcNow.ToString("o"))</_Now>
     </PropertyGroup>
 
+    <!-- Remove any .msix/.zip left in the publish directory by a previous run of this same
+         RID before the file list below is captured or makeappx packs the directory - either
+         would otherwise pick up the stale package/zip (as a duplicate copy-list entry and,
+         for makeappx, as payload baked inside the new package). -->
+    <Delete Files="$(MsixFile);$(_EffectivePublishDir)$(PublishZipFile)" />
+
     <ItemGroup Condition="'$(Configuration)' == 'Release'">
       <_PublishedFiles Include="$(_EffectivePublishDir)**\*.*" Exclude="$(_EffectivePublishDir)**\*.pdb" />
     </ItemGroup>
@@ -214,12 +220,6 @@
     </ItemGroup>
     <Exec Condition="'$(EnableSigning)'=='true' and '$(_SignArgs)' != '' and '@(_FilesToSign)' != ''"
           Command="&quot;$(SignToolExe)&quot; sign $(_SignArgs) @(_FilesToSign->'&quot;%(FullPath)&quot;', ' ')" />
-
-    <!-- Remove any .msix/.zip left in the publish directory by a previous run of this same
-         RID before packing. makeappx enumerates the whole /d directory as payload, so a
-         leftover package or zip from an earlier publish would otherwise get baked inside the
-         new package as content. -->
-    <Delete Files="$(MsixFile);$(_EffectivePublishDir)$(PublishZipFile)" />
 
     <!-- Create MSIX. /o overwrites without an interactive Y/N prompt (which would hang a
          non-interactive build the second time a given RID is published). -->

@@ -68,14 +68,13 @@ internal sealed class HostsEntryDataGridView : DataGridView
     public HostsEntry? CurrentHostEntry => CurrentRow?.DataBoundItem is ObjectView<HostsEntry> view ? view.Object : null;
 
     /// <summary>
-    /// Gets the last selected host entry.
+    /// Gets the host entry bound to the given row index, or <see langword="null"/> if
+    /// the index is out of range or the row has no bound entry.
     /// </summary>
-    public HostsEntry? LastSelectedHostEntry => SelectedHostEntries.LastOrDefault();
-
-    /// <summary>
-    /// Gets the first selected host entry.
-    /// </summary>
-    public HostsEntry? FirstSelectedHostEntry => SelectedHostEntries.FirstOrDefault();
+    public HostsEntry? GetHostEntry(int rowIndex) =>
+        rowIndex >= 0 && rowIndex < Rows.Count && Rows[rowIndex].DataBoundItem is ObjectView<HostsEntry> view
+            ? view.Object
+            : null;
 
     /// <inheritdoc />
     protected override void OnCurrentCellDirtyStateChanged(System.EventArgs e)
