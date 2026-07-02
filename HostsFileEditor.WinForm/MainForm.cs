@@ -172,11 +172,13 @@ internal sealed partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
-            // Clone like Copy does, so the clipboard holds independent entries rather
-            // than the live instances being removed (keeps undo/paste state consistent).
-            _clipboardEntries = [.. dataGridViewHostsEntries.SelectedHostEntries.Select(entry => new HostsEntry(entry))];
+            // Snapshot the actual selected entries so we remove THOSE, then clone independent
+            // copies for the clipboard. Removing the clones (as before) matched nothing by
+            // reference, so Cut silently behaved like Copy.
+            var selected = dataGridViewHostsEntries.SelectedHostEntries.ToList();
+            _clipboardEntries = [.. selected.Select(entry => new HostsEntry(entry))];
 
-            HostsFile.Instance.Entries.Remove(_clipboardEntries);
+            HostsFile.Instance.Entries.Remove(selected);
         }
         else
         {
@@ -280,11 +282,11 @@ internal sealed partial class MainForm : Form
 
         if (currentlyDisabled)
         {
-            HostsFile.EnableHostsFile();
+            HostsFile.Instance.EnableHostsFile();
         }
         else
         {
-            HostsFile.DisableHostsFile();
+            HostsFile.Instance.DisableHostsFile();
         }
 
         UpdateNotifyIcon();

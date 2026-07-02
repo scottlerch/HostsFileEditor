@@ -39,12 +39,15 @@ public static partial class Win32FileDialogs
     private const int OFN_PATHMUSTEXIST = 0x00000800;
     private const int OFN_OVERWRITEPROMPT = 0x00000002;
 
-    [LibraryImport("comdlg32.dll", SetLastError = true)]
+    // EntryPoint must name the exact export: LibraryImport (unlike DllImport) does no A/W
+    // probing, and comdlg32 only exports GetOpenFileNameW/GetSaveFileNameW. The struct is
+    // marshalled as Unicode (CharSet.Unicode, StringToHGlobalUni), so the W variants match.
+    [LibraryImport("comdlg32.dll", EntryPoint = "GetOpenFileNameW", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool GetOpenFileName(ref OPENFILENAME ofn);
 
-    [LibraryImport("comdlg32.dll", SetLastError = true)]
+    [LibraryImport("comdlg32.dll", EntryPoint = "GetSaveFileNameW", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool GetSaveFileName(ref OPENFILENAME ofn);

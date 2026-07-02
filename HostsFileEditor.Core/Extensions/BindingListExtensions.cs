@@ -11,8 +11,16 @@ internal static class BindingListExtensions
     public static void BatchUpdate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this BindingList<T> list, Action action)
     {
         list.RaiseListChangedEvents = false;
-        action();
-        list.RaiseListChangedEvents = true;
-        list.ResetBindings();
+        try
+        {
+            action();
+        }
+        finally
+        {
+            // Restore notifications even if the action throws; otherwise the list would stay
+            // silent for the rest of the session and bound views would freeze.
+            list.RaiseListChangedEvents = true;
+            list.ResetBindings();
+        }
     }
 }

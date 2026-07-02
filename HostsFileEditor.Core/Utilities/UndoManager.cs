@@ -47,6 +47,12 @@ public class UndoManager
         {
             _batchingActions = true;
 
+            // A new (batched) action invalidates the redo branch — the previously undone
+            // groups that sit after the current position must be discarded, otherwise redo
+            // would replay stale actions on top of the new one.
+            RemoveNodesAfter(_undoActions, _undoActionsPosition);
+            RemoveNodesAfter(_redoActions, _redoActionsPosition);
+
             _undoActions.AddAfter(_undoActionsPosition, new LinkedList<Action>());
             _undoActionsPosition = _undoActionsPosition.Next!;
 
@@ -98,6 +104,11 @@ public class UndoManager
                 }
                 else
                 {
+                    // A new action invalidates the redo branch (the undone groups after
+                    // the current position); discard them before appending so redo can't
+                    // walk into stale history.
+                    RemoveNodesAfter(_undoActions, _undoActionsPosition);
+
                     _undoActions.AddAfter(
                         _undoActionsPosition,
                         new LinkedList<Action>([undoAction]));
@@ -114,6 +125,8 @@ public class UndoManager
                 }
                 else
                 {
+                    RemoveNodesAfter(_redoActions, _redoActionsPosition);
+
                     _redoActions.AddAfter(
                         _redoActionsPosition,
                         new LinkedList<Action>([redoAction]));
@@ -138,12 +151,18 @@ public class UndoManager
 
             _suspendAddActions = true;
 
-            foreach (var action in actions)
+            try
             {
-                action();
+                foreach (var action in actions)
+                {
+                    action();
+                }
+            }
+            finally
+            {
+                _suspendAddActions = false;
             }
 
-            _suspendAddActions = false;
             OnHistoryChanged();
         }
     }
@@ -159,12 +178,18 @@ public class UndoManager
 
             _suspendAddActions = true;
 
-            foreach (var action in actions)
+            try
             {
-                action();
+                foreach (var action in actions)
+                {
+                    action();
+                }
+            }
+            finally
+            {
+                _suspendAddActions = false;
             }
 
-            _suspendAddActions = false;
             OnHistoryChanged();
         }
     }
@@ -227,6 +252,18 @@ public class UndoManager
         {
             _undoInProgress = false;
             _redoInProgress = false;
+        }
+    }
+
+    // Discards every group after the given position (the redo branch). Called when a new
+    // action is recorded so redo can no longer replay superseded history.
+    private static void RemoveNodesAfter(
+        LinkedList<LinkedList<Action>> actions,
+        LinkedListNode<LinkedList<Action>> position)
+    {
+        while (position.Next is not null)
+        {
+            actions.Remove(position.Next);
         }
     }
 

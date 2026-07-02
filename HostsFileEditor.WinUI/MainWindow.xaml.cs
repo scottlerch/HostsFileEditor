@@ -238,7 +238,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void OnSaveClick(object sender, RoutedEventArgs e) => HostsFile.Instance.Save();
+    private async void OnSaveClick(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            HostsFile.Instance.Save();
+        }
+        catch (Elevation.ElevationCancelledException)
+        {
+            // User declined the UAC prompt; nothing was written. Keep the unsaved edits.
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorDialogAsync("Error Saving Hosts File", $"An error occurred while saving the hosts file:\n\n{ex.Message}");
+        }
+    }
 
     private void OnSaveAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         => TryInvokeUnlessTextBox(() => OnSaveClick(this, new RoutedEventArgs()), args);
@@ -417,18 +431,31 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void OnDisableHostsClick(object sender, RoutedEventArgs e)
+    private async void OnDisableHostsClick(object sender, RoutedEventArgs e)
     {
         var isChecked = !HostsFile.IsEnabled; // current binding value
-        if (!isChecked)
+        try
         {
-            HostsFile.DisableHostsFile();
+            if (!isChecked)
+            {
+                HostsFile.Instance.DisableHostsFile();
+            }
+            else
+            {
+                HostsFile.Instance.EnableHostsFile();
+            }
         }
-        else
+        catch (Elevation.ElevationCancelledException)
         {
-            HostsFile.EnableHostsFile();
+            // User declined the UAC prompt; the file was not renamed.
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorDialogAsync("Error Changing Hosts File State", $"An error occurred while enabling or disabling the hosts file:\n\n{ex.Message}");
         }
 
+        // Bound to HostsFile.IsEnabled (computed from the file system), so this reflects the
+        // real post-operation state whether the toggle succeeded, was declined, or failed.
         OnPropertyChanged(nameof(IsDisabledHosts));
     }
 

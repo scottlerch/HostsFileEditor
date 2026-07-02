@@ -94,6 +94,46 @@ public sealed class UndoManagerTests
     }
 
     [TestMethod]
+    public void AddActions_AfterUndo_TruncatesRedoBranch()
+    {
+        var h = new Holder { State = 0 };
+
+        // Record A ("" -> 1), undo it, then record a NEW action B ("" -> 2).
+        UndoManager.Instance.AddActions(() => h.State = 0, () => h.State = 1);
+        h.State = 1;
+        UndoManager.Instance.Undo();
+        h.State.ShouldBe(0);
+
+        UndoManager.Instance.AddActions(() => h.State = 0, () => h.State = 2);
+        h.State = 2;
+
+        // The stale redo of A must be gone; redo must not resurrect it.
+        UndoManager.Instance.CanRedo.ShouldBeFalse();
+        UndoManager.Instance.Redo();
+        h.State.ShouldBe(2);
+    }
+
+    [TestMethod]
+    public void BatchActions_AfterUndo_TruncatesRedoBranch()
+    {
+        var h = new Holder { State = 0 };
+
+        UndoManager.Instance.AddActions(() => h.State = 0, () => h.State = 1);
+        h.State = 1;
+        UndoManager.Instance.Undo();
+        h.State.ShouldBe(0);
+
+        // A batched action after an undo must also invalidate the redo branch.
+        UndoManager.Instance.BatchActions(() =>
+            UndoManager.Instance.AddActions(() => h.State = 0, () => h.State = 5));
+        h.State = 5;
+
+        UndoManager.Instance.CanRedo.ShouldBeFalse();
+        UndoManager.Instance.Redo();
+        h.State.ShouldBe(5);
+    }
+
+    [TestMethod]
     public void EnforceCapacity_ManyActions_UndoRedoStaysConsistent()
     {
         var h = new Holder { State = 0 };

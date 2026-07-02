@@ -42,7 +42,9 @@ public class HostsFile : INotifyPropertyChanged
             return IsEnabled ? new HostsFile(DefaultHostFilePath) : new HostsFile(DefaultDisabledHostFilePath);
         });
 
-    private readonly string _filePath;
+    // Not readonly: Enable/Disable rename the live hosts file at runtime and update this so
+    // Save/Refresh keep targeting the current file rather than the path frozen at construction.
+    private string _filePath;
 
     private HostsFile(string filePath)
     {
@@ -81,26 +83,42 @@ public class HostsFile : INotifyPropertyChanged
 
     public int LineCount => Entries.Count;
 
-    public static void DisableHostsFile()
+    public void DisableHostsFile()
     {
         PrivilegedFileOperations.Current.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
         NativeMethods.FlushDns();
+
+        // The live file was renamed; track it so a subsequent Save/Refresh operates on the
+        // now-disabled file instead of recreating the enabled one. Runs only after a
+        // successful Move (a declined UAC prompt throws before this and leaves state intact).
+        _filePath = DefaultDisabledHostFilePath;
     }
 
-    public static void EnableHostsFile()
+    public void EnableHostsFile()
     {
         PrivilegedFileOperations.Current.Move(DefaultDisabledHostFilePath, DefaultHostFilePath);
         NativeMethods.FlushDns();
+
+        _filePath = DefaultHostFilePath;
     }
 
     public void Import(string importFilePath)
     {
         if (_filePath != importFilePath)
         {
+            // Read before mutating: a failed read (missing/locked file) then leaves the
+            // current entries and undo history intact instead of clearing them and throwing
+            // mid-batch (which would strand the UI showing rows that no longer exist).
+            var lines = File.ReadAllLines(importFilePath);
+
+            // Undo actions from before the import reference the replaced entries and stale
+            // indices; replaying them would crash or corrupt, so drop the history.
+            UndoManager.Instance.ClearHistory();
+
             Entries.BatchUpdate(() =>
             {
                 Entries.Clear();
-                Entries.AddLines(File.ReadAllLines(importFilePath), RemoveDefaultText);
+                Entries.AddLines(lines, RemoveDefaultText);
             });
         }
     }
@@ -152,12 +170,16 @@ public class HostsFile : INotifyPropertyChanged
 
     public void Refresh(bool removeDefault = true)
     {
+        // Read before mutating so a failed read leaves the current entries intact rather
+        // than clearing them and throwing mid-batch (see Import).
+        var lines = File.ReadAllLines(_filePath);
+
         UndoManager.Instance.ClearHistory();
 
         Entries.BatchUpdate(() =>
         {
             Entries.Clear();
-            Entries.AddLines(File.ReadAllLines(_filePath), removeDefault);
+            Entries.AddLines(lines, removeDefault);
         });
 
         NativeMethods.FlushDns();
