@@ -79,4 +79,4 @@ Icons are from the _Open Icon Library_ and their license and terms can be found 
 
 ---
 
-Made by [Scott Lerch](https://scottlerch.com)
+[Privacy Policy](https://hostsfileeditor.com/privacy/) &middot; Made by [Scott Lerch](https://scottlerch.com)
