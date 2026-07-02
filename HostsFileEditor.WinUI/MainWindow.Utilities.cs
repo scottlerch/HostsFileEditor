@@ -6,7 +6,10 @@ namespace HostsFileEditor;
 
 public sealed partial class MainWindow
 {
-    private bool IsTextBoxFocused() => FocusManager.GetFocusedElement() is TextBox;
+    // The parameterless FocusManager.GetFocusedElement() relies on CoreWindow and always
+    // returns null in a WinUI 3 desktop app; the XamlRoot overload is required, otherwise the
+    // guard never fires and accelerators hijack text editing in the filter box and cells.
+    private bool IsTextBoxFocused() => FocusManager.GetFocusedElement(Content.XamlRoot) is TextBox;
 
     private void TryInvokeUnlessTextBox(Action action, KeyboardAcceleratorInvokedEventArgs args)
     {

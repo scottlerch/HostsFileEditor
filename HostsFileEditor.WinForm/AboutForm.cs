@@ -93,5 +93,8 @@ sealed partial class AboutForm : Form
         }
     }
 
-    private void OnLinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => Process.Start(githubLink.Text);
+    private void OnLinkClicked(object sender, LinkLabelLinkClickedEventArgs e) =>
+        // UseShellExecute is required to launch a URL; on .NET (Core) it defaults to false,
+        // which treats the string as an executable path and throws.
+        Process.Start(new ProcessStartInfo(githubLink.Text) { UseShellExecute = true });
 }

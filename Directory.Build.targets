@@ -160,12 +160,32 @@
     <MakeDir Directories="$(_PackagedOutputStampDir)" Condition="!Exists('$(_PackagedOutputStampDir)')" />
   </Target>
 
-  <!-- Main packaging target now incremental: Inputs/Outputs allow MSBuild to skip when unchanged. -->
+  <!-- Records the effective signing configuration to a stamp file so a change to it
+       invalidates SignAndPackage's incremental check (signing settings are properties, not
+       files, and would otherwise never re-trigger packaging — a -Sign run after an unsigned
+       run could silently ship unsigned binaries). WriteOnlyWhenDifferent keeps the stamp's
+       timestamp stable when nothing changed, preserving normal incrementality. -->
+  <Target Name="_StampSigningConfig"
+          Condition="Exists('$(MSBuildProjectDirectory)\AppxManifest.xml')"
+          DependsOnTargets="_CreatePackagingStampDir">
+    <PropertyGroup>
+      <_SigningStampContent>EnableSigning=$(EnableSigning)|SignPackage=$(SignPackage)|Dlib=$(SigningDlib)|Meta=$(SigningMetadata)|Thumb=$(SigningCertThumbprint)|Cert=$(CertFile)|Ts=$(SigningTimestampUrl)</_SigningStampContent>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_PackagedOutputStampDir)$(ProjectName).signing.stamp"
+                      Lines="$(_SigningStampContent)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <!-- Main packaging target now incremental: Inputs/Outputs allow MSBuild to skip when unchanged.
+       Inputs include the bundled Elevate helper (produced by PublishElevateHelper, not part of
+       ResolvedFileToPublish) and the signing stamp, so a helper-only or signing-config change
+       re-triggers packaging instead of leaving a stale/unsigned package. -->
   <Target Name="SignAndPackage"
           Condition="Exists('$(MSBuildProjectDirectory)\AppxManifest.xml')"
-          DependsOnTargets="_ResolvePackagingTools"
+          DependsOnTargets="_ResolvePackagingTools;_StampSigningConfig"
           AfterTargets="Publish"
-          Inputs="@(ResolvedFileToPublish)"
+          Inputs="@(ResolvedFileToPublish);$(ProjectDir)$(PublishDir)Elevate\HostsFileEditor.Elevate.exe;$(_PackagedOutputStampDir)$(ProjectName).signing.stamp"
           Outputs="$(ProjectDir)$(PublishDir)$(AssemblyName).msix">
     <PropertyGroup>
       <_EffectivePublishDir>$(ProjectDir)$(PublishDir)</_EffectivePublishDir>
@@ -180,15 +200,23 @@
          for makeappx, as payload baked inside the new package). -->
     <Delete Files="$(MsixFile);$(_EffectivePublishDir)$(PublishZipFile)" />
 
+    <!-- Ensure the manifest and Assets are present BEFORE the file list is captured and before
+         makeappx packs. A no-op incremental re-publish empties the publish Assets folder (and
+         can drop the manifest), which fails makeappx manifest validation (the logos it
+         references go missing). Copy them from the project so packaging is robust regardless of
+         publish's incremental content handling. -->
+    <Copy SourceFiles="$(ProjectDir)AppxManifest.xml" DestinationFolder="$(_EffectivePublishDir)" SkipUnchangedFiles="true" Condition="Exists('$(ProjectDir)AppxManifest.xml')" />
+    <ItemGroup>
+      <_SourceAssets Include="$(ProjectDir)Assets\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_SourceAssets)" DestinationFolder="$(_EffectivePublishDir)Assets" SkipUnchangedFiles="true" Condition="'@(_SourceAssets)' != ''" />
+
     <ItemGroup Condition="'$(Configuration)' == 'Release'">
       <_PublishedFiles Include="$(_EffectivePublishDir)**\*.*" Exclude="$(_EffectivePublishDir)**\*.pdb" />
     </ItemGroup>
     <ItemGroup Condition="'$(Configuration)' == 'Debug'">
       <_PublishedFiles Include="$(_EffectivePublishDir)**\*.*" />
     </ItemGroup>
-
-    <!-- Ensure manifest is present (redundant if CopyToPublishDirectory worked, but defensive) -->
-    <Copy SourceFiles="$(ProjectDir)AppxManifest.xml" DestinationFolder="$(_EffectivePublishDir)" SkipUnchangedFiles="true" Condition="Exists('$(ProjectDir)AppxManifest.xml')" />
 
     <!-- Stamp Identity/@ProcessorArchitecture to match the publish RID. The hand-written
          manifest carries x64; this rewrites it for arm64 (or x86) builds so a correct
@@ -221,6 +249,14 @@
     <Exec Condition="'$(EnableSigning)'=='true' and '$(_SignArgs)' != '' and '@(_FilesToSign)' != ''"
           Command="&quot;$(SignToolExe)&quot; sign $(_SignArgs) @(_FilesToSign->'&quot;%(FullPath)&quot;', ' ')" />
 
+    <!-- Keep debug symbols out of the Store package: makeappx packs the entire publish
+         directory, so delete the PDBs first (they are already excluded from the artifacts
+         copy). Release only; Debug packages keep symbols for local debugging. -->
+    <ItemGroup Condition="'$(Configuration)' == 'Release'">
+      <_PdbsInPublish Include="$(_EffectivePublishDir)**\*.pdb" />
+    </ItemGroup>
+    <Delete Condition="'$(Configuration)' == 'Release'" Files="@(_PdbsInPublish)" />
+
     <!-- Create MSIX. /o overwrites without an interactive Y/N prompt (which would hang a
          non-interactive build the second time a given RID is published). -->
     <Exec Condition="Exists('$(_EffectivePublishDir)')" Command="&quot;$(MakeAppxExe)&quot; pack /o /d &quot;$(_EffectivePublishDir.TrimEnd('\\'))&quot; /p &quot;$(MsixFile)&quot;" />
@@ -229,8 +265,10 @@
     <Exec Condition="'$(EnableSigning)'=='true' and '$(SignPackage)'=='true' and '$(_SignArgs)' != '' and Exists('$(MsixFile)')"
           Command="&quot;$(SignToolExe)&quot; sign $(_SignArgs) &quot;$(MsixFile)&quot;" />
 
-    <!-- Optionally ZIP (only when CreatePublishZip true) -->
-    <Exec Condition="'$(CreatePublishZip)'=='true'" Command="cd /d &quot;$(_EffectivePublishDir)&quot; &amp;&amp; &quot;$(Pkg7ZipCLI)\tools\7za.exe&quot; a -tzip -aoa &quot;$(PublishZipFile)&quot; *.exe" />
+    <!-- Optionally ZIP (only when CreatePublishZip true). Include the Elevate\ subfolder so
+         the zip-distributed app can still elevate on demand — *.exe alone is non-recursive and
+         omitted the helper, leaving the asInvoker app unable to save the hosts file. -->
+    <Exec Condition="'$(CreatePublishZip)'=='true'" Command="cd /d &quot;$(_EffectivePublishDir)&quot; &amp;&amp; &quot;$(Pkg7ZipCLI)\tools\7za.exe&quot; a -tzip -aoa &quot;$(PublishZipFile)&quot; *.exe Elevate" />
 
     <!-- Add msix/zip artifacts explicitly so they get copied -->
     <ItemGroup>

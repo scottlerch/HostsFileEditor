@@ -75,6 +75,41 @@ internal sealed partial class MainForm : Form
         base.WndProc(ref message);
     }
 
+    /// <inheritdoc />
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        // Menu/context-menu shortcut keys (Del, Ctrl+X/C/V, Ctrl+D, Alt+Up/Down, etc.) are
+        // dispatched form-wide before the focused control sees them. When the user is typing in
+        // the filter textbox, let it handle these as normal text editing instead of acting on
+        // the grid — otherwise, e.g., Del in the filter box deletes the selected hosts rows.
+        //
+        // The grid-focus guard is essential: whenever the grid (or its active cell editor) has
+        // focus, these shortcuts MUST reach the menu handlers so copy/cut/paste/delete of rows
+        // keep working. Only suppress when the grid has no focus and the filter box does.
+        if (IsGridShortcut(keyData)
+            && !dataGridViewHostsEntries.ContainsFocus
+            && textFilter.Focused)
+        {
+            return false;
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    private static bool IsGridShortcut(Keys keyData) => keyData switch
+    {
+        Keys.Delete => true,
+        Keys.Control | Keys.C => true,
+        Keys.Control | Keys.X => true,
+        Keys.Control | Keys.V => true,
+        Keys.Control | Keys.A => true,
+        Keys.Control | Keys.Z => true,
+        Keys.Control | Keys.D => true,
+        Keys.Alt | Keys.Up => true,
+        Keys.Alt | Keys.Down => true,
+        _ => false,
+    };
+
     /// <summary>
     /// Called when archive clicked.
     /// </summary>
@@ -99,6 +134,18 @@ internal sealed partial class MainForm : Form
     }
 
     /// <summary>
+    /// Sets the system clipboard text, skipping the call for empty content
+    /// (Clipboard.SetText throws ArgumentNullException on null or empty).
+    /// </summary>
+    private static void SetClipboardTextSafe(string text)
+    {
+        if (!string.IsNullOrEmpty(text))
+        {
+            Clipboard.SetText(text);
+        }
+    }
+
+    /// <summary>
     /// Occurs when copy clicked.
     /// </summary>
     /// <param name="sender">
@@ -109,9 +156,12 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnCopyClick(object sender, EventArgs e)
     {
-        // HACK: If editing cell forward cut/copy/paste command
-        // to editing control
-        if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
+        // HACK: forward Ctrl+C/X/V to the in-cell text editor ONLY when editing a cell's text
+        // with no full row selected. This grid keeps the current cell in edit mode, so without
+        // the row guard the hack fired on row selections too and copy/cut/paste never reached
+        // the row logic below (Delete worked only because it has no such check).
+        if (dataGridViewHostsEntries.IsCurrentCellInEditMode
+            && dataGridViewHostsEntries.SelectedRows.Count == 0)
         {
             var keys = menuCopy.ShortcutKeys;
             menuCopy.ShortcutKeys = Keys.None;
@@ -140,7 +190,7 @@ internal sealed partial class MainForm : Form
                 }
             }
 
-            Clipboard.SetText(builder.ToString());
+            SetClipboardTextSafe(builder.ToString());
         }
     }
 
@@ -155,9 +205,12 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnCutClick(object sender, EventArgs e)
     {
-        // HACK: If editing cell forward cut/copy/paste command
-        // to editing control
-        if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
+        // HACK: forward Ctrl+C/X/V to the in-cell text editor ONLY when editing a cell's text
+        // with no full row selected. This grid keeps the current cell in edit mode, so without
+        // the row guard the hack fired on row selections too and copy/cut/paste never reached
+        // the row logic below (Delete worked only because it has no such check).
+        if (dataGridViewHostsEntries.IsCurrentCellInEditMode
+            && dataGridViewHostsEntries.SelectedRows.Count == 0)
         {
             var keys = menuCut.ShortcutKeys;
             menuCut.ShortcutKeys = Keys.None;
@@ -195,7 +248,7 @@ internal sealed partial class MainForm : Form
                 }
             }
 
-            Clipboard.SetText(builder.ToString());
+            SetClipboardTextSafe(builder.ToString());
         }
     }
 
@@ -276,20 +329,32 @@ internal sealed partial class MainForm : Form
         // absent (renamed to .disabled), rather than trusting the sender's checkbox.
         var currentlyDisabled = !HostsFile.IsEnabled;
 
-        menuDisable.Checked = !currentlyDisabled;
-        buttonDisable.Checked = !currentlyDisabled;
-        menuContextDisable.Checked = !currentlyDisabled;
-
-        if (currentlyDisabled)
+        try
         {
-            HostsFile.Instance.EnableHostsFile();
+            if (currentlyDisabled)
+            {
+                HostsFile.Instance.EnableHostsFile();
+            }
+            else
+            {
+                HostsFile.Instance.DisableHostsFile();
+            }
         }
-        else
+        catch (Elevation.ElevationCancelledException)
         {
-            HostsFile.Instance.DisableHostsFile();
+            // User declined the UAC prompt; the file was not renamed.
         }
-
-        UpdateNotifyIcon();
+        finally
+        {
+            // Sync the toggles from the ACTUAL file state (not the intended one) so a declined
+            // or failed elevation can't leave the menus/toolbar asserting a change that never
+            // happened. Previously the checkboxes were set before the privileged op.
+            var disabledNow = !HostsFile.IsEnabled;
+            menuDisable.Checked = disabledNow;
+            buttonDisable.Checked = disabledNow;
+            menuContextDisable.Checked = disabledNow;
+            UpdateNotifyIcon();
+        }
     }
 
     /// <summary>
@@ -404,6 +469,7 @@ internal sealed partial class MainForm : Form
 
         menuDisable.Checked = !HostsFile.IsEnabled;
         buttonDisable.Checked = !HostsFile.IsEnabled;
+        menuContextDisable.Checked = !HostsFile.IsEnabled;
 
         UpdateNotifyIcon();
 
@@ -451,11 +517,20 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnFormClosing(object sender, FormClosingEventArgs e)
     {
-        if (e.CloseReason != CloseReason.ApplicationExitCall)
+        // Minimize to tray only when the user closes the window. Never veto an OS-initiated
+        // close (WindowsShutDown / logoff) — cancelling that blocks Windows shutdown — nor an
+        // explicit Application.Exit.
+        if (e.CloseReason == CloseReason.UserClosing)
         {
             e.Cancel = true;
             Hide();
+            return;
         }
+
+        // On OS shutdown/logoff the app exits without going through Exit, so persist settings
+        // here too (Exit also saves for the ApplicationExitCall path; a redundant save is
+        // harmless).
+        SaveSettings();
     }
 
     /// <summary>
@@ -686,9 +761,12 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnPasteClick(object sender, EventArgs e)
     {
-        // HACK: If editing cell forward cut/copy/paste command
-        // to editing control
-        if (dataGridViewHostsEntries.IsCurrentCellInEditMode)
+        // HACK: forward Ctrl+C/X/V to the in-cell text editor ONLY when editing a cell's text
+        // with no full row selected. This grid keeps the current cell in edit mode, so without
+        // the row guard the hack fired on row selections too and copy/cut/paste never reached
+        // the row logic below (Delete worked only because it has no such check).
+        if (dataGridViewHostsEntries.IsCurrentCellInEditMode
+            && dataGridViewHostsEntries.SelectedRows.Count == 0)
         {
             var keys = menuPaste.ShortcutKeys;
             menuPaste.ShortcutKeys = Keys.None;
@@ -712,8 +790,12 @@ internal sealed partial class MainForm : Form
 
             _clipboardEntries = null;
         }
-        else
+        else if (dataGridViewHostsEntries.SelectedRows.Count == 0)
         {
+            // Cell-level text paste, only when no full rows are selected. Previously this
+            // ran whenever there were no internal clipboard entries — including with rows
+            // selected (e.g. a second Ctrl+V after a row paste), which overwrote every cell
+            // of the selected rows with the system clipboard text.
             foreach (
                 DataGridViewCell cell in
                 dataGridViewHostsEntries.SelectedCells)
@@ -811,7 +893,9 @@ internal sealed partial class MainForm : Form
 
         if (result == DialogResult.Yes)
         {
-            HostsFile.Instance.Refresh();
+            // Honor the "remove default text" setting on reload, matching initial load and
+            // Import; passing nothing would always strip the default hosts header.
+            HostsFile.Instance.Refresh(HostsFile.RemoveDefaultText);
         }
     }
 

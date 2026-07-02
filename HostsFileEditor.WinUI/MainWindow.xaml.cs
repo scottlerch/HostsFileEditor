@@ -91,17 +91,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 CtxRedo?.Visibility = redo ? Visibility.Visible : Visibility.Collapsed;
             });
 
-        TrySetAppWindowTitleBar();
-        TryEnableMicaBackdrop();
-        RefreshEntries();
-        RefreshArchives();
-
+        // Apply persisted settings BEFORE the first HostsFile.Instance access (RefreshEntries
+        // below): that access loads the hosts file and constructs every HostsEntry, so
+        // RemoveDefaultText and AutoPingIPAddress must already be set or they are inert at
+        // startup (header not stripped, no pings) until the next reload.
         IsPingIPs = LocalSettings.GetBool("AutoPingIPs", defaultValue: false);
         IsRemoveDefaultText = LocalSettings.GetBool("RemoveDefaultText", defaultValue: false);
         IsArchiveVisible = LocalSettings.GetBool("ArchiveVisible", defaultValue: false);
         HostsEntry.AutoPingIPAddress = IsPingIPs;
         HostsFile.RemoveDefaultText = IsRemoveDefaultText;
         ArchivesColumnWidth = IsArchiveVisible ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+
+        TrySetAppWindowTitleBar();
+        TryEnableMicaBackdrop();
+        RefreshEntries();
+        RefreshArchives();
 
         OnPropertyChanged(nameof(IsBackEnabled));
         OnPropertyChanged(nameof(MainViewVisibility));
@@ -472,7 +476,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         try
         {
-            HostsFile.Instance.Refresh();
+            // Honor the "remove default text" setting on reload, matching initial load and
+            // Import; passing nothing would always strip the default hosts header.
+            HostsFile.Instance.Refresh(HostsFile.RemoveDefaultText);
             RefreshEntries();
         }
         catch (Exception ex)
@@ -585,9 +591,19 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        var trimmed = name.Trim();
+
+        // Reject invalid or duplicate names (matches the classic UI's InputForm). Without
+        // this, Archive silently overwrites the existing file and adds a duplicate list row.
+        if (!HostsArchive.Validate(new HostsArchive(trimmed).FilePath, out var error))
+        {
+            await ShowErrorDialogAsync("Invalid Archive Name", error);
+            return;
+        }
+
         try
         {
-            HostsFile.Instance.Archive(name.Trim());
+            HostsFile.Instance.Archive(trimmed);
             RefreshArchives();
         }
         catch (Exception ex)
@@ -596,12 +612,19 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private void OnArchiveLoadClick(object sender, RoutedEventArgs e)
+    private async void OnArchiveLoadClick(object sender, RoutedEventArgs e)
     {
         if (ArchiveList.SelectedItem is HostsArchive archive)
         {
-            HostsFile.Instance.Import(archive.FilePath);
-            RefreshEntries();
+            try
+            {
+                HostsFile.Instance.Import(archive.FilePath);
+                RefreshEntries();
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync("Error Loading Archive", $"An error occurred while loading the archive:\n\n{ex.Message}");
+            }
         }
     }
 
