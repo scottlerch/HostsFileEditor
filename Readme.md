@@ -2,21 +2,21 @@
 
 Release binaries can be downloaded from [GitHub Releases](https://github.com/scottlerch/HostsFileEditor/releases).
 
-### Latest &mdash; v1.3.0 (portable)
+### Latest &mdash; v1.3.1 (portable)
 
 The **classic edition** rebuilt on .NET 10: fully self-contained (no runtime to install), runs as a standard user, and elevates on demand (a single UAC prompt) only when you save changes to the hosts file. Binaries are signed.
 
- * [Download v1.3.0 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.0/HostsFileEditor-1.3.0-x64.zip)
- * [Download v1.3.0 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.0/HostsFileEditor-1.3.0-arm64.zip)
+ * [Download v1.3.1 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.1/HostsFileEditor-1.3.1-x64.zip)
+ * [Download v1.3.1 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.1/HostsFileEditor-1.3.1-arm64.zip)
 
-_What's new since v1.2.0:_ a new **modern edition** (WinUI 3) coming to the Microsoft Store, native **ARM64** builds, a move to **.NET 10** with self-contained deployment, **on-demand elevation** (the app no longer runs entirely as administrator), per-user data under `%LocalAppData%\HostsFileEditor`, Authenticode-signed binaries, and many correctness fixes to undo/redo, move, cut/copy/paste, import/export, and filtering. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.3.0).
+_What's new since v1.2.0:_ a new **modern edition** (WinUI 3) on the Microsoft Store, native **ARM64** builds, a move to **.NET 10** with self-contained deployment, **on-demand elevation** (the app no longer runs entirely as administrator), per-user data under `%LocalAppData%\HostsFileEditor`, Authenticode-signed binaries, and many correctness fixes to undo/redo, move, cut/copy/paste, import/export, and filtering. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.3.1).
 
 ### Microsoft Store
 
-Both editions are being published to the Microsoft Store &mdash; installs and updates are automatic, with no separate download:
+Both editions are available on the Microsoft Store &mdash; installs and updates are automatic, with no separate download:
 
- * Hosts File Editor &mdash; modern edition &mdash; _coming soon (pending certification)_ <!-- TODO: replace with the Store listing URL once published -->
- * Hosts File Editor &mdash; classic edition &mdash; _coming soon (pending certification)_ <!-- TODO: replace with the Store listing URL once published -->
+ * [Hosts File Editor (modern)](https://apps.microsoft.com/detail/9NBQWCDXGF9R) &mdash; the new WinUI edition
+ * [Hosts File Editor (classic)](https://apps.microsoft.com/detail/9NF73PSPK332) &mdash; the classic WinForms edition
 
 ### Legacy &mdash; v1.2.0
 
