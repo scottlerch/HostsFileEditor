@@ -631,8 +631,56 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnExitClick(object sender, EventArgs e)
     {
+        // File > Exit / tray Exit is the true-exit path (closing the window only hides to tray),
+        // so warn about unsaved changes here before actually exiting.
+        if (!ConfirmDiscardUnsavedChanges())
+        {
+            return;
+        }
+
         SaveSettings();
         Application.Exit();
+    }
+
+    /// <summary>
+    /// If there are unsaved hosts-file changes, prompts to save/discard/cancel. Returns true if
+    /// the caller should proceed with exiting (saved or discarded), false to abort the exit.
+    /// </summary>
+    private bool ConfirmDiscardUnsavedChanges()
+    {
+        if (!HostsFile.Instance.IsModified)
+        {
+            return true;
+        }
+
+        var result = MessageBox.Show(
+            this,
+            "You have unsaved changes to the hosts file. Save them before exiting?",
+            "Unsaved Changes",
+            MessageBoxButtons.YesNoCancel,
+            MessageBoxIcon.Warning);
+
+        switch (result)
+        {
+            case DialogResult.Yes:
+                try
+                {
+                    HostsFile.Instance.Save();
+                }
+                catch (Elevation.ElevationCancelledException)
+                {
+                    // Declined the elevation prompt; abort the exit so changes aren't lost.
+                    return false;
+                }
+
+                return true;
+
+            case DialogResult.No:
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     /// <summary>

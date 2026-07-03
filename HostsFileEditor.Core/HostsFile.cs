@@ -46,6 +46,10 @@ public class HostsFile : INotifyPropertyChanged
     // Save/Refresh keep targeting the current file rather than the path frozen at construction.
     private string _filePath;
 
+    // Undo position captured at the last point the in-memory entries matched the saved file
+    // (load / refresh / save). IsModified compares the current position against it.
+    private object? _cleanStateToken;
+
     private HostsFile(string filePath)
     {
         _filePath = filePath;
@@ -67,7 +71,22 @@ public class HostsFile : INotifyPropertyChanged
         }
 
         Entries.ListChanged += OnHostsEntriesListChanged;
+
+        // Freshly loaded from disk: no unsaved changes.
+        MarkClean();
     }
+
+    // Records the current undo position as the "saved" state. Called when the in-memory entries
+    // match the file on disk (initial load, refresh, save). Import/RestoreDefault deliberately
+    // do NOT call this: they load content that has not yet been written to the hosts file, so
+    // the app should still consider it modified (a save is needed).
+    private void MarkClean() => _cleanStateToken = UndoManager.Instance.CurrentStateToken;
+
+    /// <summary>
+    /// Gets a value indicating whether there are in-memory edits that have not been saved to the
+    /// hosts file, so the UI can warn before discarding them (e.g. on exit).
+    /// </summary>
+    public bool IsModified => !ReferenceEquals(UndoManager.Instance.CurrentStateToken, _cleanStateToken);
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -147,6 +166,9 @@ public class HostsFile : INotifyPropertyChanged
     {
         SaveAs(_filePath);
         NativeMethods.FlushDns();
+
+        // Entries now match the file on disk.
+        MarkClean();
     }
 
     public void SaveAs(string saveFilePath)
@@ -183,6 +205,9 @@ public class HostsFile : INotifyPropertyChanged
         });
 
         NativeMethods.FlushDns();
+
+        // Entries were just reloaded from the live file, so they match disk.
+        MarkClean();
     }
 
     protected void OnPropertyChanged(string property) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property));
