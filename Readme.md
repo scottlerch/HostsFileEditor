@@ -1,49 +1,38 @@
-## Download
+**A fast, friendly editor for the Windows `hosts` file.**
 
-Release binaries can be downloaded from [GitHub Releases](https://github.com/scottlerch/HostsFileEditor/releases).
+[![Latest release](https://img.shields.io/github/v/release/scottlerch/HostsFileEditor)](https://github.com/scottlerch/HostsFileEditor/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](License.md)
+[![Microsoft Store](https://img.shields.io/badge/Microsoft%20Store-available-brightgreen)](https://apps.microsoft.com/detail/9NBQWCDXGF9R)
 
-### Latest &mdash; v1.3.1 (portable)
+The Windows `hosts` file (`%WinDir%\System32\drivers\etc\hosts`) maps hostnames to IP
+addresses before DNS is consulted &mdash; handy for pointing a domain at a local dev server,
+blocking sites, testing deployments, or switching between environments. Editing it by hand in
+Notepad is tedious and error-prone. **Hosts File Editor** turns it into a proper table you can
+cut, copy, paste, enable, disable, sort, filter, and archive &mdash; with full undo/redo and a
+one-click toggle for the whole file.
 
-The **classic edition** rebuilt on .NET 10: fully self-contained (no runtime to install), runs as a standard user, and elevates on demand (a single UAC prompt) only when you save changes to the hosts file. Binaries are signed.
-
- * [Download v1.3.1 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.1/HostsFileEditor-1.3.1-x64.zip)
- * [Download v1.3.1 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.1/HostsFileEditor-1.3.1-arm64.zip)
-
-_What's new since v1.2.0:_ a new **modern edition** (WinUI 3) on the Microsoft Store, native **ARM64** builds, a move to **.NET 10** with self-contained deployment, **on-demand elevation** (the app no longer runs entirely as administrator), per-user data under `%LocalAppData%\HostsFileEditor`, Authenticode-signed binaries, and many correctness fixes to undo/redo, move, cut/copy/paste, import/export, and filtering. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.3.1).
-
-### Microsoft Store
-
-Both editions are available on the Microsoft Store &mdash; installs and updates are automatic, with no separate download:
-
- * [Hosts File Editor (modern)](https://apps.microsoft.com/detail/9NBQWCDXGF9R) &mdash; the new WinUI edition
- * [Hosts File Editor (classic)](https://apps.microsoft.com/detail/9NF73PSPK332) &mdash; the classic WinForms edition
-
-### Legacy &mdash; v1.2.0
-
-The last **.NET Framework 4.x** release: much smaller because it relies on the .NET Framework already built into Windows rather than bundling a runtime, and proven over years of use. Kept here as the last known-good classic build:
-
- * [Download v1.2.0 installer](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditorSetup-1.2.0.msi)
- * [Download v1.2.0 portable](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditor-1.2.0.zip)
-
-## Features
- * Cut, copy, paste, duplicate, enable, disable and move one or more entries at a time
- * Filter and sort when there are a large number of host entries
- * Enable and disable entire hostsfile from application or tray
- * Archive and restore various hostsfile configurations when switching between environments
- * Automatically ping endpoints to check availability
+It runs as a standard user and elevates on demand (a single UAC prompt) only when you actually
+save changes to the hosts file, so day-to-day viewing, archiving, and backups need no admin rights.
 
 <img src="images/modern.png" alt="Main screen modern light" width="673">
 
 *main modern editor (light)*
 
+## Features
+ * Cut, copy, paste, duplicate, enable, disable and move one or more entries at a time
+ * Filter and sort when there are a large number of host entries
+ * Enable and disable the entire hosts file from the application or tray
+ * Archive and restore various hosts file configurations when switching between environments
+ * Automatically ping endpoints to check availability
+
 <img src="images/modern_dark.png" alt="Main screen modern dark" width="673">
 
 *main modern editor (dark)*
 
-![Main screen classic](images/classic.png)  
+![Main screen classic](images/classic.png)
 *main classic editor with optional archive visible on right*
 
-![Tray](images/classic_tray.png)  
+![Tray](images/classic_tray.png)
 *tray icon with context menu*
 
 ### Usage Notes
@@ -54,13 +43,41 @@ When selecting rows to move, delete, copy, or cut be sure to select the entire r
 
 Using the filter and sort while editing is quirky. The filter and sort are applied once a cell is edited so your cell may change positions or disappear depending on the current sort and filter.
 
+## Download
+
+Runs on Windows 10 and 11, x64 or ARM64. Two editions are available &mdash; pick whichever you prefer;
+they share the same core and features.
+
+### Microsoft Store &mdash; recommended
+
+Installs and updates automatically, with no separate download:
+
+ * [Hosts File Editor (modern)](https://apps.microsoft.com/detail/9NBQWCDXGF9R) &mdash; the new WinUI edition
+ * [Hosts File Editor (classic)](https://apps.microsoft.com/detail/9NF73PSPK332) &mdash; the classic WinForms edition
+
+### Portable &mdash; v1.3.1
+
+The **classic edition** rebuilt on .NET 10: fully self-contained (no runtime to install), runs as a standard user, and elevates on demand (a single UAC prompt) only when you save changes to the hosts file. Binaries are signed. Download directly from [GitHub Releases](https://github.com/scottlerch/HostsFileEditor/releases):
+
+ * [Download v1.3.1 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.1/HostsFileEditor-1.3.1-x64.zip)
+ * [Download v1.3.1 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.1/HostsFileEditor-1.3.1-arm64.zip)
+
+_What's new since v1.2.0:_ a new **modern edition** (WinUI 3) on the Microsoft Store, native **ARM64** builds, a move to **.NET 10** with self-contained deployment, **on-demand elevation** (the app no longer runs entirely as administrator), per-user data under `%LocalAppData%\HostsFileEditor`, Authenticode-signed binaries, and many correctness fixes to undo/redo, move, cut/copy/paste, import/export, and filtering. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.3.1).
+
+### Legacy &mdash; v1.2.0
+
+The last **.NET Framework 4.x** release: much smaller because it relies on the .NET Framework already built into Windows rather than bundling a runtime, and proven over years of use. Kept here as the last known-good classic build:
+
+ * [Download v1.2.0 installer](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditorSetup-1.2.0.msi)
+ * [Download v1.2.0 portable](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditor-1.2.0.zip)
+
 ## Build
 
 Requires .NET 10.0 or later. To build the installer you must have [Windows SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/) with `makeappx.exe` and `signtool.exe` commands.
 
 To build the application, use the .NET CLI run from Visual Studio 2022 Developer PowerShell so `makeappx.exe` and `signtool.exe` are in your `PATH`:
 
-```bash
+```powershell
 # Build for Debug (includes debugging symbols)
 dotnet build -c Debug
 
@@ -79,6 +96,36 @@ dotnet clean
 
 The published apps are fully self-contained &mdash; the classic (WinForms) build bundles the .NET runtime and the modern (WinUI) build bundles both the .NET and Windows App SDK runtimes &mdash; so no separate runtime needs to be installed to run either one. Building and debugging the modern app from source still requires the [Windows App SDK](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) (installed with the Visual Studio "Windows application development" workload).
 
+### Building release artifacts (portable + Store)
+
+Each `dotnet publish` above also packages the project it builds &mdash; the publish step signs the exe,
+builds an MSIX with `makeappx`, and (for the classic edition) zips a portable build. To produce **every**
+distributable in one shot &mdash; both editions for both architectures &mdash; use the `build-all.ps1`
+script instead:
+
+```powershell
+# Publish + package classic and modern, for win-x64 and win-arm64
+.\build-all.ps1
+
+# Same, but Authenticode-sign the exe and elevation helper (see docs/signing.md)
+.\build-all.ps1 -Sign
+```
+
+It publishes all four flavor/architecture combinations and lays the output out under `artifacts\`:
+
+- **Portable zips** &mdash; `artifacts\classic\<arch>\HostsFileEditor.zip`. Only the classic (WinForms)
+  edition produces a portable zip; these are what ship on GitHub Releases.
+- **Store packages** &mdash; the signed `.msix` for both editions, collected into `artifacts\store\` with
+  descriptive names (e.g. `HostsFileEditor-modern-x64.msix`) ready to upload to Partner Center.
+
+Signing is **off by default**. The `.msix` *package* doesn't need signing for the Store (Microsoft
+re-signs it on ingestion), but signing the **binaries** &mdash; the app exe and the
+`HostsFileEditor.Elevate.exe` helper &mdash; is recommended for **both** editions: the Store re-signs
+the package, not the exe files inside it, so without `-Sign` the on-demand elevation prompt shows
+"Unknown Publisher" instead of a verified publisher. Pass `-Sign` to Authenticode-sign the exe and helper
+(Azure Trusted Signing); this also builds SmartScreen reputation for the self-distributed GitHub-release
+zip. See [docs/signing.md](docs/signing.md) for setup.
+
 ### Build Outputs
 
 - Built files are automatically copied to the `.\bin` directory after publishing
@@ -89,9 +136,18 @@ You can view binary logs using:
 - Visual Studio: File → Open → build log file (.binlog)
 - MSBuild Structured Log Viewer: Download from https://msbuildlog.com/
 
+## Contributing
+
+Issues and pull requests are welcome &mdash; see the [open issues](https://github.com/scottlerch/HostsFileEditor/issues) to get started.
+
+The project is mid-migration from **WinForms** to **WinUI 3**. Two UIs currently ship side by side on
+top of one shared core library (`HostsFileEditor.Core`): the legacy classic (WinForms) UI and the new
+modern (WinUI 3) UI. When changing behavior, prefer putting shared logic in the core so both editions
+benefit; new UI work should target the WinUI project.
+
 ## License
- 
-[GNU General Public](https://www.gnu.org/licenses/)
+
+[GNU General Public License v3](License.md).
 
 _Equin.ApplicationFramework.BindingListView_ is by Andrew Davey and license
 terms can be found at <http://blw.sourceforge.net/>.
