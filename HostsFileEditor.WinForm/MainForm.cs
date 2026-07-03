@@ -2,6 +2,7 @@ using Equin.ApplicationFramework;
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
+using System.Configuration;
 using System.Text;
 
 namespace HostsFileEditor;
@@ -1022,7 +1023,20 @@ internal sealed partial class MainForm : Form
     /// </summary>
     private void LoadSettings()
     {
-        var settings = Settings.Default;
+        Settings settings;
+        try
+        {
+            settings = Settings.Default;
+
+            // The first property access loads user.config; a corrupt file throws here. Recover
+            // and start with defaults rather than failing to launch (issue #37).
+            _ = settings.AutoPingIPAddresses;
+        }
+        catch (ConfigurationErrorsException ex)
+        {
+            ResetCorruptUserConfig(ex);
+            return;
+        }
 
         HostsEntry.AutoPingIPAddress = settings.AutoPingIPAddresses;
         HostsFile.RemoveDefaultText = settings.RemoveDefaultText;
@@ -1059,29 +1073,73 @@ internal sealed partial class MainForm : Form
     /// </summary>
     private void SaveSettings()
     {
-        var settings = Settings.Default;
-
-        settings.AutoPingIPAddresses = HostsEntry.AutoPingIPAddress;
-        settings.RemoveDefaultText = HostsFile.RemoveDefaultText;
-        settings.WindowLocation = Location;
-        settings.ArchiveVisible = menuViewArchive.Checked;
-
-        // Save size for normal window, don't save anything for minimized
-        // since that's probably not what the user wants next time
-        // they open
-        if (WindowState == FormWindowState.Normal)
+        try
         {
-            settings.WindowSize = Size;
-            settings.WindowState = WindowState;
+            var settings = Settings.Default;
+
+            settings.AutoPingIPAddresses = HostsEntry.AutoPingIPAddress;
+            settings.RemoveDefaultText = HostsFile.RemoveDefaultText;
+            settings.WindowLocation = Location;
+            settings.ArchiveVisible = menuViewArchive.Checked;
+
+            // Save size for normal window, don't save anything for minimized
+            // since that's probably not what the user wants next time
+            // they open
+            if (WindowState == FormWindowState.Normal)
+            {
+                settings.WindowSize = Size;
+                settings.WindowState = WindowState;
+            }
+            else if (WindowState == FormWindowState.Maximized)
+            {
+                settings.WindowState = WindowState;
+            }
+
+            settings.SplitterWidth = splitContainer.SplitterDistance;
+
+            settings.Save();
         }
-        else if (WindowState == FormWindowState.Maximized)
+        catch (ConfigurationErrorsException)
         {
-            settings.WindowState = WindowState;
+            // Persisting settings must never crash the app (e.g. a corrupt or locked user.config
+            // on exit/shutdown). Losing window bounds/preferences is acceptable; failing to close
+            // is not (issue #37).
+        }
+    }
+
+    /// <summary>
+    /// Recovers from a corrupt user settings file by deleting it and reloading defaults, so a bad
+    /// <c>user.config</c> cannot prevent the app from starting (issue #37).
+    /// </summary>
+    private static void ResetCorruptUserConfig(ConfigurationErrorsException ex)
+    {
+        // The offending path is on the exception (sometimes only on the inner one).
+        var badFile = (ex.InnerException as ConfigurationErrorsException)?.Filename;
+        if (string.IsNullOrEmpty(badFile))
+        {
+            badFile = ex.Filename;
         }
 
-        settings.SplitterWidth = splitContainer.SplitterDistance;
+        try
+        {
+            if (!string.IsNullOrEmpty(badFile) && File.Exists(badFile))
+            {
+                File.Delete(badFile);
+            }
 
-        settings.Save();
+            // Drop the faulted in-memory state so the rest of the session reads clean defaults.
+            Settings.Default.Reload();
+        }
+        catch (IOException)
+        {
+            // Best effort — fall back to in-memory defaults for this session.
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+        catch (ConfigurationErrorsException)
+        {
+        }
     }
 
     /// <summary>
