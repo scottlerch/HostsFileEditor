@@ -35,13 +35,18 @@
     <PackagingFlavor>modern</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\modern\</OutputPackagingDir>
     <CreatePublishZip>false</CreatePublishZip>
-    <!-- Do NOT generate a separate resources.pri here. The WinUI build already emits the
-         package resource index (HostsFileEditor.pri) that indexes the app's compiled XAML
-         resources AND the qualified logo assets (scale-*, targetsize-*, altform-unplated) added
-         to Assets\. The shell resolves the unplated taskbar logo from that index. Adding a
-         second, logo-only resources.pri shadows it, so WinUI can't find its own XAML resources
-         and crashes on launch (Microsoft.UI.Xaml.dll, 0xc000027b). The unplated asset files in
-         Assets\ are what fix the taskbar plate for the modern edition. -->
+    <!-- The WinUI build emits the package resource index; by default it names it
+         <AssemblyName>.pri with the resource-map root also = <AssemblyName> ("HostsFileEditor").
+         The app resolves its XAML from that fine, but the SHELL only resolves tile/taskbar logos
+         from a package-root resources.pri whose resource-map root matches the package Identity
+         Name — so with the default naming the taskbar fell back to the flat logo on the accent
+         plate. Emit the index as resources.pri with the identity as the map root so the shell
+         resolves the qualified logo assets (incl. altform-unplated) added to Assets\ and renders
+         the taskbar icon unplated. Keep this in sync with Identity/@Name in AppxManifest.xml.
+         Do NOT also set GenerateResourcesPri here: a second, logo-only resources.pri would shadow
+         this complete index and crash WinUI on launch (Microsoft.UI.Xaml.dll, 0xc000027b). -->
+    <ProjectPriFileName>resources.pri</ProjectPriFileName>
+    <ProjectPriIndexName>11033ScottLerch.HostsFileEditormodern</ProjectPriIndexName>
     <GenerateResourcesPri>false</GenerateResourcesPri>
   </PropertyGroup>
   <ItemGroup>

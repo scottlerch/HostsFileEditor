@@ -214,16 +214,13 @@
          for makeappx, as payload baked inside the new package). -->
     <Delete Files="$(MsixFile);$(_EffectivePublishDir)$(PublishZipFile)" />
 
-    <!-- Remove any stale makepri output left in the publish directory from a previous run before
-         packing. Without this, an incremental re-publish keeps a resources.pri even after
-         GenerateResourcesPri is turned off (publish never cleans it), and for the WinUI app that
-         stale resources.pri shadows the build's HostsFileEditor.pri and crashes the app on launch
-         (Microsoft.UI.Xaml.dll, 0xc000027b). The makepri step below regenerates it when enabled.
-         Never delete HostsFileEditor.pri — that is the WinUI build's real package resource index. -->
-    <ItemGroup>
+    <!-- When makepri generates the package resources.pri (GenerateResourcesPri=true), delete any
+         stale output from a previous run first so the fresh index fully replaces it. Only runs on
+         the makepri path so it never removes a resources.pri emitted directly by the build. -->
+    <ItemGroup Condition="'$(GenerateResourcesPri)'=='true'">
       <_StalePriFiles Include="$(_EffectivePublishDir)resources.pri;$(_EffectivePublishDir)resources.scale-*.pri" />
     </ItemGroup>
-    <Delete Files="@(_StalePriFiles)" />
+    <Delete Condition="'$(GenerateResourcesPri)'=='true'" Files="@(_StalePriFiles)" />
 
     <!-- Ensure the manifest and Assets are present BEFORE the file list is captured and before
          makeappx packs. A no-op incremental re-publish empties the publish Assets folder (and
