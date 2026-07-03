@@ -35,8 +35,10 @@ $enableSigning = if ($Sign) { "true" } else { "false" }
 # and timestamp default in Directory.Build.targets. See docs/signing.md.
 if ($Sign -and -not ($ExtraArgs -join ' ' -match 'SigningDlib')) {
     $nugetRoot = (dotnet nuget locals global-packages --list) -replace '.*global-packages:\s*', ''
+    # Pick the x64 dlib to match the x64 signtool the build resolves; the x86 one fails to load.
     $dlib = Get-ChildItem -Path (Join-Path $nugetRoot 'microsoft.trusted.signing.client') `
         -Recurse -Filter 'Azure.CodeSigning.Dlib.dll' -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -match '\\x64\\' } |
         Sort-Object FullName -Descending | Select-Object -First 1
     if ($dlib) {
         Write-Host "Using Trusted Signing dlib: $($dlib.FullName)" -ForegroundColor DarkGray
