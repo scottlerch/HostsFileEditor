@@ -395,6 +395,11 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     // blank one, so trailing junk (e.g. a port after the hostname) was silently dropped and
     // an unmatched remainder still "parsed". Lines matching nothing are preserved as comments
     // by the constructor.
-    [GeneratedRegex(@"^((?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$", RegexOptions.Compiled)]
+    //
+    // The entry alternative leads with \s* so a line with leading whitespace before the
+    // optional '#' still parses as an entry (issue #22). Without it, \s* consumed the leading
+    // space and '#' was captured as the ipaddress, demoting a valid disabled entry (e.g.
+    // " # 1.2.3.4 host") to a plain comment.
+    [GeneratedRegex(@"^(\s*(?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$", RegexOptions.Compiled)]
     private static partial Regex ValidHostsRegex();
 }
