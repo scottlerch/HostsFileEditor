@@ -35,10 +35,14 @@
     <PackagingFlavor>modern</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\modern\</OutputPackagingDir>
     <CreatePublishZip>false</CreatePublishZip>
-    <!-- Generate a resources.pri during packaging so the shell resolves the qualified logo
-         assets (scale-*, targetsize-*, altform-unplated) and the taskbar/Alt+Tab render the
-         icon unplated instead of on the accent-color plate. See Directory.Build.targets. -->
-    <GenerateResourcesPri>true</GenerateResourcesPri>
+    <!-- Do NOT generate a separate resources.pri here. The WinUI build already emits the
+         package resource index (HostsFileEditor.pri) that indexes the app's compiled XAML
+         resources AND the qualified logo assets (scale-*, targetsize-*, altform-unplated) added
+         to Assets\. The shell resolves the unplated taskbar logo from that index. Adding a
+         second, logo-only resources.pri shadows it, so WinUI can't find its own XAML resources
+         and crashes on launch (Microsoft.UI.Xaml.dll, 0xc000027b). The unplated asset files in
+         Assets\ are what fix the taskbar plate for the modern edition. -->
+    <GenerateResourcesPri>false</GenerateResourcesPri>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
