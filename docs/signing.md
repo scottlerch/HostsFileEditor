@@ -2,12 +2,17 @@
 
 Hosts File Editor's binaries are Authenticode-signed with **Azure Trusted Signing** (formerly
 Azure Code Signing / "Artifact Signing"). Signing the app exe and the elevation helper gives a
-verified publisher on the UAC prompt and builds SmartScreen reputation for the
-**self-distributed** builds (GitHub Releases).
+verified publisher on the UAC prompt &mdash; for **both** Store and self-distributed builds &mdash;
+and builds SmartScreen reputation for the self-distributed builds (GitHub Releases).
 
-> **You do not need to sign for the Microsoft Store.** The Store re-signs the `.msix` with
-> Microsoft's certificate on ingestion, so Store submissions work unsigned. Signing here is for
-> the GitHub-release exe/zip and for reputation.
+> **The MSIX *package* does not need signing for the Microsoft Store** &mdash; the Store re-signs
+> the `.msix` with Microsoft's certificate on ingestion, so Store submissions work with the package
+> unsigned. **The binaries inside it are a different matter.** The Store re-signs the *package*, not
+> the exe files within it, so signing the app exe and the elevation helper is recommended for **both**
+> the Store and self-distributed builds: the UAC "Verified publisher" line on the on-demand elevation
+> prompt comes from the Authenticode signature embedded in `HostsFileEditor.Elevate.exe` itself, not
+> from the package signature. Without it, that prompt reads "Unknown Publisher" even on a Store install.
+> Exe/helper signing also builds SmartScreen reputation for the self-distributed GitHub-release exe/zip.
 
 ## What is signed
 
