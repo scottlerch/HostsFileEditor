@@ -157,8 +157,16 @@
       <MakeAppxExe Condition="'$(MakeAppxExe)'=='makeappx.exe' and Exists('$(_KitsRoot10)bin\x64\makeappx.exe')">$(_KitsRoot10)bin\x64\makeappx.exe</MakeAppxExe>
     </PropertyGroup>
 
+    <!-- makepri.exe ships in the same SDK bin\<ver>\x64 folder as makeappx.exe, so derive it
+         from the resolved MakeAppx path; fall back to PATH when MakeAppx came from PATH. -->
+    <PropertyGroup>
+      <MakePriExe Condition="'$(MakePriExe)'==''">makepri.exe</MakePriExe>
+      <MakePriExe Condition="'$(MakePriExe)'=='makepri.exe' and '$(MakeAppxExe)'!='makeappx.exe' and Exists('$([System.IO.Path]::GetDirectoryName($(MakeAppxExe)))\makepri.exe')">$([System.IO.Path]::GetDirectoryName($(MakeAppxExe)))\makepri.exe</MakePriExe>
+    </PropertyGroup>
+
     <Message Text="Using SignTool: $(SignToolExe)" Importance="Low" />
     <Message Text="Using MakeAppx: $(MakeAppxExe)" Importance="Low" />
+    <Message Text="Using MakePri: $(MakePriExe)" Importance="Low" />
   </Target>
  
   <!-- Ensure stamp directory exists -->
@@ -270,6 +278,35 @@
       <_PdbsInPublish Include="$(_EffectivePublishDir)**\*.pdb" />
     </ItemGroup>
     <Delete Condition="'$(Configuration)' == 'Release'" Files="@(_PdbsInPublish)" />
+
+    <!-- Generate a package-root resources.pri so the shell resolves the qualified logo assets
+         (scale-*, targetsize-*, and especially altform-unplated) and the taskbar / Alt+Tab render
+         the icon unplated instead of on the accent-color plate. The .NET build already emits a
+         component <Project>.pri, but MSIX resolves logos from resources.pri whose resource-map
+         root matches the package Identity — which makepri /mn produces.
+
+         Index a STAGING copy of just the (already arch/version-stamped) manifest + Assets, NOT
+         the full self-contained publish tree: that tree bundles the Windows App SDK framework
+         assets and PRIs, which make 'makepri new' fail with duplicate/conflicting resource
+         entries (e.g. Microsoft.UI.Xaml\Assets\NoiseAsset...). createconfig/priconfig live in obj
+         and never enter the package. Opt-in per project via GenerateResourcesPri. -->
+    <PropertyGroup Condition="'$(GenerateResourcesPri)'=='true'">
+      <_PriConfigFile>$(_PackagedOutputStampDir)priconfig.xml</_PriConfigFile>
+      <_PriStageDir>$(_PackagedOutputStampDir)pri-stage\</_PriStageDir>
+    </PropertyGroup>
+    <RemoveDir Condition="'$(GenerateResourcesPri)'=='true'" Directories="$(_PriStageDir)" />
+    <MakeDir Condition="'$(GenerateResourcesPri)'=='true'" Directories="$(_PriStageDir)Assets" />
+    <Copy Condition="'$(GenerateResourcesPri)'=='true' and Exists('$(_EffectivePublishDir)AppxManifest.xml')"
+          SourceFiles="$(_EffectivePublishDir)AppxManifest.xml" DestinationFolder="$(_PriStageDir)" />
+    <ItemGroup Condition="'$(GenerateResourcesPri)'=='true'">
+      <_PriStageAssets Include="$(_EffectivePublishDir)Assets\*.*" />
+    </ItemGroup>
+    <Copy Condition="'$(GenerateResourcesPri)'=='true' and '@(_PriStageAssets)' != ''"
+          SourceFiles="@(_PriStageAssets)" DestinationFolder="$(_PriStageDir)Assets" />
+    <Exec Condition="'$(GenerateResourcesPri)'=='true' and Exists('$(_PriStageDir)AppxManifest.xml')"
+          Command="&quot;$(MakePriExe)&quot; createconfig /cf &quot;$(_PriConfigFile)&quot; /dq en-US /o" />
+    <Exec Condition="'$(GenerateResourcesPri)'=='true' and Exists('$(_PriStageDir)AppxManifest.xml')"
+          Command="&quot;$(MakePriExe)&quot; new /pr &quot;$(_PriStageDir.TrimEnd('\\'))&quot; /cf &quot;$(_PriConfigFile)&quot; /mn &quot;$(_PriStageDir)AppxManifest.xml&quot; /of &quot;$(_EffectivePublishDir)resources.pri&quot; /o" />
 
     <!-- Create MSIX. /o overwrites without an interactive Y/N prompt (which would hang a
          non-interactive build the second time a given RID is published). -->
