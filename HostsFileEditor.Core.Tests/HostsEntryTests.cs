@@ -135,6 +135,39 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void Parse_LeadingWhitespace_DisabledEntry()
+    {
+        // Issue #22: a space before the '#' must not break parsing — the line is still a
+        // disabled host entry, not a plain comment.
+        var entry = new HostsEntry(" # 127.0.0.1  localhost");
+        entry.Valid.ShouldBeTrue();
+        entry.Enabled.ShouldBeFalse();
+        entry.IpAddress.ShouldBe("127.0.0.1");
+        entry.HostNames.ShouldBe("localhost");
+    }
+
+    [TestMethod]
+    public void Parse_LeadingWhitespace_EnabledEntry()
+    {
+        // Leading whitespace before an enabled entry likewise parses normally.
+        var entry = new HostsEntry("   127.0.0.1 localhost");
+        entry.Valid.ShouldBeTrue();
+        entry.Enabled.ShouldBeTrue();
+        entry.IpAddress.ShouldBe("127.0.0.1");
+        entry.HostNames.ShouldBe("localhost");
+    }
+
+    [TestMethod]
+    public void Parse_LeadingTab_DisabledEntry()
+    {
+        var entry = new HostsEntry("\t# 10.0.0.1 example.com");
+        entry.Valid.ShouldBeTrue();
+        entry.Enabled.ShouldBeFalse();
+        entry.IpAddress.ShouldBe("10.0.0.1");
+        entry.HostNames.ShouldBe("example.com");
+    }
+
+    [TestMethod]
     public void Parse_DisabledWithAfterComment()
     {
         var entry = new HostsEntry("# 127.0.0.1 localhost # note");

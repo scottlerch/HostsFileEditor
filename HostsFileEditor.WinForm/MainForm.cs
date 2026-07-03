@@ -265,6 +265,23 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnDeleteClick(object sender, EventArgs e)
     {
+        // HACK: forward Delete to the in-cell text editor when editing a cell's text with no
+        // full row selected, so it removes the character in front of the cursor instead of
+        // wiping the cell (issue #36). Mirrors the Ctrl+C/X/V forwarding in OnCopy/Cut/PasteClick;
+        // both menuDelete and menuContextDelete carry the Del shortcut, so clear both to avoid
+        // re-triggering this handler while the synthetic keystroke is dispatched.
+        if (dataGridViewHostsEntries.IsCurrentCellInEditMode
+            && dataGridViewHostsEntries.SelectedRows.Count == 0)
+        {
+            var keys = menuDelete.ShortcutKeys;
+            menuDelete.ShortcutKeys = Keys.None;
+            menuContextDelete.ShortcutKeys = Keys.None;
+            SendKeys.SendWait("{DEL}");
+            menuDelete.ShortcutKeys = keys;
+            menuContextDelete.ShortcutKeys = keys;
+            return;
+        }
+
         if (dataGridViewHostsEntries.SelectedRows.Count > 0)
         {
             HostsFile.Instance.Entries.Remove(
