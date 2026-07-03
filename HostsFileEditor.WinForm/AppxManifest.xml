@@ -27,7 +27,7 @@
                  Executable="HostsFileEditor.exe"
                  EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Hosts File Editor"
+        DisplayName="Hosts File Editor (classic)"
         Description="Edit your hosts file with ease"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
