@@ -30,6 +30,23 @@ $ErrorActionPreference = "Stop"
 $repoRoot = $PSScriptRoot
 $enableSigning = if ($Sign) { "true" } else { "false" }
 
+# When signing, auto-resolve the Azure Trusted Signing dlib from the NuGet global-packages
+# cache (Microsoft.Trusted.Signing.Client) unless the caller supplied one. The metadata (/dmdf)
+# and timestamp default in Directory.Build.targets. See docs/signing.md.
+if ($Sign -and -not ($ExtraArgs -join ' ' -match 'SigningDlib')) {
+    $nugetRoot = (dotnet nuget locals global-packages --list) -replace '.*global-packages:\s*', ''
+    $dlib = Get-ChildItem -Path (Join-Path $nugetRoot 'microsoft.trusted.signing.client') `
+        -Recurse -Filter 'Azure.CodeSigning.Dlib.dll' -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending | Select-Object -First 1
+    if ($dlib) {
+        Write-Host "Using Trusted Signing dlib: $($dlib.FullName)" -ForegroundColor DarkGray
+        $ExtraArgs += "-p:SigningDlib=$($dlib.FullName)"
+    }
+    else {
+        Write-Warning "Trusted Signing dlib not found in the NuGet cache. Restore it first (see docs/signing.md), or pass -p:SigningDlib=<path>."
+    }
+}
+
 $targets = @(
     @{ Project = "HostsFileEditor.WinForm\HostsFileEditor.WinForm.csproj"; Flavor = "classic"; Rid = "win-x64";   Platform = $null }
     @{ Project = "HostsFileEditor.WinForm\HostsFileEditor.WinForm.csproj"; Flavor = "classic"; Rid = "win-arm64"; Platform = $null }

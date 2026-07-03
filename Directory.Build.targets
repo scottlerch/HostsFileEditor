@@ -15,6 +15,12 @@
       prompt and SmartScreen. Timestamping is always applied (required for short-lived certs
       such as Trusted Signing). Trusted Signing typically uses http://timestamp.acs.microsoft.com.
     -->
+    <!-- Default the Trusted Signing metadata (/dmdf) to the checked-in file so only the dlib
+         path needs to be supplied per invocation (see docs/signing.md). -->
+    <SigningMetadata Condition="'$(SigningMetadata)'=='' and Exists('$(MSBuildThisFileDirectory)signing\metadata.json')">$(MSBuildThisFileDirectory)signing\metadata.json</SigningMetadata>
+    <!-- Use Microsoft's timestamp server for Trusted Signing (its short-lived certs require it);
+         otherwise fall back to a general public timestamp authority. -->
+    <SigningTimestampUrl Condition="'$(SigningTimestampUrl)'=='' and '$(SigningDlib)' != ''">http://timestamp.acs.microsoft.com</SigningTimestampUrl>
     <SigningTimestampUrl Condition="'$(SigningTimestampUrl)'==''">http://timestamp.digicert.com</SigningTimestampUrl>
     <!--
       MSIX package signing is OFF by default: the Microsoft Store re-signs the package on
