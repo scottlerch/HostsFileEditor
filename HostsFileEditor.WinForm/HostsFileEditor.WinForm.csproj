@@ -4,6 +4,14 @@
     <OutputType>WinExe</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
     <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+    <!-- High-DPI: opt into PerMonitorV2 so the UI stays crisp on 4K/scaled displays and
+         re-scales correctly across monitors with different scaling. Consumed by the
+         source-generated ApplicationConfiguration.Initialize() call in Program.cs.
+         ApplicationVisualStyles/UseCompatibleTextRendering match the previous manual
+         EnableVisualStyles() / SetCompatibleTextRenderingDefault(false) startup calls. -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationVisualStyles>true</ApplicationVisualStyles>
+    <ApplicationUseCompatibleTextRendering>false</ApplicationUseCompatibleTextRendering>
     <StartupObject>HostsFileEditor.Program</StartupObject>
     <ApplicationIcon>HostsFileEditor.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>

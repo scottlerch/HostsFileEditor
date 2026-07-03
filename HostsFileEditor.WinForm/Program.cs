@@ -22,8 +22,9 @@ internal static class Program
         using var program = ProgramSingleInstance.Start();
         if (program.IsOnlyInstance)
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
+            // Applies visual styles, GDI text rendering, and the high-DPI mode
+            // (PerMonitorV2) configured via the Application* MSBuild properties in the csproj.
+            ApplicationConfiguration.Initialize();
             Application.ThreadException += OnApplicationThreadException;
 
             // Run as a standard user (asInvoker) and elevate only the privileged hosts-file
