@@ -21,13 +21,10 @@ save changes to the hosts file, so day-to-day viewing, archiving, and backups ne
 ## Features
  * Cut, copy, paste, duplicate, enable, disable and move one or more entries at a time
  * Filter and sort when there are a large number of host entries
- * Enable and disable the entire hosts file from the application or tray
+ * Quickly enable and disable the entire hosts file
  * Archive and restore various hosts file configurations when switching between environments
  * Automatically ping endpoints to check availability
-
-<img src="images/modern_dark.png" alt="Main screen modern dark" width="673">
-
-*main modern editor (dark)*
+ * Modern variant supports light and dark themes
 
 ![Main screen classic](images/classic.png)
 *main classic editor with optional archive visible on right*
@@ -37,7 +34,7 @@ save changes to the hosts file, so day-to-day viewing, archiving, and backups ne
 
 ### Usage Notes
 
-By default the application closes to the tray. To exit completely you must select Exit from the File menu or tray context menu. Only one instance of the application is allowed at a time. If you try to open it again it will just activate the previously running instance.
+By default the classic edition closes to the tray. To exit completely you must select Exit from the File menu or tray context menu. Only one instance of the application is allowed at a time. If you try to open it again it will just activate the previously running instance.
 
 When selecting rows to move, delete, copy, or cut be sure to select the entire row using the row header cell. If no entire rows are selected, cut, copy, paste, and delete apply individually to the selected cells.
 
@@ -66,7 +63,7 @@ _What's new since v1.2.0:_ a new **modern edition** (WinUI 3) on the Microsoft S
 
 ### Legacy &mdash; v1.2.0
 
-The last **.NET Framework 4.x** release: much smaller because it relies on the .NET Framework already built into Windows rather than bundling a runtime, and proven over years of use. Kept here as the last known-good classic build:
+The last **.NET Framework 4.x** release that runs on Windows 7 and 8: much smaller because it relies on the .NET Framework already built into Windows rather than bundling a runtime, and proven over years of use. Kept here as the last known-good classic build:
 
  * [Download v1.2.0 installer](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditorSetup-1.2.0.msi)
  * [Download v1.2.0 portable](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.2.0/HostsFileEditor-1.2.0.zip)
@@ -140,7 +137,7 @@ You can view binary logs using:
 
 Issues and pull requests are welcome &mdash; see the [open issues](https://github.com/scottlerch/HostsFileEditor/issues) to get started.
 
-The project is mid-migration from **WinForms** to **WinUI 3**. Two UIs currently ship side by side on
+The project has recently migrated from **WinForms** to **WinUI 3**. Two UIs currently ship side by side on
 top of one shared core library (`HostsFileEditor.Core`): the legacy classic (WinForms) UI and the new
 modern (WinUI 3) UI. When changing behavior, prefer putting shared logic in the core so both editions
 benefit; new UI work should target the WinUI project.
