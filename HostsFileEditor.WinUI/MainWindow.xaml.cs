@@ -225,6 +225,26 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnPasteAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         => TryInvokeUnlessTextBox(() => OnPasteClick(this, new RoutedEventArgs()), args);
 
+    // Row-level accelerators matching the classic edition: Del, Ctrl+D, Alt+Up/Down,
+    // Ctrl+Alt+Up/Down. Guarded so they don't hijack text editing in the filter box / cells.
+    private void OnDeleteAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnDeleteClick(this, new RoutedEventArgs()), args);
+
+    private void OnDuplicateAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnDuplicateClick(this, new RoutedEventArgs()), args);
+
+    private void OnMoveUpAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnMoveUpClick(this, new RoutedEventArgs()), args);
+
+    private void OnMoveDownAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnMoveDownClick(this, new RoutedEventArgs()), args);
+
+    private void OnInsertAboveAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnInsertAboveClick(this, new RoutedEventArgs()), args);
+
+    private void OnInsertBelowAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        => TryInvokeUnlessTextBox(() => OnInsertBelowClick(this, new RoutedEventArgs()), args);
+
     private async void OnImportClick(object sender, RoutedEventArgs e)
     {
         try

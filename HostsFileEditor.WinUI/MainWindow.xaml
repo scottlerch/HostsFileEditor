@@ -16,6 +16,13 @@
             <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedoAcceleratorInvoked"/>
             <KeyboardAccelerator Key="S" Modifiers="Control" Invoked="OnSaveAcceleratorInvoked"/>
             <KeyboardAccelerator Key="F5" Invoked="OnRefreshAcceleratorInvoked"/>
+            <!-- Row-level accelerators, matching the classic (WinForms) edition. -->
+            <KeyboardAccelerator Key="Delete" Invoked="OnDeleteAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="D" Modifiers="Control" Invoked="OnDuplicateAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="Up" Modifiers="Menu" Invoked="OnMoveUpAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="Down" Modifiers="Menu" Invoked="OnMoveDownAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="Up" Modifiers="Control,Menu" Invoked="OnInsertAboveAcceleratorInvoked"/>
+            <KeyboardAccelerator Key="Down" Modifiers="Control,Menu" Invoked="OnInsertBelowAcceleratorInvoked"/>
         </Grid.KeyboardAccelerators>
         <Grid x:Name="AppTitleBar" Height="42" Padding="0" VerticalAlignment="Top" Background="Transparent">
             <Grid.ColumnDefinitions>
@@ -260,8 +267,8 @@
                             <MenuFlyoutItem x:Name="CtxCut" Text="Cut" Click="OnCutClick" Icon="Cut" KeyboardAcceleratorTextOverride="Ctrl+X" />
                             <MenuFlyoutItem x:Name="CtxPaste" Text="Paste" Click="OnPasteClick" Icon="Paste" KeyboardAcceleratorTextOverride="Ctrl+V" />
                             <MenuFlyoutSeparator />
-                            <MenuFlyoutItem x:Name="CtxAddAbove" Text="Add Above" Click="OnInsertAboveClick"/>
-                            <MenuFlyoutItem x:Name="CtxAddBelow" Text="Add Below" Click="OnInsertBelowClick"/>
+                            <MenuFlyoutItem x:Name="CtxAddAbove" Text="Add Above" Click="OnInsertAboveClick" KeyboardAcceleratorTextOverride="Ctrl+Alt+Up" />
+                            <MenuFlyoutItem x:Name="CtxAddBelow" Text="Add Below" Click="OnInsertBelowClick" KeyboardAcceleratorTextOverride="Ctrl+Alt+Down" />
                             <MenuFlyoutSeparator />
                             <MenuFlyoutItem x:Name="CtxUndo" Text="Undo" Click="OnUndoClick" Icon="Undo" KeyboardAcceleratorTextOverride="Ctrl+Z" />
                             <MenuFlyoutItem x:Name="CtxRedo" Text="Redo" Click="OnRedoClick" Icon="Redo" KeyboardAcceleratorTextOverride="Ctrl+Y" />
