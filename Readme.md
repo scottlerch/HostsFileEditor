@@ -52,14 +52,16 @@ Installs and updates automatically, with no separate download:
  * [Hosts File Editor (modern)](https://apps.microsoft.com/detail/9NBQWCDXGF9R) &mdash; the new WinUI edition
  * [Hosts File Editor (classic)](https://apps.microsoft.com/detail/9NF73PSPK332) &mdash; the classic WinForms edition
 
-### Portable &mdash; v1.3.1
+### Portable &mdash; v1.3.2
 
 The **classic edition** rebuilt on .NET 10: fully self-contained (no runtime to install), runs as a standard user, and elevates on demand (a single UAC prompt) only when you save changes to the hosts file. Binaries are signed. Download directly from [GitHub Releases](https://github.com/scottlerch/HostsFileEditor/releases):
 
- * [Download v1.3.1 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.1/HostsFileEditor-1.3.1-x64.zip)
- * [Download v1.3.1 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.1/HostsFileEditor-1.3.1-arm64.zip)
+ * [Download v1.3.2 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.2/HostsFileEditor-1.3.2-x64.zip)
+ * [Download v1.3.2 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.3.2/HostsFileEditor-1.3.2-arm64.zip)
 
-_What's new since v1.2.0:_ a new **modern edition** (WinUI 3) on the Microsoft Store, native **ARM64** builds, a move to **.NET 10** with self-contained deployment, **on-demand elevation** (the app no longer runs entirely as administrator), per-user data under `%LocalAppData%\HostsFileEditor`, Authenticode-signed binaries, and many correctness fixes to undo/redo, move, cut/copy/paste, import/export, and filtering. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.3.1).
+_What's new in v1.3.2:_ high-DPI polish and fixes &mdash; the classic edition is now **PerMonitorV2 DPI-aware** (crisp on 4K / scaled displays) with sharper toolbar icons; the taskbar icon renders **unplated** and the elevation prompt shows the app icon (both editions); the **File menu** sits above the toolbar again (classic); the modern edition gained the missing **row keyboard shortcuts** (Del, Ctrl+D, Alt+Arrow move, Ctrl+Alt+Arrow insert); and both editions now **warn about unsaved changes on exit**. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.3.2).
+
+_What's new since v1.2.0:_ a new **modern edition** (WinUI 3) on the Microsoft Store, native **ARM64** builds, a move to **.NET 10** with self-contained deployment, **on-demand elevation** (the app no longer runs entirely as administrator), per-user data under `%LocalAppData%\HostsFileEditor`, Authenticode-signed binaries, and many correctness fixes to undo/redo, move, cut/copy/paste, import/export, and filtering.
 
 ### Legacy &mdash; v1.2.0
 
