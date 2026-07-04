@@ -22,13 +22,51 @@ public class HostsFile : INotifyPropertyChanged
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "HostsFileEditor");
 
-    public static readonly string DefaultHostFilePath =
-        Path.Combine(DefaultHostFileDirectory, @"hosts");
+    // Dev/test override: when the HFE_HOSTS_PATH environment variable points at an existing file,
+    // the app loads (and saves/enables/disables) THAT file instead of the real system hosts file.
+    // This lets load performance be measured against a large test hosts file without touching — or
+    // wedging the DNS Client on — the real machine hosts file. Gated entirely on the env var and
+    // the file existing, so a normal run (no such variable) is completely unaffected.
+    private static readonly string? HostsPathOverride = ResolveHostsPathOverride();
+
+    private static string? ResolveHostsPathOverride()
+    {
+        // 1. Environment variable — easy for the portable exe launched from a shell.
+        var env = Environment.GetEnvironmentVariable("HFE_HOSTS_PATH");
+        if (!string.IsNullOrEmpty(env) && File.Exists(env))
+        {
+            return Path.GetFullPath(env);
+        }
+
+        // 2. A marker file whose first line is the hosts path — for the packaged/MSIX app, which
+        //    doesn't reliably inherit a freshly set environment variable. Absent = normal behavior.
+        try
+        {
+            var marker = Path.Combine(AppDataDirectory, "dev-hosts-path.txt");
+            if (File.Exists(marker))
+            {
+                var path = File.ReadLines(marker).FirstOrDefault()?.Trim();
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                {
+                    return Path.GetFullPath(path);
+                }
+            }
+        }
+        catch
+        {
+            // Test hook only — never let it interfere with normal startup.
+        }
+
+        return null;
+    }
+
+    public static string DefaultHostFilePath =>
+        HostsPathOverride ?? Path.Combine(DefaultHostFileDirectory, @"hosts");
 
     public static readonly string DefaultBackupHostFilePath =
         Path.Combine(AppDataDirectory, "hosts.bak");
 
-    public static readonly string DefaultDisabledHostFilePath =
+    public static string DefaultDisabledHostFilePath =>
         DefaultHostFilePath + ".disabled";
 
     // Internal test hook: override backup file path so unit tests do not need elevated permissions
