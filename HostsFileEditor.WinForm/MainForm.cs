@@ -51,6 +51,17 @@ internal sealed partial class MainForm : Form
     {
         InitializeComponent();
 
+        // The ToolStripContainer's top panel doesn't reliably order the two strips from the
+        // designer (Dock=None + Location isn't honored for row order, so the menu ends up below
+        // the toolbar). Pin the rows explicitly: menu on top (row 0), toolbar beneath (row 1).
+        var topPanel = toolStripContainer.TopToolStripPanel;
+        topPanel.SuspendLayout();
+        topPanel.Controls.Remove(menuStrip);
+        topPanel.Controls.Remove(toolStrip);
+        topPanel.Join(menuStrip, 0);
+        topPanel.Join(toolStrip, 1);
+        topPanel.ResumeLayout(true);
+
         // Must be a directory: setting InitialDirectory to the hosts *file* path made Windows
         // ignore it, so Save As opened in the default location instead of the etc directory.
         saveFileDialog.InitialDirectory = HostsFile.DefaultHostFileDirectory;

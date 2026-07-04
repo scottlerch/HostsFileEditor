@@ -1,6 +1,7 @@
 using HostsFileEditor.Services;
 using HostsFileEditor.Win32;
 using Microsoft.UI;
+using Microsoft.UI.Input;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
@@ -10,6 +11,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Windows.System;
 using WinRT;
 using WinRT.Interop;
 
@@ -285,17 +287,39 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnDuplicateAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         => TryInvokeUnlessTextBox(() => OnDuplicateClick(this, new RoutedEventArgs()), args);
 
-    private void OnMoveUpAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-        => TryInvokeUnlessTextBox(() => OnMoveUpClick(this, new RoutedEventArgs()), args);
+    // Alt+Up/Down (move) and Ctrl+Alt+Up/Down (insert) can't be plain KeyboardAccelerators: the
+    // ListView consumes the arrow key for navigation before the accelerator fires (so move never
+    // worked, and insert only worked at the first/last row — the one spot the ListView can't
+    // navigate). Handle them in the tunneling PreviewKeyDown, which runs before the ListView's own
+    // key handling, and mark them handled so the selection doesn't also move.
+    private void OnEntriesPreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key is not (VirtualKey.Up or VirtualKey.Down) || IsTextBoxFocused())
+        {
+            return;
+        }
 
-    private void OnMoveDownAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-        => TryInvokeUnlessTextBox(() => OnMoveDownClick(this, new RoutedEventArgs()), args);
+        var alt = IsKeyDown(VirtualKey.Menu);
+        if (!alt)
+        {
+            return;
+        }
 
-    private void OnInsertAboveAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-        => TryInvokeUnlessTextBox(() => OnInsertAboveClick(this, new RoutedEventArgs()), args);
+        var ctrl = IsKeyDown(VirtualKey.Control);
+        if (e.Key == VirtualKey.Up)
+        {
+            if (ctrl) { OnInsertAboveClick(this, new RoutedEventArgs()); } else { OnMoveUpClick(this, new RoutedEventArgs()); }
+        }
+        else
+        {
+            if (ctrl) { OnInsertBelowClick(this, new RoutedEventArgs()); } else { OnMoveDownClick(this, new RoutedEventArgs()); }
+        }
 
-    private void OnInsertBelowAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-        => TryInvokeUnlessTextBox(() => OnInsertBelowClick(this, new RoutedEventArgs()), args);
+        e.Handled = true;
+    }
+
+    private static bool IsKeyDown(VirtualKey key) =>
+        InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
 
     private async void OnImportClick(object sender, RoutedEventArgs e)
     {
