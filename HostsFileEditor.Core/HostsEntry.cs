@@ -20,7 +20,21 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
     private static readonly Regex _matchValidHostEntry = ValidHostsRegex();
 
-    private readonly Dictionary<string, string> _errors = [];
+    // Lazily allocated: a valid entry (the overwhelming majority in a real hosts file) has no
+    // errors, so it never allocates this dictionary. Mutated only via SetError.
+    private Dictionary<string, string>? _errors;
+
+    private void SetError(string key, string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+        {
+            _errors?.Remove(key);
+        }
+        else
+        {
+            (_errors ??= [])[key] = message;
+        }
+    }
 
     private string _comment;
     private bool _enabled;
@@ -74,7 +88,12 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
                 _ipAddress = match.Groups[Address].Value;
                 _comment = match.Groups[AfterComment].Value;
 
-                _hostnames = TwoSpaceMatchRegex().Replace(HostNames, " ");
+                // Collapse runs of 2+ spaces between hostnames, but only pay for the regex when
+                // there actually is a double space (the common case has none).
+                if (_hostnames.Contains("  ", StringComparison.Ordinal))
+                {
+                    _hostnames = TwoSpaceMatchRegex().Replace(_hostnames, " ");
+                }
 
                 ValidateIpAddress();
                 ValidateHostnames();
@@ -84,7 +103,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
                     _enabled = false;
                     _hostnames = string.Empty;
                     _ipAddress = string.Empty;
-                    _errors.Clear();
+                    _errors?.Clear();
                     _comment = _unparsedText.TrimStart(' ', '\t', '#');
                     _unparsedTextInvalid = false;
                 }
@@ -118,14 +137,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         _valid = entry._valid;
         _hostnamesValid = entry._hostnamesValid;
         _ipAddressValid = entry._ipAddressValid;
-        _errors = new Dictionary<string, string>(entry._errors);
+        _errors = entry._errors is null ? null : new Dictionary<string, string>(entry._errors);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public static bool AutoPingIPAddress { get; set; }
 
-    public string Error => string.Join(Environment.NewLine, [.. _errors.Values]);
+    public string Error => _errors is null ? string.Empty : string.Join(Environment.NewLine, _errors.Values);
 
     public string Comment
     {
@@ -247,7 +266,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         set => Update(ref _valid, value, nameof(Valid));
     }
 
-    public string this[string propertyName] => _errors.TryGetValue(propertyName, out var value) ? value : string.Empty;
+    public string this[string propertyName] => _errors is not null && _errors.TryGetValue(propertyName, out var value) ? value : string.Empty;
 
     public override string ToString() => $"{IpAddress} {HostNames} {Comment}";
 
@@ -289,7 +308,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
         void ReportFailure()
         {
-            _errors[nameof(IpAddress)] = string.Format(CultureInfo.CurrentCulture, Resources.PingFailed, status);
+            SetError(nameof(IpAddress), string.Format(CultureInfo.CurrentCulture, Resources.PingFailed, status));
             OnPropertyChanged(nameof(IpAddress));
         }
 
@@ -338,14 +357,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     {
         if (string.IsNullOrWhiteSpace(_hostnames) && !_enabled)
         {
-            _errors[nameof(HostNames)] = string.Empty;
+            SetError(nameof(HostNames), null);
             _hostnamesValid = true;
         }
         else
         {
             _hostnamesValid = HostNameRegex().IsMatch(_hostnames);
 
-            _errors[nameof(HostNames)] = !_hostnamesValid ? Resources.InvalidHostnames : string.Empty;
+            SetError(nameof(HostNames), !_hostnamesValid ? Resources.InvalidHostnames : null);
         }
 
         _valid = _ipAddressValid && _hostnamesValid;
@@ -359,7 +378,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
             // ValidateHostnames (which sets _hostnamesValid = true here): set the flag the
             // final _valid recompute reads, instead of writing _valid directly — that write
             // was dead code, immediately overwritten using the stale _ipAddressValid below.
-            _errors[nameof(IpAddress)] = string.Empty;
+            SetError(nameof(IpAddress), null);
             _ipAddressValid = true;
         }
         else
@@ -368,11 +387,11 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
             if (!_ipAddressValid)
             {
-                _errors[nameof(IpAddress)] = Resources.InvalidIPAddress;
+                SetError(nameof(IpAddress), Resources.InvalidIPAddress);
             }
             else
             {
-                _errors[nameof(IpAddress)] = string.Empty;
+                SetError(nameof(IpAddress), null);
 
                 if (AutoPingIPAddress)
                 {
@@ -400,6 +419,8 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     // optional '#' still parses as an entry (issue #22). Without it, \s* consumed the leading
     // space and '#' was captured as the ipaddress, demoting a valid disabled entry (e.g.
     // " # 1.2.3.4 host") to a plain comment.
-    [GeneratedRegex(@"^(\s*(?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$", RegexOptions.Compiled)]
+    // No RegexOptions.Compiled: the source generator already emits the fully compiled matcher, so
+    // Compiled would only add redundant runtime IL compilation at startup.
+    [GeneratedRegex(@"^(\s*(?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$")]
     private static partial Regex ValidHostsRegex();
 }

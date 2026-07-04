@@ -238,20 +238,29 @@ public class HostsEntryList : BindingList<HostsEntry>
 
     protected override void InsertItem(int index, HostsEntry item)
     {
-        UndoManager.Instance.AddActions(
-            undoAction: () => Remove(item),
-            redoAction: () => Insert(index, item));
+        // Skip building the undo closures entirely when capturing is suspended (e.g. the bulk
+        // load in AddLines) — otherwise every one of hundreds of thousands of inserts allocates
+        // two throwaway delegates and fires HistoryChanged for nothing.
+        if (!UndoManager.Instance.IsCapturingSuspended)
+        {
+            UndoManager.Instance.AddActions(
+                undoAction: () => Remove(item),
+                redoAction: () => Insert(index, item));
+        }
 
         base.InsertItem(index, item);
     }
 
     protected override void RemoveItem(int index)
     {
-        var item = this[index];
+        if (!UndoManager.Instance.IsCapturingSuspended)
+        {
+            var item = this[index];
 
-        UndoManager.Instance.AddActions(
-            undoAction: () => Insert(index, item),
-            redoAction: () => Remove(item));
+            UndoManager.Instance.AddActions(
+                undoAction: () => Insert(index, item),
+                redoAction: () => Remove(item));
+        }
 
         base.RemoveItem(index);
     }
