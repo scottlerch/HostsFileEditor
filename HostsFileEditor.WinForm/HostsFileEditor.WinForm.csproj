@@ -27,6 +27,10 @@
     <!-- Native AOT isn't working yet with WinForms, specifically Binding is explicitly not supported throwing NotSupportedException -->
     <!--<PublishAot>true</PublishAot>-->
     <PublishSingleFile>true</PublishSingleFile>
+    <!-- Compress the bundled runtime/assemblies inside the single-file exe. Cuts the on-disk
+         exe size substantially at a small one-time startup cost (content is decompressed on
+         first run). -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Self-contained for Store compatibility: bundle the .NET runtime so the MSIX needs no
          external runtime framework package (there is no reliable .NET runtime MSIX dependency). -->

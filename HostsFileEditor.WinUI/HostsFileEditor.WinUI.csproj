@@ -101,4 +101,23 @@
     </Content>
     <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
+
+  <!-- Strip ~43 MB of Windows App SDK components this app never uses. The self-contained WinUI
+       runtime bundles the Windows ML / Copilot stack (onnxruntime + DirectML) and the Widgets
+       APIs; a hosts-file editor references none of it. There is no supported property to exclude
+       them (WindowsAppSDK issue #5969), so delete them from the publish output after Publish and
+       before the package is built. These are lazy-loaded only when the corresponding AI/Widgets
+       APIs are called, which never happens here — verified the app still launches without them.
+       WinUIEdit.dll is intentionally NOT removed: it backs text controls the app does use. -->
+  <Target Name="_StripUnusedWinAppSdkLibs" AfterTargets="Publish" BeforeTargets="SignAndPackage">
+    <ItemGroup>
+      <_UnusedWinAppSdkLib Include="$(PublishDir)onnxruntime.dll" />
+      <_UnusedWinAppSdkLib Include="$(PublishDir)DirectML.dll" />
+      <_UnusedWinAppSdkLib Include="$(PublishDir)PerceptiveStreaming.dll" />
+      <_UnusedWinAppSdkLib Include="$(PublishDir)Microsoft.Windows.Widgets.dll" />
+      <_UnusedWinAppSdkLib Include="$(PublishDir)Microsoft.Windows.Widgets.winmd" />
+    </ItemGroup>
+    <Delete Files="@(_UnusedWinAppSdkLib)" />
+    <Message Importance="high" Text="Stripped unused Windows App SDK libraries (onnxruntime, DirectML, PerceptiveStreaming, Widgets) from publish output." />
+  </Target>
 </Project>
