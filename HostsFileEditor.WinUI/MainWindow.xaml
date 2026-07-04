@@ -16,13 +16,14 @@
             <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedoAcceleratorInvoked"/>
             <KeyboardAccelerator Key="S" Modifiers="Control" Invoked="OnSaveAcceleratorInvoked"/>
             <KeyboardAccelerator Key="F5" Invoked="OnRefreshAcceleratorInvoked"/>
-            <!-- Row-level accelerators, matching the classic (WinForms) edition. -->
+            <!-- Row-level accelerators, matching the classic (WinForms) edition. Delete and Ctrl+D
+                 are not arrow keys, so they don't collide with ListView navigation and work as
+                 accelerators. The Alt+Arrow (move) and Ctrl+Alt+Arrow (insert) combos DO collide —
+                 the ListView consumes the arrow key for navigation before the accelerator can fire
+                 (except at the first/last row, where it can't navigate) — so those are handled in
+                 EntriesList's tunneling PreviewKeyDown instead. -->
             <KeyboardAccelerator Key="Delete" Invoked="OnDeleteAcceleratorInvoked"/>
             <KeyboardAccelerator Key="D" Modifiers="Control" Invoked="OnDuplicateAcceleratorInvoked"/>
-            <KeyboardAccelerator Key="Up" Modifiers="Menu" Invoked="OnMoveUpAcceleratorInvoked"/>
-            <KeyboardAccelerator Key="Down" Modifiers="Menu" Invoked="OnMoveDownAcceleratorInvoked"/>
-            <KeyboardAccelerator Key="Up" Modifiers="Control,Menu" Invoked="OnInsertAboveAcceleratorInvoked"/>
-            <KeyboardAccelerator Key="Down" Modifiers="Control,Menu" Invoked="OnInsertBelowAcceleratorInvoked"/>
         </Grid.KeyboardAccelerators>
         <Grid x:Name="AppTitleBar" Height="42" Padding="0" VerticalAlignment="Top" Background="Transparent">
             <Grid.ColumnDefinitions>
@@ -249,6 +250,7 @@
                 <ListView x:Name="EntriesList"
                           Grid.Row="1"
                           Margin="0,8,0,0"
+                          PreviewKeyDown="OnEntriesPreviewKeyDown"
                           SelectionMode="Extended"
                           HorizontalContentAlignment="Stretch"
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
