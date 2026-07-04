@@ -309,6 +309,12 @@
                 <TextBlock Grid.Row="1" Text="No entries match the current filters." FontStyle="Italic" Foreground="Gray"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            IsHitTestVisible="False" Visibility="{x:Bind EntriesFilteredVisibility, Mode=OneWay}"/>
+                <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="12"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{x:Bind LoadingVisibility, Mode=OneWay}">
+                    <ProgressRing IsActive="True" Width="40" Height="40"/>
+                    <TextBlock Text="Loading hosts file…" FontStyle="Italic" Foreground="Gray" HorizontalAlignment="Center"/>
+                </StackPanel>
             </Grid>
             <Grid x:Name="ArchiveHost" Visibility="{x:Bind ArchiveViewVisibility, Mode=OneWay}" Margin="8" RowDefinitions="Auto,*">
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">

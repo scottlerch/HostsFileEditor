@@ -461,7 +461,7 @@ internal sealed partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
-    private void OnFomLoad(object sender, EventArgs e)
+    private async void OnFomLoad(object sender, EventArgs e)
     {
         LoadSettings();
 
@@ -472,6 +472,27 @@ internal sealed partial class MainForm : Form
 
         bindingSourceArchive.DataSource = _hostsArchiveView;
         _hostsArchiveView.Sort = nameof(HostsArchive.FileName);
+
+        // Parse the hosts file off the UI thread (it can be very large) behind a loading indicator,
+        // so the window paints and stays responsive instead of freezing on a huge file.
+        UseWaitCursor = true;
+        var loadingLabel = new Label
+        {
+            Text = "Loading hosts file…",
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleCenter,
+            BackColor = SystemColors.Window,
+            Font = new Font(Font.FontFamily, 12f, FontStyle.Italic),
+            ForeColor = SystemColors.GrayText,
+        };
+        dataGridViewHostsEntries.Parent!.Controls.Add(loadingLabel);
+        loadingLabel.BringToFront();
+
+        await HostsFile.PreloadAsync();
+
+        loadingLabel.Parent!.Controls.Remove(loadingLabel);
+        loadingLabel.Dispose();
+        UseWaitCursor = false;
 
         bindingSourceHostFile.DataSource = HostsFile.Instance;
 

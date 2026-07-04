@@ -92,6 +92,14 @@ public class HostsFile : INotifyPropertyChanged
 
     public static HostsFile Instance => _instance.Value;
 
+    /// <summary>
+    /// Forces the lazy initial load and parse of the hosts file onto a background thread. For a
+    /// very large hosts file (hundreds of thousands of entries) this parse takes long enough to
+    /// freeze the UI if done inline, so the apps await this (showing a loading indicator) before
+    /// first touching <see cref="Instance"/> on the UI thread. Subsequent access is instant.
+    /// </summary>
+    public static Task PreloadAsync() => Task.Run(() => _ = _instance.Value.Entries.Count);
+
     public static bool IsEnabled => File.Exists(DefaultHostFilePath);
 
     public static bool RemoveDefaultText { get; set; }

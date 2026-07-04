@@ -19,7 +19,16 @@ namespace HostsFileEditor;
 
 public sealed partial class MainWindow : Window, INotifyPropertyChanged
 {
-    internal ObservableCollection<HostsEntry> Entries { get; } = [];
+    // Replaceable so the initial load can bulk-assign the whole (filtered) set in one rebind
+    // instead of adding hundreds of thousands of items one at a time.
+    internal ObservableCollection<HostsEntry> Entries { get; private set; } = [];
+
+    // False until the (potentially slow) initial hosts-file parse has completed on a background
+    // thread. Gates every property that touches HostsFile.Instance.Entries so the eager x:Bind
+    // evaluation during InitializeComponent doesn't trigger that parse on the UI thread.
+    private bool _isLoaded;
+
+    public Visibility LoadingVisibility => _isLoaded ? Visibility.Collapsed : Visibility.Visible;
 
     internal ObservableCollection<HostsArchive> Archives { get; } = [];
 
@@ -45,9 +54,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public Visibility ArchiveViewVisibility => IsArchiveVisible ? Visibility.Visible : Visibility.Collapsed;
 
-    public Visibility EntriesEmptyVisibility => HostsFile.Instance.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility EntriesEmptyVisibility => _isLoaded && HostsFile.Instance.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    public Visibility EntriesFilteredVisibility => HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility EntriesFilteredVisibility => _isLoaded && HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public bool IsFilterCommentsHidden { get; private set; }
 
@@ -106,7 +115,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         TrySetAppWindowTitleBar();
         TryEnableMicaBackdrop();
-        RefreshEntries();
         RefreshArchives();
 
         OnPropertyChanged(nameof(IsBackEnabled));
@@ -127,15 +135,65 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // Subscribe to undo history changes so we can update Undo/Redo visibility
         Utilities.UndoManager.Instance.HistoryChanged += OnUndoHistoryChanged;
 
-        // Subscribe to core entries changes so undo/redo of add/remove shows in UI
-        HostsFile.Instance.Entries.ListChanged += OnCoreEntriesListChanged;
-
         // Unsubscribe when window closes to avoid leaks
         Closed += (s, e) =>
         {
             Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
-            HostsFile.Instance.Entries.ListChanged -= OnCoreEntriesListChanged;
+            if (_isLoaded)
+            {
+                HostsFile.Instance.Entries.ListChanged -= OnCoreEntriesListChanged;
+            }
         };
+
+        // Parse the hosts file on a background thread (it can be very large) and then bulk-populate
+        // the list, so the window stays responsive with a loading indicator instead of freezing.
+        _ = LoadEntriesAsync();
+    }
+
+    private async Task LoadEntriesAsync()
+    {
+        await HostsFile.PreloadAsync();
+
+        // Back on the UI thread with the parse already done, so touching Instance is now cheap.
+        HostsFile.Instance.Entries.ListChanged += OnCoreEntriesListChanged;
+        _isLoaded = true;
+
+        BulkPopulateEntries();
+
+        OnPropertyChanged(nameof(LoadingVisibility));
+        OnPropertyChanged(nameof(EntriesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesFilteredVisibility));
+        _selectionService.UpdateSelectionDependentButtons();
+    }
+
+    // One-shot bulk load of the (filtered) entries: build the list off the persistent collection
+    // and rebind in a single operation, instead of hundreds of thousands of incremental adds.
+    private void BulkPopulateEntries()
+    {
+        var filtered = HostsFile.Instance.Entries.Where(EntryPassesCurrentFilter).ToList();
+        Entries = new ObservableCollection<HostsEntry>(filtered);
+        OnPropertyChanged(nameof(Entries));
+    }
+
+    private bool EntryPassesCurrentFilter(HostsEntry e)
+    {
+        if (IsFilterCommentsHidden && e.HasCommentOnly)
+        {
+            return false;
+        }
+
+        if (IsFilterDisabledHidden && !e.Enabled && !e.HasCommentOnly)
+        {
+            return false;
+        }
+
+        var text = string.Empty;
+        if (Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb && ftb.Text is string s)
+        {
+            text = s.Trim();
+        }
+
+        return string.IsNullOrEmpty(text) || e.ToString().Contains(text, StringComparison.OrdinalIgnoreCase);
     }
 
     private void OnCoreEntriesListChanged(object? sender, ListChangedEventArgs e) =>
