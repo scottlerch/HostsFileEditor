@@ -223,8 +223,10 @@ partial class MainForm
         // 
         // toolStripContainer.TopToolStripPanel
         // 
-        this.toolStripContainer.TopToolStripPanel.Controls.Add(this.menuStrip);
+        // Add the toolbar first, then the menu: in a TopToolStripPanel the last-added strip
+        // stacks on top, so the menu must be added last to sit above the toolbar.
         this.toolStripContainer.TopToolStripPanel.Controls.Add(this.toolStrip);
+        this.toolStripContainer.TopToolStripPanel.Controls.Add(this.menuStrip);
         // 
         // statusStrip
         // 
