@@ -162,7 +162,59 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             appWindow.Changed += (_, __) => UpdateTitleBarPadding(appWindow);
             SizeChanged += (_, __) => UpdateTitleBarPadding(appWindow);
             UpdateTitleBarPadding(appWindow);
+
+            // Warn about unsaved changes before the window closes (true exit; WinUI has no tray).
+            appWindow.Closing += OnAppWindowClosing;
         }
+    }
+
+    // Set once the user has chosen to discard/save so the re-close isn't intercepted again.
+    private bool _forceClose;
+
+    private async void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    {
+        if (_forceClose || !HostsFile.Instance.IsModified)
+        {
+            return;
+        }
+
+        // Cancel this close; re-close only after the user decides (the dialog is async).
+        args.Cancel = true;
+
+        var choice = await _dialogService.ShowThreeWayAsync(
+            Content.XamlRoot,
+            "Unsaved changes",
+            "You have unsaved changes to the hosts file. Save them before exiting?",
+            primaryText: "Save",
+            secondaryText: "Don't save",
+            closeText: "Cancel");
+
+        if (choice == ContentDialogResult.None)
+        {
+            // Cancel: keep the window open.
+            return;
+        }
+
+        if (choice == ContentDialogResult.Primary)
+        {
+            try
+            {
+                HostsFile.Instance.Save();
+            }
+            catch (Elevation.ElevationCancelledException)
+            {
+                // Declined the elevation prompt; keep the window open so changes aren't lost.
+                return;
+            }
+            catch (Exception ex)
+            {
+                await ShowErrorDialogAsync("Save failed", ex.Message);
+                return;
+            }
+        }
+
+        _forceClose = true;
+        Close();
     }
 
     private void UpdateTitleBarPadding(AppWindow appWindow)

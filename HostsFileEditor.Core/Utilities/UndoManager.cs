@@ -34,6 +34,12 @@ public class UndoManager
     public bool CanUndo => _undoActionsPosition != _undoActions.First;
     public bool CanRedo => _redoActionsPosition != _redoActions.Last;
 
+    // Opaque token identifying the current position in the undo history. It reference-compares
+    // equal only when the history is back at the same position, so callers can detect whether
+    // anything has changed since a captured token (e.g. unsaved edits since the last save). It
+    // changes as actions are added/undone/redone and whenever the history is cleared.
+    public object CurrentStateToken => _undoActionsPosition;
+
     // Event raised when the undo/redo history changes (so UI can update)
     public event EventHandler? HistoryChanged;
 
