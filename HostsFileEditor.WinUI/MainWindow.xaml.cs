@@ -175,6 +175,18 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(Entries));
     }
 
+    // A filter change can swap the entire visible set, so rebuild it with a single bulk rebind
+    // rather than the per-item minimal diff in RefreshEntries — that diff is O(n^2) with hundreds
+    // of thousands of ObservableCollection mutations for a large hosts file, which locks up the UI.
+    // Selection is reset, which is the expected behavior when the filter changes.
+    private void RefreshEntriesFiltered()
+    {
+        BulkPopulateEntries();
+        OnPropertyChanged(nameof(EntriesEmptyVisibility));
+        OnPropertyChanged(nameof(EntriesFilteredVisibility));
+        _selectionService.UpdateSelectionDependentButtons();
+    }
+
     private bool EntryPassesCurrentFilter(HostsEntry e)
     {
         if (IsFilterCommentsHidden && e.HasCommentOnly)
@@ -669,7 +681,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnOpenInTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
 
-    private void OnFilterTextChanged(object sender, TextChangedEventArgs e) => RefreshEntries(true);
+    private void OnFilterTextChanged(object sender, TextChangedEventArgs e) => RefreshEntriesFiltered();
 
     private void OnFilterCommentsClick(object sender, RoutedEventArgs e)
     {
@@ -677,7 +689,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             // IsChecked == true => hide comments
             IsFilterCommentsHidden = t.IsChecked == true;
-            RefreshEntries(true);
+            RefreshEntriesFiltered();
             OnPropertyChanged(nameof(IsFilterCommentsHidden));
             OnPropertyChanged(nameof(ActiveFilterCount));
             OnPropertyChanged(nameof(ActiveFiltersBadgeVisibility));
@@ -690,7 +702,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             // IsChecked == true => hide disabled entries
             IsFilterDisabledHidden = t.IsChecked == true;
-            RefreshEntries(true);
+            RefreshEntriesFiltered();
             OnPropertyChanged(nameof(IsFilterDisabledHidden));
             OnPropertyChanged(nameof(ActiveFilterCount));
             OnPropertyChanged(nameof(ActiveFiltersBadgeVisibility));
@@ -704,7 +716,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         IsFilterDisabledHidden = false;
         if (changed)
         {
-            RefreshEntries(true);
+            RefreshEntriesFiltered();
             OnPropertyChanged(nameof(IsFilterCommentsHidden));
             OnPropertyChanged(nameof(IsFilterDisabledHidden));
             OnPropertyChanged(nameof(ActiveFilterCount));
