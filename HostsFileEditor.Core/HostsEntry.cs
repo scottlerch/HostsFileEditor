@@ -18,8 +18,6 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     private const string Hostname = "hostname";
     private const string LineComment = "comment";
 
-    private static readonly Regex _matchValidHostEntry = ValidHostsRegex();
-
     // Lazily allocated: a valid entry (the overwhelming majority in a real hosts file) has no
     // errors, so it never allocates this dictionary. Mutated only via SetError.
     private Dictionary<string, string>? _errors;
@@ -59,34 +57,49 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     public HostsEntry(string unparsedTextLine) : this()
     {
         _unparsedText = unparsedTextLine;
+        ApplyStructuralParse(ParseStructuralSpan(unparsedTextLine));
+    }
 
-        var match = _matchValidHostEntry.Match(_unparsedText);
+    // The line's structural shape, mirroring the three regex alternatives (plus "no match"). The
+    // regex and span engines both produce this; ApplyStructuralParse then runs identical
+    // validation/demotion so only the structural extraction can differ (guarded by a differential
+    // test that asserts the two engines agree on a large corpus).
+    private enum LineKind { Entry, Comment, Blank, NoMatch }
 
-        _valid = match.Success;
+    private readonly record struct StructuralParse(LineKind Kind, bool Disabled, string Ip, string Hostname, string Comment);
 
-        if (match.Success)
+    private void ApplyStructuralParse(in StructuralParse p)
+    {
+        if (p.Kind == LineKind.NoMatch)
         {
-            if (match.Groups[Blank].Success)
-            {
+            // No pattern matched (e.g. an IP with a trailing port/path). Preserve the raw text as
+            // a comment so it round-trips intact. _valid/_enabled already false, fields empty.
+            _comment = _unparsedText.TrimStart(' ', '\t', '#');
+            return;
+        }
+
+        switch (p.Kind)
+        {
+            case LineKind.Blank:
                 _valid = false;
                 _hostnamesValid = false;
                 _ipAddressValid = false;
                 _enabled = false;
-            }
-            else if (match.Groups[LineComment].Success)
-            {
-                _comment = match.Groups[LineComment].Value;
+                break;
+
+            case LineKind.Comment:
+                _comment = p.Comment;
                 _enabled = false;
                 _valid = false;
                 _hostnamesValid = false;
                 _ipAddressValid = false;
-            }
-            else
-            {
-                _enabled = !match.Groups[Disabled].Success;
-                _hostnames = match.Groups[Hostname].Value;
-                _ipAddress = match.Groups[Address].Value;
-                _comment = match.Groups[AfterComment].Value;
+                break;
+
+            default: // Entry
+                _enabled = !p.Disabled;
+                _hostnames = p.Hostname;
+                _ipAddress = p.Ip;
+                _comment = p.Comment;
 
                 // Collapse runs of 2+ spaces between hostnames, but only pay for the regex when
                 // there actually is a double space (the common case has none).
@@ -107,21 +120,164 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
                     _comment = _unparsedText.TrimStart(' ', '\t', '#');
                     _unparsedTextInvalid = false;
                 }
+
+                break;
+        }
+
+        if (_comment.Length > 0 && _comment[0] == ' ')
+        {
+            _comment = _comment[1..];
+        }
+    }
+
+    // Reference engine (the original regex). Kept as the oracle the differential test compares the
+    // span engine against.
+    private static StructuralParse ParseStructuralRegex(string line)
+    {
+        var match = ValidHostsRegex().Match(line);
+
+        if (!match.Success)
+        {
+            return new StructuralParse(LineKind.NoMatch, false, string.Empty, string.Empty, string.Empty);
+        }
+
+        if (match.Groups[Blank].Success)
+        {
+            return new StructuralParse(LineKind.Blank, false, string.Empty, string.Empty, string.Empty);
+        }
+
+        if (match.Groups[LineComment].Success)
+        {
+            return new StructuralParse(LineKind.Comment, false, string.Empty, string.Empty, match.Groups[LineComment].Value);
+        }
+
+        return new StructuralParse(
+            LineKind.Entry,
+            match.Groups[Disabled].Success,
+            match.Groups[Address].Value,
+            match.Groups[Hostname].Value,
+            match.Groups[AfterComment].Value);
+    }
+
+    // Allocation-light hand parser: no Match/Group objects; only the (unavoidable) field strings
+    // that get stored are materialized. It intentionally does NOT validate hostname characters —
+    // an entry requires a non-empty IP token and a non-empty hostname token; hostname-char
+    // validity is deferred to ValidateHostnames (invalid hostnames demote to a comment, matching
+    // the regex's alt1-fail -> comment behavior). See the differential test.
+    private static StructuralParse ParseStructuralSpan(string line)
+    {
+        var s = line.AsSpan();
+        var n = s.Length;
+
+        var i = 0;
+        while (i < n && char.IsWhiteSpace(s[i]))
+        {
+            i++;
+        }
+
+        if (i == n)
+        {
+            return new StructuralParse(LineKind.Blank, false, string.Empty, string.Empty, string.Empty);
+        }
+
+        // Try to parse an entry. Prefer treating a leading '#'-run as the "disabled" marker (the
+        // regex's disabled group is greedy). If that yields no entry, retry treating the '#' as part
+        // of the IP token — the regex backtracks to this, and it then demotes to a comment.
+        if (s[i] == '#')
+        {
+            var contentStart = i;
+            while (contentStart < n && s[contentStart] == '#') { contentStart++; }
+            while (contentStart < n && char.IsWhiteSpace(s[contentStart])) { contentStart++; }
+
+            if (TryParseEntry(s, contentStart, disabled: true, out var disabledEntry))
+            {
+                return disabledEntry;
+            }
+        }
+
+        if (TryParseEntry(s, i, disabled: false, out var entry))
+        {
+            return entry;
+        }
+
+        // --- Comment: [ws] #+ [one ws] COMMENT ---
+        if (s[i] == '#')
+        {
+            var c = i;
+            while (c < n && s[c] == '#') { c++; }
+            if (c < n && char.IsWhiteSpace(s[c])) { c++; }
+            return new StructuralParse(LineKind.Comment, false, string.Empty, string.Empty, s[c..n].ToString());
+        }
+
+        // Blank handled above; anything else is unmatched.
+        return new StructuralParse(LineKind.NoMatch, false, string.Empty, string.Empty, string.Empty);
+
+        // Parses "IP  ws+  HOSTNAMES [ws]  (#+ AFTERCOMMENT)?" from 'start'. IP is the first
+        // non-whitespace run; the hostname must be structurally valid (else the regex would fall
+        // through to the comment alternative). Allocates only the field strings, and only on success.
+        static bool TryParseEntry(ReadOnlySpan<char> s, int start, bool disabled, out StructuralParse result)
+        {
+            var n = s.Length;
+
+            var ipStart = start;
+            var p = start;
+            while (p < n && !char.IsWhiteSpace(s[p])) { p++; }
+            var ipEnd = p;
+
+            var wsStart = p;
+            while (p < n && char.IsWhiteSpace(s[p])) { p++; }
+
+            if (ipEnd > ipStart && p > wsStart && p < n)
+            {
+                var hostStart = p;
+                var hashIndex = -1;
+                for (var q = p; q < n; q++)
+                {
+                    if (s[q] == '#') { hashIndex = q; break; }
+                }
+
+                var hostEnd = hashIndex >= 0 ? hashIndex : n;
+                while (hostEnd > hostStart && char.IsWhiteSpace(s[hostEnd - 1])) { hostEnd--; }
+
+                if (hostEnd > hostStart && HostNameRegex().IsMatch(s[hostStart..hostEnd]))
+                {
+                    var afterComment = string.Empty;
+                    if (hashIndex >= 0)
+                    {
+                        var c = hashIndex;
+                        while (c < n && s[c] == '#') { c++; }
+                        afterComment = s[c..n].ToString();
+                    }
+
+                    result = new StructuralParse(
+                        LineKind.Entry,
+                        disabled,
+                        s[ipStart..ipEnd].ToString(),
+                        s[hostStart..hostEnd].ToString(),
+                        afterComment);
+                    return true;
+                }
             }
 
-            if (_comment.Length > 0 && _comment[0] == ' ')
-            {
-                _comment = _comment[1..];
-            }
+            result = default;
+            return false;
         }
-        else
-        {
-            // The line matched no pattern (e.g. an IP with a trailing port/path, or other
-            // malformed content). Preserve the raw text as a comment so it round-trips intact
-            // instead of rendering as an empty, uneditable row. _valid/_enabled are already
-            // false and the ip/hostname fields empty.
-            _comment = _unparsedText.TrimStart(' ', '\t', '#');
-        }
+    }
+
+    // Test hooks: build an entry via a specific engine so a differential test can assert the span
+    // engine agrees with the regex oracle.
+    internal static HostsEntry ParseViaRegexForTest(string line)
+    {
+        var e = new HostsEntry { _unparsedText = line };
+        e.ApplyStructuralParse(ParseStructuralRegex(line));
+        return e;
+    }
+
+    internal static HostsEntry ParseViaSpanForTest(string line)
+    {
+        var e = new HostsEntry { _unparsedText = line };
+        e.ApplyStructuralParse(ParseStructuralSpan(line));
+        return e;
     }
 
     public HostsEntry(HostsEntry entry)
