@@ -36,6 +36,10 @@
     <PackagingFlavor>classic</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\classic\</OutputPackagingDir>
     <CreatePublishZip>true</CreatePublishZip>
+    <!-- Generate a resources.pri during packaging so the shell resolves the qualified logo
+         assets (scale-*, targetsize-*, altform-unplated) and the taskbar/Alt+Tab render the
+         icon unplated instead of on the accent-color plate. See Directory.Build.targets. -->
+    <GenerateResourcesPri>true</GenerateResourcesPri>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />

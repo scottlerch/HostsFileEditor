@@ -35,6 +35,19 @@
     <PackagingFlavor>modern</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\modern\</OutputPackagingDir>
     <CreatePublishZip>false</CreatePublishZip>
+    <!-- The WinUI build emits the package resource index; by default it names it
+         <AssemblyName>.pri with the resource-map root also = <AssemblyName> ("HostsFileEditor").
+         The app resolves its XAML from that fine, but the SHELL only resolves tile/taskbar logos
+         from a package-root resources.pri whose resource-map root matches the package Identity
+         Name — so with the default naming the taskbar fell back to the flat logo on the accent
+         plate. Emit the index as resources.pri with the identity as the map root so the shell
+         resolves the qualified logo assets (incl. altform-unplated) added to Assets\ and renders
+         the taskbar icon unplated. Keep this in sync with Identity/@Name in AppxManifest.xml.
+         Do NOT also set GenerateResourcesPri here: a second, logo-only resources.pri would shadow
+         this complete index and crash WinUI on launch (Microsoft.UI.Xaml.dll, 0xc000027b). -->
+    <ProjectPriFileName>resources.pri</ProjectPriFileName>
+    <ProjectPriIndexName>11033ScottLerch.HostsFileEditormodern</ProjectPriIndexName>
+    <GenerateResourcesPri>false</GenerateResourcesPri>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />

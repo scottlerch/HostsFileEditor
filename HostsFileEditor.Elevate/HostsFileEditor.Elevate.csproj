@@ -4,6 +4,10 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <AssemblyName>HostsFileEditor.Elevate</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Embed the app icon so the on-demand elevation UAC prompt shows the Hosts File Editor
+         icon (the consent dialog uses the icon embedded in the exe being elevated). Without it
+         the prompt shows a generic default. -->
+    <ApplicationIcon>HostsFileEditor.ico</ApplicationIcon>
     <InvariantGlobalization>true</InvariantGlobalization>
     <!--
       Published self-contained + AOT so the helper is a single native exe with no runtime
