@@ -287,4 +287,25 @@ public class HostsEntryListTests
         list.Count.ShouldBe(1);
         list[0].ShouldBe(b);
     }
+
+    [TestMethod]
+    public void Remove_UndoThenNewRemoveThenRedo_DoesNotResurrectStaleRedo()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        var c = new HostsEntry("127.0.0.1 c");
+        list.Add(a); list.Add(b); list.Add(c);
+
+        list.Remove([a]);              // -> [b, c]
+        UndoManager.Instance.Undo();   // -> [a, b, c]
+        list.Remove([c]);              // -> [a, b]; must truncate the pending "remove a" redo branch
+
+        UndoManager.Instance.Redo();   // nothing valid to redo — the stale "remove a" must not fire
+
+        list.Count.ShouldBe(2);
+        list[0].ShouldBe(a);
+        list[1].ShouldBe(b);
+    }
 }

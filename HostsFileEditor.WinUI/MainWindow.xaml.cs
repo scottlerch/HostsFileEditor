@@ -65,6 +65,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public Visibility LoadingVisibility => _isLoaded ? Visibility.Collapsed : Visibility.Visible;
 
+    // Dev/test HFE_HOSTS_PATH override indicator for the title bar (OneTime — set at startup).
+    public string OverrideIndicatorText => HostsFile.OverridePath is { } p ? $"[{p}]" : string.Empty;
+
+    public Visibility OverrideIndicatorVisibility => HostsFile.OverridePath is not null ? Visibility.Visible : Visibility.Collapsed;
+
     internal ObservableCollection<HostsArchive> Archives { get; } = [];
 
     private IEnumerable<HostsEntry>? _clipboardEntries;
@@ -120,6 +125,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         _selectionService = new SelectionStateService(
             hasSelection: () => _logicalSelectAll || _selectedEntries.Count > 0,
+            hasAnchoredSelection: () => _selectedEntries.Count > 0,
             setRemoveEnabled: v => { RemoveButton?.IsEnabled = v; },
             setDuplicateEnabled: v => { DuplicateButton?.IsEnabled = v; },
             setMoveUpEnabled: v => { MoveUpButton?.IsEnabled = v; },
@@ -187,7 +193,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async Task LoadEntriesAsync()
     {
-        await HostsFile.PreloadAsync();
+        try
+        {
+            await HostsFile.PreloadAsync();
+        }
+        catch (Exception ex)
+        {
+            // LoadEntriesAsync is started fire-and-forget, so an exception from the off-thread load
+            // (locked/denied hosts file, failed backup copy, bad HFE_HOSTS_PATH target) would be
+            // unobserved. Stop the spinner, show the error, and leave an empty list.
+            _isLoaded = true;
+            OnPropertyChanged(nameof(LoadingVisibility));
+            OnPropertyChanged(nameof(EntriesEmptyVisibility));
+            OnPropertyChanged(nameof(EntriesFilteredVisibility));
+            await ShowErrorDialogAsync("Error Loading Hosts File", $"The hosts file could not be loaded:\n\n{ex.Message}");
+            return;
+        }
 
         // Back on the UI thread with the parse already done, so touching Instance is now cheap.
         HostsFile.Instance.Entries.ListChanged += OnCoreEntriesListChanged;
@@ -658,7 +679,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // selection — the actual cause of the multi-minute Select-All + Remove/Cut hang). Both branches
     // are O(n) with O(1) hash lookups and preserve visible order.
     private List<HostsEntry> GetSelectedEntries() =>
-        _logicalSelectAll || _selectedEntries.Count >= Entries.Count
+        // Key the "all" fast path on the explicit logical flag only. A count-based short-circuit
+        // (_selectedEntries.Count >= Entries.Count) would wrongly return every row if the mirror
+        // ever drifted above the visible count; the Where already returns all rows when everything
+        // is natively selected, so the flag is the sole trigger.
+        _logicalSelectAll
             ? [.. Entries]
             : [.. Entries.Where(_selectedEntries.Contains)];
 
@@ -749,6 +774,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnDuplicateClick(object sender, RoutedEventArgs e)
     {
         var rows = GetSelectedEntries();
+        // Consume a logical Select-All synchronously: the operation adds rows, so "all" no longer
+        // holds. Clearing inline (not just via the deferred RefreshEntries) closes a race where a
+        // second op fired before the dispatcher ran would still see "all selected".
+        SetLogicalSelectAll(false);
         if (rows.Count > 0)
         {
             foreach (var entry in rows)
@@ -870,6 +899,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnCheckClick(object sender, RoutedEventArgs e)
     {
         var rows = GetSelectedEntries();
+        // Consume a logical Select-All synchronously. Toggle refreshes only via the deferred
+        // OnCoreEntriesListChanged(Reset), so without this inline clear the flag would linger until
+        // the dispatcher ran, letting a rapid follow-up op act on "all" unexpectedly.
+        SetLogicalSelectAll(false);
         if (rows.Count > 0)
         {
             // If all selected are enabled, then uncheck; otherwise check
@@ -993,43 +1026,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // 8. Update selection-dependent buttons & context menu.
     private void RefreshEntries(bool preserveSelection = false, bool preserveLogicalSelectAll = false)
     {
-        // 1. Filter text
-        var text = string.Empty;
-        if (Content is FrameworkElement root &&
-            root.FindName("FilterTextBox") is TextBox ftb &&
-            ftb.Text is string s)
-        {
-            text = s.Trim();
-        }
-
-        // 2. Capture selection if needed (from the mirror, not the O(n^2) SelectedItems collection)
+        // 1. Capture selection if needed (from the mirror, not the O(n^2) SelectedItems collection)
         HashSet<HostsEntry>? selectedSnapshot = null;
         if (preserveSelection && _selectedEntries.Count > 0)
         {
             selectedSnapshot = [.. _selectedEntries];
         }
 
-        // 3. Build target filtered list
-        var newList = new List<HostsEntry>();
-        foreach (var e in HostsFile.Instance.Entries)
-        {
-            if (IsFilterCommentsHidden && e.HasCommentOnly)
-            {
-                continue;
-            }
+        // 2. Build target filtered list through the shared predicate (same rule as BulkPopulateEntries).
+        var newList = HostsFile.Instance.Entries.Where(EntryPassesCurrentFilter).ToList();
 
-            if (IsFilterDisabledHidden && !e.Enabled && !e.HasCommentOnly)
-            {
-                continue;
-            }
-
-            if (string.IsNullOrEmpty(text) || e.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
-            {
-                newList.Add(e);
-            }
-        }
-
-        // 4. Fast path: identical sequence -> only adjust selection/properties
+        // 3. Fast path: identical sequence -> only adjust selection/properties
         var same =
             Entries.Count == newList.Count &&
             Entries.Zip(newList, ReferenceEquals).All(eq => eq);
@@ -1107,9 +1114,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             SetLogicalSelectAll(false);
         }
 
-        // 7. Property notifications (possible count / filter changes)
+        // 7. Property notifications (possible count / filter changes). Re-raise the banner text too,
+        // so a preserved logical Select-All whose visible count changed doesn't show a stale number.
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
+        if (_logicalSelectAll)
+        {
+            OnPropertyChanged(nameof(SelectAllBannerText));
+        }
 
         // 8. Update dependent UI
         _selectionService.UpdateSelectionDependentButtons();

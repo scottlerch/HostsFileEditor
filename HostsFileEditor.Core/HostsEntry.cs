@@ -131,7 +131,9 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     }
 
     // Reference engine (the original regex). Kept as the oracle the differential test compares the
-    // span engine against.
+    // span engine against. It is dead in production (only ParseViaRegexForTest calls it): the WinUI
+    // publish trims it as unreferenced, and its cost in the untrimmed WinForm exe is a few KB — not
+    // worth #if-gating, which would break `dotnet build -c Release` of the test project.
     private static StructuralParse ParseStructuralRegex(string line)
     {
         var match = ValidHostsRegex().Match(line);

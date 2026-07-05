@@ -47,6 +47,10 @@
                        Margin="0,0,4,0"
                        VerticalAlignment="Center"/>
                 <TextBlock Text="Hosts File Editor" FontSize="11" FontWeight="Normal" VerticalAlignment="Center"/>
+                <!-- Dev/test HFE_HOSTS_PATH override: shown so the redirect is never silent. -->
+                <TextBlock Text="{x:Bind OverrideIndicatorText}" Visibility="{x:Bind OverrideIndicatorVisibility}"
+                           FontSize="11" FontStyle="Italic" VerticalAlignment="Center" Margin="8,0,0,0"
+                           Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
             </StackPanel>
         </Grid>
         <Grid x:Name="TopCommandRow" Grid.Row="1" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}" ColumnSpacing="4" Padding="8,0">

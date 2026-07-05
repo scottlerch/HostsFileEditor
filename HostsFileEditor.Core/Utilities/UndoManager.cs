@@ -34,10 +34,13 @@ public class UndoManager
     public bool CanUndo => _undoActionsPosition != _undoActions.First;
     public bool CanRedo => _redoActionsPosition != _redoActions.Last;
 
-    // True when AddActions would capture nothing anyway — history is suspended, or an undo/redo /
-    // bulk load is in progress. Lets hot paths (e.g. list InsertItem/RemoveItem during a bulk load)
-    // skip building throwaway undo closures and firing HistoryChanged for every one of hundreds of
-    // thousands of items.
+    // True when AddActions would capture nothing anyway, so hot paths (list InsertItem/RemoveItem
+    // during a bulk load) can skip building throwaway undo closures and firing HistoryChanged for
+    // every one of hundreds of thousands of items. Two cases:
+    //   - _suspendAddActions: explicit suspension AND undo/redo replay (Undo()/Redo() set it).
+    //   - _undoInProgress && _redoInProgress: both are set only by SuspendUndoRedo (bulk load /
+    //     ReplaceAll). A single-sided SuspendUndo/SuspendRedo would NOT read as suspended here — no
+    //     caller mutates the list under single-sided suspension, so that gap is not exercised.
     public bool IsCapturingSuspended => _suspendAddActions || (_undoInProgress && _redoInProgress);
 
     // Opaque token identifying the current position in the undo history. It reference-compares

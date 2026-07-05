@@ -497,13 +497,38 @@ internal sealed partial class MainForm : Form
         dataGridViewHostsEntries.Parent!.Controls.Add(loadingLabel);
         loadingLabel.BringToFront();
 
-        await HostsFile.PreloadAsync();
-
-        loadingLabel.Parent!.Controls.Remove(loadingLabel);
-        loadingLabel.Dispose();
-        UseWaitCursor = false;
+        try
+        {
+            await HostsFile.PreloadAsync();
+        }
+        catch (Exception ex)
+        {
+            // OnFomLoad is `async void`, so an exception from the off-thread load (locked/denied
+            // hosts file, failed backup copy, bad HFE_HOSTS_PATH target) would otherwise escape
+            // unobserved and crash. Surface it and leave an empty grid instead.
+            MessageBox.Show(
+                this,
+                "The hosts file could not be loaded:" + Environment.NewLine + Environment.NewLine + ex.Message,
+                Text,
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
+        finally
+        {
+            loadingLabel.Parent?.Controls.Remove(loadingLabel);
+            loadingLabel.Dispose();
+            UseWaitCursor = false;
+        }
 
         bindingSourceHostFile.DataSource = HostsFile.Instance;
+
+        // Make a dev/test HFE_HOSTS_PATH override visible in the title bar so it's never a silent
+        // redirect of the (privileged) hosts operations to an alternate file.
+        if (HostsFile.OverridePath is { } overridePath)
+        {
+            Text += $" — [{overridePath}]";
+        }
 
         _hostEntriesView = new BindingListView<HostsEntry>(components)
         {
@@ -790,7 +815,8 @@ internal sealed partial class MainForm : Form
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
             // GetLastRow is an O(n) scan; SelectedRows.Cast().Max(...) rebuilds the O(n^2) collection.
             var maxRowIndex = dataGridViewHostsEntries.Rows.GetLastRow(DataGridViewElementStates.Selected);
-            var belowEntry = dataGridViewHostsEntries.GetHostEntry(maxRowIndex + 1);
+            // -1 means no selected row (e.g. selection cleared by a reentrant refresh after the guard).
+            var belowEntry = maxRowIndex < 0 ? null : dataGridViewHostsEntries.GetHostEntry(maxRowIndex + 1);
 
             if (belowEntry != null)
             {
@@ -831,7 +857,8 @@ internal sealed partial class MainForm : Form
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
             // GetFirstRow is an O(n) scan; SelectedRows.Cast().Min(...) rebuilds the O(n^2) collection.
             var minRowIndex = dataGridViewHostsEntries.Rows.GetFirstRow(DataGridViewElementStates.Selected);
-            var aboveEntry = dataGridViewHostsEntries.GetHostEntry(minRowIndex - 1);
+            // -1 means no selected row (e.g. selection cleared by a reentrant refresh after the guard).
+            var aboveEntry = minRowIndex < 0 ? null : dataGridViewHostsEntries.GetHostEntry(minRowIndex - 1);
 
             if (aboveEntry != null)
             {

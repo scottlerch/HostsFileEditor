@@ -63,6 +63,14 @@ public class HostsFile : INotifyPropertyChanged
     public static string DefaultHostFilePath =>
         HostsPathOverride ?? Path.Combine(DefaultHostFileDirectory, @"hosts");
 
+    /// <summary>
+    /// Gets the dev/test override path (from <c>HFE_HOSTS_PATH</c> or the <c>dev-hosts-path.txt</c>
+    /// marker) when one is active, otherwise <see langword="null"/>. Surfaced so the UI can make it
+    /// obvious the app is editing an alternate file rather than the real system hosts file — the
+    /// override ships in all builds, so this keeps its effect visible rather than silent.
+    /// </summary>
+    public static string? OverridePath => HostsPathOverride;
+
     public static readonly string DefaultBackupHostFilePath =
         Path.Combine(AppDataDirectory, "hosts.bak");
 
@@ -124,6 +132,12 @@ public class HostsFile : INotifyPropertyChanged
     /// Gets a value indicating whether there are in-memory edits that have not been saved to the
     /// hosts file, so the UI can warn before discarding them (e.g. on exit).
     /// </summary>
+    /// <remarks>
+    /// The clean token is a specific undo-history position (reference-compared). If enough edits
+    /// push it out of the capped history (<see cref="UndoManager"/> trims oldest), it can never be
+    /// reference-equal again — which is correct: those undo steps are gone, so the file genuinely
+    /// cannot be returned to the saved state via undo and IsModified should stay true.
+    /// </remarks>
     public bool IsModified => !ReferenceEquals(UndoManager.Instance.CurrentStateToken, _cleanStateToken);
 
     public event PropertyChangedEventHandler? PropertyChanged;

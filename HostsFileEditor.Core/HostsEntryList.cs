@@ -236,6 +236,9 @@ public class HostsEntryList : BindingList<HostsEntry>
             return;
         }
 
+        // The undo action replaces the ENTIRE list, so this must not be nested inside an outer
+        // UndoManager.BatchActions alongside other partial list mutations — on undo, ReplaceAll
+        // would overwrite their effects. All callers invoke Remove as a standalone operation.
         if (!UndoManager.Instance.IsCapturingSuspended)
         {
             UndoManager.Instance.AddActions(

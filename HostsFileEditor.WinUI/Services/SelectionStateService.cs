@@ -4,6 +4,10 @@ public class SelectionStateService
 {
     private readonly Func<bool> _hasSelection;
 
+    // Move/insert need a concrete anchor row, which a logical Select-All (no native selection)
+    // doesn't provide — so they're gated on this rather than _hasSelection.
+    private readonly Func<bool> _hasAnchoredSelection;
+
     private readonly Action<bool> _setRemoveEnabled;
     private readonly Action<bool> _setDuplicateEnabled;
     private readonly Action<bool> _setMoveUpEnabled;
@@ -19,6 +23,7 @@ public class SelectionStateService
 
     public SelectionStateService(
         Func<bool> hasSelection,
+        Func<bool> hasAnchoredSelection,
         Action<bool> setRemoveEnabled,
         Action<bool> setDuplicateEnabled,
         Action<bool> setMoveUpEnabled,
@@ -32,6 +37,7 @@ public class SelectionStateService
         Action<bool, bool> setUndoRedoVis)
     {
         _hasSelection = hasSelection ?? throw new ArgumentNullException(nameof(hasSelection));
+        _hasAnchoredSelection = hasAnchoredSelection ?? hasSelection;
         _setRemoveEnabled = setRemoveEnabled ?? (_ => { });
         _setDuplicateEnabled = setDuplicateEnabled ?? (_ => { });
         _setMoveUpEnabled = setMoveUpEnabled ?? (_ => { });
@@ -48,23 +54,26 @@ public class SelectionStateService
     public void UpdateSelectionDependentButtons()
     {
         var hasSelection = _hasSelection();
+        var hasAnchored = _hasAnchoredSelection();
         _setRemoveEnabled(hasSelection);
         _setDuplicateEnabled(hasSelection);
-        _setMoveUpEnabled(hasSelection);
-        _setMoveDownEnabled(hasSelection);
+        _setMoveUpEnabled(hasAnchored);
+        _setMoveDownEnabled(hasAnchored);
         _setToggleEnabled(hasSelection);
     }
 
     public void UpdateContextMenuItems()
     {
         var hasSelection = _hasSelection();
+        var hasAnchored = _hasAnchoredSelection();
 
         _setCtxCopyVis(hasSelection);
         _setCtxCutVis(hasSelection);
         _setCtxPasteVis(hasSelection);
 
-        _setCtxAddAboveVis(hasSelection);
-        _setCtxAddBelowVis(hasSelection);
+        // Add Above/Below insert relative to a single anchor row — needs a native selection.
+        _setCtxAddAboveVis(hasAnchored);
+        _setCtxAddBelowVis(hasAnchored);
 
         var undoManager = Utilities.UndoManager.Instance;
         var canUndo = undoManager.CanUndo;

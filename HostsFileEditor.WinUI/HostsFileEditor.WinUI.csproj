@@ -117,6 +117,11 @@
       <_UnusedWinAppSdkLib Include="$(PublishDir)Microsoft.Windows.Widgets.dll" />
       <_UnusedWinAppSdkLib Include="$(PublishDir)Microsoft.Windows.Widgets.winmd" />
     </ItemGroup>
+    <!-- Warn (don't fail) if an expected lib is missing: a future Windows App SDK bump that
+         renames/relocates one would otherwise silently stop stripping and the ~43 MB creeps back
+         with no signal. -->
+    <Warning Condition="!Exists('%(_UnusedWinAppSdkLib.Identity)')"
+             Text="Expected unused WinAppSDK lib not found (SDK layout may have changed): %(_UnusedWinAppSdkLib.Identity)" />
     <Delete Files="@(_UnusedWinAppSdkLib)" />
     <Message Importance="high" Text="Stripped unused Windows App SDK libraries (onnxruntime, DirectML, PerceptiveStreaming, Widgets) from publish output." />
   </Target>
