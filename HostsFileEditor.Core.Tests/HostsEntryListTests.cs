@@ -1,3 +1,6 @@
+using System.ComponentModel;
+using HostsFileEditor.Utilities;
+
 namespace HostsFileEditor.Core.Tests;
 
 [TestClass]
@@ -172,5 +175,80 @@ public class HostsEntryListTests
         list.Add(a); list.Add(b);
         list.Remove([a]);
         list.ShouldNotContain(a);
+    }
+
+    [TestMethod]
+    public void Remove_MultipleEntries_KeepsSurvivorsInOrder()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        var c = new HostsEntry("127.0.0.1 c");
+        var d = new HostsEntry("127.0.0.1 d");
+        list.Add(a); list.Add(b); list.Add(c); list.Add(d);
+
+        list.Remove([b, d]);
+
+        list.Count.ShouldBe(2);
+        list[0].ShouldBe(a);
+        list[1].ShouldBe(c);
+    }
+
+    [TestMethod]
+    public void Remove_RaisesSingleResetListChanged()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        var c = new HostsEntry("127.0.0.1 c");
+        list.Add(a); list.Add(b); list.Add(c);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        list.Remove([a, b]);
+
+        // A bulk delete must surface as exactly one Reset — not one event per removed row — so
+        // bound views rebind once instead of doing O(n) work per removed item.
+        events.ShouldBe([ListChangedType.Reset]);
+    }
+
+    [TestMethod]
+    public void Remove_ThenUndo_RestoresEntriesInOriginalOrder()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        var c = new HostsEntry("127.0.0.1 c");
+        list.Add(a); list.Add(b); list.Add(c);
+
+        list.Remove([a, c]);
+        list.Count.ShouldBe(1);
+
+        UndoManager.Instance.Undo();
+
+        list.Count.ShouldBe(3);
+        list[0].ShouldBe(a);
+        list[1].ShouldBe(b);
+        list[2].ShouldBe(c);
+    }
+
+    [TestMethod]
+    public void Remove_ThenUndoThenRedo_RemovesAgain()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        var c = new HostsEntry("127.0.0.1 c");
+        list.Add(a); list.Add(b); list.Add(c);
+
+        list.Remove([a, c]);
+        UndoManager.Instance.Undo();
+        UndoManager.Instance.Redo();
+
+        list.Count.ShouldBe(1);
+        list[0].ShouldBe(b);
     }
 }

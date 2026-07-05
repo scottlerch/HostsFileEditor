@@ -42,6 +42,20 @@ internal sealed class HostsEntryDataGridView : DataGridView
     {
         get
         {
+            // DataGridView.SelectedRows is O(n^2) for a large selection: its collection does an
+            // O(n) duplicate check per added row, so Select-All then Cut/Remove on a huge hosts
+            // file froze the app for minutes (~4.5 min at 400K rows). GetRowCount(Selected) is
+            // O(1); when every visible row is selected — the common Select-All case — read the
+            // bound view directly and skip SelectedRows entirely.
+            var dataRowCount = RowCount - (NewRowIndex >= 0 ? 1 : 0);
+            if (dataRowCount > 0 &&
+                Rows.GetRowCount(DataGridViewElementStates.Selected) >= dataRowCount)
+            {
+                return BoundEntryViews()
+                    .Where(view => view?.Object != null)
+                    .Select(view => view!.Object);
+            }
+
             return SelectedRows
                 .Cast<DataGridViewRow>()
                 .Select(row => row.DataBoundItem as ObjectView<HostsEntry>)
@@ -61,6 +75,32 @@ internal sealed class HostsEntryDataGridView : DataGridView
             }
         }
     }
+
+    /// <summary>
+    /// Enumerates the bound <see cref="ObjectView{HostsEntry}"/> items in the current (filtered/
+    /// sorted) view order, unwrapping the grid's <see cref="BindingSource"/> to its underlying list.
+    /// Used to avoid the O(n^2) <see cref="DataGridView.SelectedRows"/> getter when all rows are
+    /// selected.
+    /// </summary>
+    private IEnumerable<ObjectView<HostsEntry>> BoundEntryViews()
+    {
+        object? source = DataSource;
+        while (source is BindingSource bindingSource)
+        {
+            source = bindingSource.List;
+        }
+
+        return (source as System.Collections.IEnumerable)?.OfType<ObjectView<HostsEntry>>()
+            ?? [];
+    }
+
+    /// <summary>
+    /// Gets the number of selected rows in O(1). The framework's <see cref="DataGridView.SelectedRows"/>
+    /// getter is O(n^2) for a large selection (its collection does a duplicate check per row as it is
+    /// built), so <c>SelectedRows.Count</c> alone freezes the app on a huge hosts file — every command
+    /// guard must use this instead.
+    /// </summary>
+    public int SelectedRowCount => Rows.GetRowCount(DataGridViewElementStates.Selected);
 
     /// <summary>
     /// Gets the current host entry.

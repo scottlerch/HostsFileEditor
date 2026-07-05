@@ -175,7 +175,7 @@ internal sealed partial class MainForm : Form
         // the row guard the hack fired on row selections too and copy/cut/paste never reached
         // the row logic below (Delete worked only because it has no such check).
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
-            && dataGridViewHostsEntries.SelectedRows.Count == 0)
+            && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
             var keys = menuCopy.ShortcutKeys;
             menuCopy.ShortcutKeys = Keys.None;
@@ -186,7 +186,7 @@ internal sealed partial class MainForm : Form
             return;
         }
 
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0)
+        if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             _clipboardEntries = [.. dataGridViewHostsEntries.SelectedHostEntries.Select(entry => new HostsEntry(entry))];
         }
@@ -224,7 +224,7 @@ internal sealed partial class MainForm : Form
         // the row guard the hack fired on row selections too and copy/cut/paste never reached
         // the row logic below (Delete worked only because it has no such check).
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
-            && dataGridViewHostsEntries.SelectedRows.Count == 0)
+            && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
             var keys = menuCut.ShortcutKeys;
             menuCut.ShortcutKeys = Keys.None;
@@ -237,7 +237,7 @@ internal sealed partial class MainForm : Form
 
         dataGridViewHostsEntries.CancelEdit();
 
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0)
+        if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             // Snapshot the actual selected entries so we remove THOSE, then clone independent
             // copies for the clipboard. Removing the clones (as before) matched nothing by
@@ -245,6 +245,9 @@ internal sealed partial class MainForm : Form
             var selected = dataGridViewHostsEntries.SelectedHostEntries.ToList();
             _clipboardEntries = [.. selected.Select(entry => new HostsEntry(entry))];
 
+            // Clear the selection before removing — see OnDeleteClick: removing selected rows makes
+            // the DataGridView reconcile a huge selection O(n^2) afterwards (a multi-minute hang).
+            dataGridViewHostsEntries.ClearSelection();
             HostsFile.Instance.Entries.Remove(selected);
         }
         else
@@ -283,7 +286,7 @@ internal sealed partial class MainForm : Form
         // both menuDelete and menuContextDelete carry the Del shortcut, so clear both to avoid
         // re-triggering this handler while the synthetic keystroke is dispatched.
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
-            && dataGridViewHostsEntries.SelectedRows.Count == 0)
+            && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
             var keys = menuDelete.ShortcutKeys;
             menuDelete.ShortcutKeys = Keys.None;
@@ -294,10 +297,16 @@ internal sealed partial class MainForm : Form
             return;
         }
 
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0)
+        if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            HostsFile.Instance.Entries.Remove(
-                dataGridViewHostsEntries.SelectedHostEntries);
+            // Snapshot the selection, then CLEAR it before removing the rows. Removing rows while
+            // they are still selected makes the DataGridView reconcile the (huge) selection
+            // row-by-row in a posted operation that is O(n^2) — it froze the UI for over a minute on
+            // a 400K-row file even though OnDeleteClick itself returned in ~30ms. Clearing first is
+            // O(n) and the rows are being deleted anyway.
+            var selected = dataGridViewHostsEntries.SelectedHostEntries.ToList();
+            dataGridViewHostsEntries.ClearSelection();
+            HostsFile.Instance.Entries.Remove(selected);
         }
         else
         {
@@ -324,7 +333,7 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnDuplicateClick(object sender, EventArgs e)
     {
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0)
+        if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             // Snapshot the selection first: InsertAfter mutates the bound list (and
             // thus SelectedRows) while we enumerate, which would otherwise throw.
@@ -776,10 +785,11 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnMoveDownClick(object sender, EventArgs e)
     {
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0)
+        if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            var maxRowIndex = dataGridViewHostsEntries.SelectedRows.Cast<DataGridViewRow>().Max(row => row.Index);
+            // GetLastRow is an O(n) scan; SelectedRows.Cast().Max(...) rebuilds the O(n^2) collection.
+            var maxRowIndex = dataGridViewHostsEntries.Rows.GetLastRow(DataGridViewElementStates.Selected);
             var belowEntry = dataGridViewHostsEntries.GetHostEntry(maxRowIndex + 1);
 
             if (belowEntry != null)
@@ -816,10 +826,11 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnMoveUpClick(object sender, EventArgs e)
     {
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0)
+        if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            var minRowIndex = dataGridViewHostsEntries.SelectedRows.Cast<DataGridViewRow>().Min(row => row.Index);
+            // GetFirstRow is an O(n) scan; SelectedRows.Cast().Min(...) rebuilds the O(n^2) collection.
+            var minRowIndex = dataGridViewHostsEntries.Rows.GetFirstRow(DataGridViewElementStates.Selected);
             var aboveEntry = dataGridViewHostsEntries.GetHostEntry(minRowIndex - 1);
 
             if (aboveEntry != null)
@@ -872,7 +883,7 @@ internal sealed partial class MainForm : Form
         // the row guard the hack fired on row selections too and copy/cut/paste never reached
         // the row logic below (Delete worked only because it has no such check).
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
-            && dataGridViewHostsEntries.SelectedRows.Count == 0)
+            && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
             var keys = menuPaste.ShortcutKeys;
             menuPaste.ShortcutKeys = Keys.None;
@@ -885,7 +896,7 @@ internal sealed partial class MainForm : Form
 
         dataGridViewHostsEntries.CancelEdit();
 
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0 &&
+        if (dataGridViewHostsEntries.SelectedRowCount > 0 &&
             _clipboardEntries != null)
         {
             var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
@@ -896,7 +907,7 @@ internal sealed partial class MainForm : Form
 
             _clipboardEntries = null;
         }
-        else if (dataGridViewHostsEntries.SelectedRows.Count == 0)
+        else if (dataGridViewHostsEntries.SelectedRowCount == 0)
         {
             // Cell-level text paste, only when no full rows are selected. Previously this
             // ran whenever there were no internal clipboard entries — including with rows
@@ -1274,7 +1285,7 @@ internal sealed partial class MainForm : Form
     {
         dataGridViewHostsEntries.CancelEdit();
 
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0)
+        if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             HostsFile.Instance.Entries.SetEnabled(
                  dataGridViewHostsEntries.SelectedHostEntries,
@@ -1301,7 +1312,7 @@ internal sealed partial class MainForm : Form
     {
         dataGridViewHostsEntries.CancelEdit();
 
-        if (dataGridViewHostsEntries.SelectedRows.Count > 0)
+        if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             HostsFile.Instance.Entries.SetEnabled(
                  dataGridViewHostsEntries.SelectedHostEntries,

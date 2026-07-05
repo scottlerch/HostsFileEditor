@@ -204,17 +204,63 @@ public class HostsEntryList : BindingList<HostsEntry>
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        this.BatchUpdate(() =>
+        // Removing one-by-one is O(n²) for a large selection: each Remove(entry) is an O(n)
+        // IndexOf plus an O(n) backing-store shift, and every removed row pushes its own undo
+        // closure. Selecting-all then Remove/Cut on a huge file wedged the app for minutes.
+        // Instead compute the survivors in one pass and replace the whole list in O(n), backed by
+        // a single combined undo/redo action.
+        var removeSet = entries as HashSet<HostsEntry> ?? [.. entries];
+        if (removeSet.Count == 0)
         {
-            UndoManager.Instance.BatchActions(() =>
+            return;
+        }
+
+        var survivors = new List<HostsEntry>(Count);
+        var removedAny = false;
+        foreach (var entry in this)
+        {
+            if (removeSet.Contains(entry))
             {
-                foreach (var entry in entries.ToList())
-                {
-                    Remove(entry);
-                }
-            });
-        });
+                removedAny = true;
+            }
+            else
+            {
+                survivors.Add(entry);
+            }
+        }
+
+        if (!removedAny)
+        {
+            return;
+        }
+
+        // Snapshot the pre-removal contents so undo restores the entire list in one pass.
+        var original = this.ToList();
+
+        if (!UndoManager.Instance.IsCapturingSuspended)
+        {
+            UndoManager.Instance.AddActions(
+                undoAction: () => ReplaceAll(original),
+                redoAction: () => ReplaceAll(survivors));
+        }
+
+        ReplaceAll(survivors);
     }
+
+    // Replaces the entire list content in O(n): ClearItems unhooks every row's change tracking,
+    // then the rows are re-added (re-hooking survivors). Wrapped in BatchUpdate so bound views get
+    // exactly one ListChanged(Reset), and with undo capture suspended because callers register
+    // their own combined undo/redo action.
+    private void ReplaceAll(List<HostsEntry> target) =>
+        this.BatchUpdate(() =>
+            UndoManager.Instance.SuspendUndoRedo(() =>
+            {
+                ClearItems();
+                foreach (var entry in target)
+                {
+                    base.InsertItem(Count, entry);
+                }
+            }));
 
     public void Add() => Add(new HostsEntry());
 

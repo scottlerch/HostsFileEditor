@@ -28,6 +28,34 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // evaluation during InitializeComponent doesn't trigger that parse on the UI thread.
     private bool _isLoaded;
 
+    // Set while an explicit handler mutates the Core list and refreshes the view itself, so the
+    // ListChanged subscription below doesn't also fire an (O(n^2)) minimal-diff refresh on top.
+    private bool _suspendCoreListSync;
+
+    // Guards against re-enqueuing the selection-state refresh while one is already pending, so a
+    // burst of SelectionChanged events (e.g. Ctrl+A over a large list) collapses to one update.
+    private bool _selectionUpdatePending;
+
+    // Our own mirror of the ListView selection, maintained from the cheap SelectionChanged deltas.
+    // Reading ListView.SelectedItems (its Count or enumeration) is O(n^2) for a large selection and
+    // hung the app for minutes on Select-All + Remove/Cut, so the bulk handlers use THIS instead and
+    // never touch SelectedItems.
+    private readonly HashSet<HostsEntry> _selectedEntries = [];
+
+    // Set while a bulk op rebinds the view, to skip delta-tracking of the resulting teardown churn
+    // (the mirror set is reset explicitly instead).
+    private bool _suspendSelectionTracking;
+
+    // "Select all" is tracked logically above this many rows instead of populating the native
+    // ListView selection. Reason: WinUI's ListView.SelectedItems clears one item at a time, so
+    // tearing down a huge native selection (on delete/cut/filter) is O(n^2) and hangs for minutes.
+    // Below the threshold, native selection is used (its teardown is cheap and gives row highlight).
+    private const int LogicalSelectAllThreshold = 20_000;
+
+    // True when Ctrl+A selected "all" logically (native selection left empty). GetSelectedEntries
+    // resolves it to the full Entries list; any real selection change clears it.
+    private bool _logicalSelectAll;
+
     public Visibility LoadingVisibility => _isLoaded ? Visibility.Collapsed : Visibility.Visible;
 
     internal ObservableCollection<HostsArchive> Archives { get; } = [];
@@ -84,7 +112,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         InitializeComponent();
 
         _selectionService = new SelectionStateService(
-            hasSelection: () => EntriesList is not null && EntriesList.SelectedItems.Count > 0,
+            hasSelection: () => _logicalSelectAll || _selectedEntries.Count > 0,
             setRemoveEnabled: v => { RemoveButton?.IsEnabled = v; },
             setDuplicateEnabled: v => { DuplicateButton?.IsEnabled = v; },
             setMoveUpEnabled: v => { MoveUpButton?.IsEnabled = v; },
@@ -173,6 +201,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var filtered = HostsFile.Instance.Entries.Where(EntryPassesCurrentFilter).ToList();
         Entries = new ObservableCollection<HostsEntry>(filtered);
         OnPropertyChanged(nameof(Entries));
+
+        // A full rebind clears the ListView selection; keep the mirror and logical select-all flag
+        // in sync (e.g. so a filter change after Ctrl+A doesn't leave "all" logically selected).
+        _selectedEntries.Clear();
+        _logicalSelectAll = false;
     }
 
     // A filter change can swap the entire visible set, so rebuild it with a single bulk rebind
@@ -208,9 +241,18 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         return string.IsNullOrEmpty(text) || e.ToString().Contains(text, StringComparison.OrdinalIgnoreCase);
     }
 
-    private void OnCoreEntriesListChanged(object? sender, ListChangedEventArgs e) =>
+    private void OnCoreEntriesListChanged(object? sender, ListChangedEventArgs e)
+    {
+        // Explicit handlers (delete/cut/…) refresh the view themselves in one bulk rebind; don't
+        // stack a second per-item diff on top of their large structural change.
+        if (_suspendCoreListSync)
+        {
+            return;
+        }
+
         // Use dispatcher to ensure UI-thread update and preserve selection when possible
         _ = DispatcherQueue.TryEnqueue(() => RefreshEntries(preserveSelection: true));
+    }
 
     private void TrySetAppWindowTitleBar()
     {
@@ -357,6 +399,30 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnDuplicateAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         => TryInvokeUnlessTextBox(() => OnDuplicateClick(this, new RoutedEventArgs()), args);
 
+    private void SelectAllEntries()
+    {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
+        if (Entries.Count > LogicalSelectAllThreshold)
+        {
+            // Track "all selected" logically rather than populating the native ListView selection:
+            // WinUI clears SelectedItems one row at a time, so tearing down a huge native selection
+            // (on the following delete/cut/filter) is O(n^2) and froze the app for minutes.
+            _logicalSelectAll = true;
+            _selectedEntries.Clear();
+            _selectionService.UpdateSelectionDependentButtons();
+            _selectionService.UpdateContextMenuItems();
+        }
+        else
+        {
+            _logicalSelectAll = false;
+            EntriesList.SelectAll();
+        }
+    }
+
     // Alt+Up/Down (move) and Ctrl+Alt+Up/Down (insert) can't be plain KeyboardAccelerators: the
     // ListView consumes the arrow key for navigation before the accelerator fires (so move never
     // worked, and insert only worked at the first/last row — the one spot the ListView can't
@@ -364,6 +430,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // key handling, and mark them handled so the selection doesn't also move.
     private void OnEntriesPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        // Ctrl+A: intercept the ListView's native select-all in the tunneling phase (before the
+        // ListView handles it) so a large list is selected logically instead of populating the
+        // native selection, whose later teardown is O(n^2) and hangs the app. A KeyboardAccelerator
+        // does NOT suppress the ListView's built-in Ctrl+A, but a handled PreviewKeyDown does.
+        if (e.Key == VirtualKey.A && IsKeyDown(VirtualKey.Control) && !IsTextBoxFocused())
+        {
+            SelectAllEntries();
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key is not (VirtualKey.Up or VirtualKey.Down) || IsTextBoxFocused())
         {
             return;
@@ -544,26 +621,53 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnDeleteClick(object sender, RoutedEventArgs e)
     {
-        var items = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
+        var items = GetSelectedEntries();
         if (items.Count > 0)
         {
-            HostsFile.Instance.Entries.Remove(items);
-            foreach (var i in items)
-            {
-                Entries.Remove(i);
-            }
+            RemoveFromCoreAndRefresh(items);
         }
-        OnPropertyChanged(nameof(EntriesEmptyVisibility));
-        OnPropertyChanged(nameof(EntriesFilteredVisibility));
 
         // Update UI buttons when selection changes cause deletion
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
     }
 
+    // Materializes the current selection as an ordered list from our own selection mirror, never
+    // touching ListView.SelectedItems (whose Count and enumeration are both O(n^2) for a large
+    // selection — the actual cause of the multi-minute Select-All + Remove/Cut hang). Both branches
+    // are O(n) with O(1) hash lookups and preserve visible order.
+    private List<HostsEntry> GetSelectedEntries() =>
+        _logicalSelectAll || _selectedEntries.Count >= Entries.Count
+            ? [.. Entries]
+            : [.. Entries.Where(_selectedEntries.Contains)];
+
+    // Removes the given rows from the Core list and rebinds the visible set once. Both the Core
+    // removal and the view rebind are O(n); the previous per-row Remove on both the BindingList and
+    // the ObservableCollection was O(n^2) and hung the app for minutes on a large selection.
+    private void RemoveFromCoreAndRefresh(List<HostsEntry> items)
+    {
+        // Suspend selection-delta tracking across the rebind: the ItemsSource swap deselects the old
+        // rows and would otherwise make us process a huge teardown delta. We reset the mirror below.
+        _suspendSelectionTracking = true;
+        _suspendCoreListSync = true;
+        try
+        {
+            HostsFile.Instance.Entries.Remove(items);
+            RefreshEntriesFiltered();
+        }
+        finally
+        {
+            _suspendCoreListSync = false;
+            _suspendSelectionTracking = false;
+        }
+
+        _logicalSelectAll = false;
+        _selectedEntries.Clear();
+    }
+
     private void OnCopyClick(object sender, RoutedEventArgs e)
     {
-        var rows = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
+        var rows = GetSelectedEntries();
         if (rows.Count > 0)
         {
             _clipboardEntries = [.. rows.Select(r => new HostsEntry(r))];
@@ -572,19 +676,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnCutClick(object sender, RoutedEventArgs e)
     {
-        var rows = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
+        var rows = GetSelectedEntries();
         if (rows.Count > 0)
         {
             _clipboardEntries = [.. rows.Select(r => new HostsEntry(r))];
-            HostsFile.Instance.Entries.Remove(rows);
-            foreach (var r in rows)
-            {
-                Entries.Remove(r);
-            }
+            RemoveFromCoreAndRefresh(rows);
         }
-
-        OnPropertyChanged(nameof(EntriesEmptyVisibility));
-        OnPropertyChanged(nameof(EntriesFilteredVisibility));
 
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
@@ -592,7 +689,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnPasteClick(object sender, RoutedEventArgs e)
     {
-        if (_clipboardEntries != null && EntriesList.SelectedItems.Count > 0)
+        if (_clipboardEntries != null && _selectedEntries.Count > 0)
         {
             var current = (HostsEntry)EntriesList.SelectedItem;
             HostsFile.Instance.Entries.Insert(current, _clipboardEntries);
@@ -605,7 +702,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnDuplicateClick(object sender, RoutedEventArgs e)
     {
-        var rows = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
+        var rows = GetSelectedEntries();
         if (rows.Count > 0)
         {
             foreach (var entry in rows)
@@ -726,7 +823,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnCheckClick(object sender, RoutedEventArgs e)
     {
-        var rows = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
+        var rows = GetSelectedEntries();
         if (rows.Count > 0)
         {
             // If all selected are enabled, then uncheck; otherwise check
@@ -859,11 +956,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             text = s.Trim();
         }
 
-        // 2. Capture selection if needed
+        // 2. Capture selection if needed (from the mirror, not the O(n^2) SelectedItems collection)
         HashSet<HostsEntry>? selectedSnapshot = null;
-        if (preserveSelection && EntriesList.SelectedItems.Count > 0)
+        if (preserveSelection && _selectedEntries.Count > 0)
         {
-            selectedSnapshot = [.. EntriesList.SelectedItems.Cast<HostsEntry>()];
+            selectedSnapshot = [.. _selectedEntries];
         }
 
         // 3. Build target filtered list
@@ -1019,8 +1116,43 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnEntriesSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        _selectionService.UpdateSelectionDependentButtons();
-        _selectionService.UpdateContextMenuItems();
+        // Maintain the selection mirror from the per-change deltas (cheap — we only touch the items
+        // that changed this event, never the whole SelectedItems collection). Skipped while a bulk
+        // op rebinds the view, since that teardown churn is handled by resetting the mirror.
+        if (!_suspendSelectionTracking)
+        {
+            // A real native selection change supersedes a prior logical select-all.
+            if (e.AddedItems.Count > 0 || e.RemovedItems.Count > 0)
+            {
+                _logicalSelectAll = false;
+            }
+
+            foreach (HostsEntry removed in e.RemovedItems)
+            {
+                _selectedEntries.Remove(removed);
+            }
+
+            foreach (HostsEntry added in e.AddedItems)
+            {
+                _selectedEntries.Add(added);
+            }
+        }
+
+        // Ctrl+A on a very large list fires SelectionChanged in a rapid burst (one per growing
+        // selection step). The state refresh below only reads whether *any* row is selected, so
+        // coalesce the burst into a single deferred update instead of running it 400K times.
+        if (_selectionUpdatePending)
+        {
+            return;
+        }
+
+        _selectionUpdatePending = true;
+        _ = DispatcherQueue.TryEnqueue(() =>
+        {
+            _selectionUpdatePending = false;
+            _selectionService.UpdateSelectionDependentButtons();
+            _selectionService.UpdateContextMenuItems();
+        });
     }
 
     private void OnArchiveSelectionChanged(object sender, SelectionChangedEventArgs e)
