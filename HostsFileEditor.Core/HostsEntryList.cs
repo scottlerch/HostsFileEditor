@@ -55,110 +55,68 @@ public class HostsEntryList : BindingList<HostsEntry>
     {
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(beforeEntry);
-
-        this.BatchUpdate(() =>
-        {
-            var moving = entries.ToList();
-            if (moving.Count == 0)
-            {
-                return;
-            }
-
-            // Capture original indices BEFORE any removals
-            var originalIndices = moving.ToDictionary(e => e, e => IndexOf(e));
-            var beforeIndex = IndexOf(beforeEntry);
-            if (beforeIndex < 0)
-            {
-                return; // target not found
-            }
-
-            // Order moving entries by their original appearance in the list
-            moving.Sort((x, y) => originalIndices[x].CompareTo(originalIndices[y]));
-
-            // Compute insertion index after removals: shift left by how many moving items were before the target
-            var removedBefore = moving.Count(e => originalIndices[e] < beforeIndex);
-            var insertIndex = beforeIndex - removedBefore;
-            if (insertIndex < 0)
-            {
-                insertIndex = 0;
-            }
-
-            UndoManager.Instance.BatchActions(() =>
-            {
-                // Remove using simple removal (one-by-one) to minimize re-ordering side effects
-                foreach (var e in moving)
-                {
-                    // If already removed (duplicate in list not expected) skip
-                    if (Contains(e))
-                    {
-                        base.Remove(e);
-                    }
-                }
-
-                if (insertIndex > Count)
-                {
-                    insertIndex = Count;
-                }
-
-                foreach (var entry in moving)
-                {
-                    Insert(insertIndex++, entry);
-                }
-            });
-        });
+        MoveRelative(entries, beforeEntry, insertAfterAnchor: false);
     }
 
     public void MoveAfter(IEnumerable<HostsEntry> entries, HostsEntry afterEntry)
     {
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(afterEntry);
+        MoveRelative(entries, afterEntry, insertAfterAnchor: true);
+    }
 
-        this.BatchUpdate(() =>
+    // Moves the given entries as a contiguous block to immediately before/after the anchor in one
+    // O(n) rebuild with a single Reset. The previous per-row base.Remove + Insert loop was O(k*n)
+    // (each an O(n) IndexOf + backing-store shift) and pushed 2 undo closures per row — the last
+    // O(n^2) hang left in the app on a large multi-row move. The anchor is excluded from the moving
+    // set so "move relative to a row inside the selection" stays a no-op (matches Move Up/Down, whose
+    // callers anchor on the row just outside the selection). Moving rows keep their relative order.
+    private void MoveRelative(IEnumerable<HostsEntry> entries, HostsEntry anchor, bool insertAfterAnchor)
+    {
+        var moveSet = new HashSet<HostsEntry>(entries);
+        moveSet.Remove(anchor);
+        if (moveSet.Count == 0)
         {
-            var moving = entries.ToList();
-            if (moving.Count == 0)
+            return;
+        }
+
+        var original = this.ToList();
+        if (!original.Contains(anchor) || !original.Any(moveSet.Contains))
+        {
+            return;
+        }
+
+        ReplaceAllUndoable(original, () =>
+        {
+            var moving = original.Where(moveSet.Contains).ToList();
+            var updated = new List<HostsEntry>(original.Count);
+            foreach (var entry in original)
             {
-                return;
-            }
-
-            var originalIndices = moving.ToDictionary(e => e, e => IndexOf(e));
-            var afterIndex = IndexOf(afterEntry);
-            if (afterIndex < 0)
-            {
-                return; // target not found
-            }
-
-            moving.Sort((x, y) => originalIndices[x].CompareTo(originalIndices[y]));
-
-            var removedBefore = moving.Count(e => originalIndices[e] < afterIndex);
-            var updatedAfterIndex = afterIndex - removedBefore; // index after removals
-            var insertIndex = updatedAfterIndex + 1; // after the target
-
-            UndoManager.Instance.BatchActions(() =>
-            {
-                foreach (var e in moving)
+                if (moveSet.Contains(entry))
                 {
-                    if (Contains(e))
+                    continue;
+                }
+
+                if (insertAfterAnchor)
+                {
+                    updated.Add(entry);
+                    if (ReferenceEquals(entry, anchor))
                     {
-                        base.Remove(e);
+                        updated.AddRange(moving);
                     }
                 }
-
-                if (insertIndex > Count)
+                else
                 {
-                    insertIndex = Count;
-                }
+                    if (ReferenceEquals(entry, anchor))
+                    {
+                        updated.AddRange(moving);
+                    }
 
-                if (insertIndex < 0)
-                {
-                    insertIndex = 0;
+                    updated.Add(entry);
                 }
+            }
 
-                foreach (var entry in moving)
-                {
-                    Insert(insertIndex++, entry);
-                }
-            });
+            return updated;
         });
     }
 
@@ -212,24 +170,39 @@ public class HostsEntryList : BindingList<HostsEntry>
 
         var toDuplicate = new HashSet<HostsEntry>(entries);
         var original = this.ToList();
-        var updated = new List<HostsEntry>(original.Count + entries.Count);
+
+        // Create each copy exactly once: redo must restore the SAME copy instances (so a later undo
+        // removes them and object identity stays stable), and rebuilding the interleaved order from
+        // this map avoids retaining a second whole-list snapshot. Reference identity distinguishes the
+        // originals to copy from the copies being appended, so copies are never themselves duplicated.
+        var copies = new Dictionary<HostsEntry, HostsEntry>();
         foreach (var entry in original)
         {
-            updated.Add(entry);
             if (toDuplicate.Contains(entry))
             {
-                updated.Add(new HostsEntry(entry));
+                copies[entry] = new HostsEntry(entry);
             }
         }
 
-        if (!UndoManager.Instance.IsCapturingSuspended)
+        if (copies.Count == 0)
         {
-            UndoManager.Instance.AddActions(
-                undoAction: () => ReplaceAll(original),
-                redoAction: () => ReplaceAll(updated));
+            return;
         }
 
-        ReplaceAll(updated);
+        ReplaceAllUndoable(original, () =>
+        {
+            var updated = new List<HostsEntry>(original.Count + copies.Count);
+            foreach (var entry in original)
+            {
+                updated.Add(entry);
+                if (copies.TryGetValue(entry, out var copy))
+                {
+                    updated.Add(copy);
+                }
+            }
+
+            return updated;
+        });
     }
 
     // Inserts items at insertIndex by rebuilding the list in O(n) and raising a single Reset — the
@@ -243,25 +216,17 @@ public class HostsEntryList : BindingList<HostsEntry>
             return;
         }
 
-        if (insertIndex < 0 || insertIndex > Count)
-        {
-            insertIndex = Count;
-        }
-
         var original = this.ToList();
-        var updated = new List<HostsEntry>(original.Count + items.Count);
-        updated.AddRange(original.Take(insertIndex));
-        updated.AddRange(items);
-        updated.AddRange(original.Skip(insertIndex));
+        var index = insertIndex < 0 || insertIndex > original.Count ? original.Count : insertIndex;
 
-        if (!UndoManager.Instance.IsCapturingSuspended)
+        ReplaceAllUndoable(original, () =>
         {
-            UndoManager.Instance.AddActions(
-                undoAction: () => ReplaceAll(original),
-                redoAction: () => ReplaceAll(updated));
-        }
-
-        ReplaceAll(updated);
+            var updated = new List<HostsEntry>(original.Count + items.Count);
+            updated.AddRange(original.Take(index));
+            updated.AddRange(items);
+            updated.AddRange(original.Skip(index));
+            return updated;
+        });
     }
 
     public void Remove(IEnumerable<HostsEntry> entries)
@@ -271,8 +236,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         // Removing one-by-one is O(n²) for a large selection: each Remove(entry) is an O(n)
         // IndexOf plus an O(n) backing-store shift, and every removed row pushes its own undo
         // closure. Selecting-all then Remove/Cut on a huge file wedged the app for minutes.
-        // Instead compute the survivors in one pass and replace the whole list in O(n), backed by
-        // a single combined undo/redo action.
+        // Instead replace the whole list in O(n), backed by a single combined undo/redo action.
         // Own HashSet with the default (reference) comparer so membership can't be skewed by a
         // caller-supplied set built with a different comparer.
         var removeSet = new HashSet<HostsEntry>(entries);
@@ -281,36 +245,33 @@ public class HostsEntryList : BindingList<HostsEntry>
             return;
         }
 
-        // Single pass builds both the pre-removal snapshot (for undo) and the survivors (for the
-        // removal itself), so Remove walks the list once instead of twice on the large-file path.
-        var original = new List<HostsEntry>(Count);
-        var survivors = new List<HostsEntry>(Count);
-        foreach (var entry in this)
-        {
-            original.Add(entry);
-            if (!removeSet.Contains(entry))
-            {
-                survivors.Add(entry);
-            }
-        }
+        var original = this.ToList();
 
         // No listed entry was actually present — nothing to do (and no spurious undo entry / event).
-        if (survivors.Count == original.Count)
+        if (!original.Any(removeSet.Contains))
         {
             return;
         }
 
-        // The undo action replaces the ENTIRE list, so this must not be nested inside an outer
-        // UndoManager.BatchActions alongside other partial list mutations — on undo, ReplaceAll
-        // would overwrite their effects. All callers invoke Remove as a standalone operation.
+        ReplaceAllUndoable(original, () => original.Where(entry => !removeSet.Contains(entry)).ToList());
+    }
+
+    // Registers a single undoable "replace the whole list" step and applies it, raising exactly one
+    // ListChanged(Reset) for do / undo / redo. It retains only the pre-op snapshot (needed for undo);
+    // the post-op list is rebuilt by buildUpdated (which closes over the small delta) rather than
+    // snapshotted, so a bulk op holds O(original) references plus its delta, not two full copies.
+    // MUST be called as a standalone operation, never nested inside an outer UndoManager.BatchActions:
+    // the whole-list undo would clobber sibling mutations recorded in the same group.
+    private void ReplaceAllUndoable(List<HostsEntry> original, Func<List<HostsEntry>> buildUpdated)
+    {
         if (!UndoManager.Instance.IsCapturingSuspended)
         {
             UndoManager.Instance.AddActions(
                 undoAction: () => ReplaceAll(original),
-                redoAction: () => ReplaceAll(survivors));
+                redoAction: () => ReplaceAll(buildUpdated()));
         }
 
-        ReplaceAll(survivors);
+        ReplaceAll(buildUpdated());
     }
 
     // Replaces the entire list content in O(n): ClearItems unhooks every row's change tracking,
@@ -334,9 +295,8 @@ public class HostsEntryList : BindingList<HostsEntry>
     {
         ArgumentNullException.ThrowIfNull(entries);
 
-        var changed = (entries as IReadOnlyList<HostsEntry> ?? [.. entries])
-            .Where(entry => entry.Enabled != isEnabled)
-            .ToList();
+        // Enumerated once by Where().ToList(); no need to pre-materialize the input.
+        var changed = entries.Where(entry => entry.Enabled != isEnabled).ToList();
         if (changed.Count == 0)
         {
             return;

@@ -53,32 +53,60 @@ internal sealed class HostsEntryDataGridView : DataGridView
             // (2) BoundEntryViews() yields exactly the visible (filtered/sorted) entries — see its
             // remarks. A selection is always a subset of the data rows, so `>= dataRowCount` can
             // only be true when every data row is genuinely selected (no false positive that would
-            // delete unselected rows).
+            // delete unselected rows). If the grid is ever switched away from full-row selection,
+            // revisit this — GetRowCount(Selected) would then count cells, not rows.
+            //
+            // Both branches materialize eagerly (ToList): callers routinely snapshot the selection,
+            // then ClearSelection() or mutate the bound list before enumerating (e.g. Cut/Duplicate/
+            // enable). A deferred sequence would re-read the now-changed grid/list and yield wrong
+            // rows or throw "collection modified", so the snapshot must be taken here.
             var dataRowCount = RowCount - (NewRowIndex >= 0 ? 1 : 0);
             if (dataRowCount > 0 &&
                 Rows.GetRowCount(DataGridViewElementStates.Selected) >= dataRowCount)
             {
                 return BoundEntryViews()
                     .Where(view => view?.Object != null)
-                    .Select(view => view!.Object);
+                    .Select(view => view!.Object)
+                    .ToList();
             }
 
             return SelectedRows
                 .Cast<DataGridViewRow>()
                 .Select(row => row.DataBoundItem as ObjectView<HostsEntry>)
                 .Where(view => view?.Object != null)
-                .Select(view => view!.Object);
+                .Select(view => view!.Object)
+                .ToList();
         }
 
         set
         {
-            foreach (var row in Rows.Cast<DataGridViewRow>())
+            // Restore a selection cheaply on a huge grid. The old body did Rows.Cast<DataGridViewRow>()
+            // with value.Contains per row: iterating Rows unshares all 400K DataGridViewRows and
+            // List.Contains is O(m), so restoring a large selection after a Move took seconds (O(n^2)
+            // in the worst case). Instead clear once, then walk the bound view (cheap ObjectView refs,
+            // no row unsharing) and select ONLY the matched rows by their index — the view order equals
+            // the grid's row order, and only the selected rows get realized via Rows[index].
+            var selected = value as ISet<HostsEntry> ?? new HashSet<HostsEntry>(value);
+            ClearSelection();
+            if (selected.Count == 0)
             {
-                if (row.DataBoundItem != null && row.Index < RowCount)
+                return;
+            }
+
+            var index = 0;
+            foreach (var view in BoundEntryViews())
+            {
+                if (index >= RowCount)
                 {
-                    row.Selected = row.DataBoundItem is ObjectView<HostsEntry> hostEntryView &&
-                        value.Contains(hostEntryView.Object);
+                    break;
                 }
+
+                if (view?.Object != null && selected.Contains(view.Object))
+                {
+                    Rows[index].Selected = true;
+                }
+
+                index++;
             }
         }
     }

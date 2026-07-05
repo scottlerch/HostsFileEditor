@@ -30,7 +30,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     // Set while an explicit handler mutates the Core list and refreshes the view itself, so the
     // ListChanged subscription below doesn't also fire an (O(n^2)) minimal-diff refresh on top.
-    private bool _suspendCoreListSync;
+    // volatile: a Core ListChanged can arrive off the UI thread (an auto-ping result whose property
+    // change wasn't marshalled — see HostsEntry.PingAsync), so OnCoreEntriesListChanged must read the
+    // freshest value rather than a cached one.
+    private volatile bool _suspendCoreListSync;
 
     // Guards against re-enqueuing the selection-state refresh while one is already pending, so a
     // burst of SelectionChanged events (e.g. Ctrl+A over a large list) collapses to one update.
@@ -43,8 +46,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private readonly HashSet<HostsEntry> _selectedEntries = [];
 
     // Set while a bulk op rebinds the view, to skip delta-tracking of the resulting teardown churn
-    // (the mirror set is reset explicitly instead).
-    private bool _suspendSelectionTracking;
+    // (the mirror set is reset explicitly instead). volatile for the same cross-thread reason as
+    // _suspendCoreListSync.
+    private volatile bool _suspendSelectionTracking;
 
     // "Select all" is tracked logically above this many rows instead of populating the native
     // ListView selection. Reason: WinUI's ListView.SelectedItems clears one item at a time, so
@@ -214,19 +218,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         HostsFile.Instance.Entries.ListChanged += OnCoreEntriesListChanged;
         _isLoaded = true;
 
-        BulkPopulateEntries();
-
+        // Same bulk rebind + notifications as a filter change; the load also hides the spinner.
+        RefreshEntriesFiltered();
         OnPropertyChanged(nameof(LoadingVisibility));
-        OnPropertyChanged(nameof(EntriesEmptyVisibility));
-        OnPropertyChanged(nameof(EntriesFilteredVisibility));
-        _selectionService.UpdateSelectionDependentButtons();
     }
 
     // One-shot bulk load of the (filtered) entries: build the list off the persistent collection
     // and rebind in a single operation, instead of hundreds of thousands of incremental adds.
     private void BulkPopulateEntries()
     {
-        var filtered = HostsFile.Instance.Entries.Where(EntryPassesCurrentFilter).ToList();
+        var filterText = CurrentFilterText();
+        var filtered = HostsFile.Instance.Entries.Where(e => EntryPassesFilter(e, filterText)).ToList();
         Entries = new ObservableCollection<HostsEntry>(filtered);
         OnPropertyChanged(nameof(Entries));
 
@@ -247,7 +249,15 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _selectionService.UpdateSelectionDependentButtons();
     }
 
-    private bool EntryPassesCurrentFilter(HostsEntry e)
+    // Resolves the trimmed filter text once (a visual-tree FindName lookup). Hoist this before a
+    // Where(...) so an O(n) filter pass over the entries doesn't re-run FindName + Trim per row —
+    // on a 400K-entry file that was ~400K tree walks and allocations per rebuild/keystroke/ItemChanged.
+    private string CurrentFilterText() =>
+        Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb && ftb.Text is string s
+            ? s.Trim()
+            : string.Empty;
+
+    private bool EntryPassesFilter(HostsEntry e, string filterText)
     {
         if (IsFilterCommentsHidden && e.HasCommentOnly)
         {
@@ -259,13 +269,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return false;
         }
 
-        var text = string.Empty;
-        if (Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb && ftb.Text is string s)
-        {
-            text = s.Trim();
-        }
-
-        return string.IsNullOrEmpty(text) || e.ToString().Contains(text, StringComparison.OrdinalIgnoreCase);
+        return string.IsNullOrEmpty(filterText) || e.ToString().Contains(filterText, StringComparison.OrdinalIgnoreCase);
     }
 
     private void OnCoreEntriesListChanged(object? sender, ListChangedEventArgs e)
@@ -564,21 +568,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnInsertBelowClick(object sender, RoutedEventArgs e)
     {
-        var current = EntriesList.SelectedItems.Cast<HostsEntry>().FirstOrDefault();
-        if (current != null)
+        if (EntriesList.SelectedItem is HostsEntry current)
         {
-            HostsFile.Instance.Entries.InsertAfter(current);
-            RefreshEntries(true);
+            MutateKeepingSelection(() => HostsFile.Instance.Entries.InsertAfter(current));
         }
     }
 
     private void OnInsertAboveClick(object sender, RoutedEventArgs e)
     {
-        var current = EntriesList.SelectedItems.Cast<HostsEntry>().FirstOrDefault();
-        if (current != null)
+        if (EntriesList.SelectedItem is HostsEntry current)
         {
-            HostsFile.Instance.Entries.InsertBefore(current);
-            RefreshEntries(true);
+            MutateKeepingSelection(() => HostsFile.Instance.Entries.InsertBefore(current));
         }
     }
 
@@ -588,19 +588,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // be added invisibly and be uneditable. Clear filters first so the user can see and edit it.
         ClearAllFilters();
 
-        var first = HostsFile.Instance.Entries.FirstOrDefault();
-        if (first != null)
+        // RefreshEntries (inside the helper) rebuilds the (filtered) view from the core list — do not
+        // also insert into the view directly, which would add the entry twice and ignore filters.
+        MutateKeepingSelection(() =>
         {
-            HostsFile.Instance.Entries.InsertBefore(first);
-        }
-        else
-        {
-            HostsFile.Instance.Entries.Add();
-        }
+            var first = HostsFile.Instance.Entries.FirstOrDefault();
+            if (first != null)
+            {
+                HostsFile.Instance.Entries.InsertBefore(first);
+            }
+            else
+            {
+                HostsFile.Instance.Entries.Add();
+            }
+        });
 
-        // RefreshEntries rebuilds the (filtered) view from the core list. Do not also
-        // insert into the view directly: that adds the entry twice and ignores filters.
-        RefreshEntries(true);
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
@@ -623,42 +625,71 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnMoveUpClick(object sender, RoutedEventArgs e)
     {
-        var selected = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
-        if (selected.Count == 0)
+        var (selected, minIndex, _) = ScanSelectedRange();
+        if (selected.Count == 0 || minIndex <= 0)
         {
             return;
         }
 
-        // Anchor on the entry immediately above the selection (in the visible/filtered
-        // view), not on an entry within the selection itself: MoveBefore(x, x) is a no-op.
-        var minIndex = selected.Min(Entries.IndexOf);
-        if (minIndex <= 0)
-        {
-            return;
-        }
-
-        HostsFile.Instance.Entries.MoveBefore(selected, Entries[minIndex - 1]);
-        RefreshEntries(true);
+        // Anchor on the entry immediately above the selection (in the visible/filtered view), not on
+        // an entry within the selection itself: MoveBefore(x, x) is a no-op.
+        MutateKeepingSelection(() => HostsFile.Instance.Entries.MoveBefore(selected, Entries[minIndex - 1]));
     }
 
     private void OnMoveDownClick(object sender, RoutedEventArgs e)
     {
-        var selected = EntriesList.SelectedItems.Cast<HostsEntry>().ToList();
-        if (selected.Count == 0)
+        var (selected, _, maxIndex) = ScanSelectedRange();
+        if (selected.Count == 0 || maxIndex < 0 || maxIndex >= Entries.Count - 1)
         {
             return;
         }
 
-        // Anchor on the entry immediately below the selection (in the visible/filtered
-        // view), not on an entry within the selection itself: MoveAfter(x, x) is a no-op.
-        var maxIndex = selected.Max(Entries.IndexOf);
-        if (maxIndex < 0 || maxIndex >= Entries.Count - 1)
+        // Anchor on the entry immediately below the selection (in the visible/filtered view), not on
+        // an entry within the selection itself: MoveAfter(x, x) is a no-op.
+        MutateKeepingSelection(() => HostsFile.Instance.Entries.MoveAfter(selected, Entries[maxIndex + 1]));
+    }
+
+    // One O(n) scan yields the selected entries (visible order) and the first/last selected indices,
+    // reading only the selection mirror. The old handlers read EntriesList.SelectedItems (O(n^2) for a
+    // large native selection) and did selected.Min/Max(Entries.IndexOf) (another O(k*n)).
+    private (List<HostsEntry> Selected, int MinIndex, int MaxIndex) ScanSelectedRange()
+    {
+        var selected = new List<HostsEntry>();
+        var minIndex = -1;
+        var maxIndex = -1;
+        for (var i = 0; i < Entries.Count; i++)
         {
-            return;
+            if (_selectedEntries.Contains(Entries[i]))
+            {
+                if (minIndex < 0)
+                {
+                    minIndex = i;
+                }
+
+                maxIndex = i;
+                selected.Add(Entries[i]);
+            }
         }
 
-        HostsFile.Instance.Entries.MoveAfter(selected, Entries[maxIndex + 1]);
-        RefreshEntries(true);
+        return (selected, minIndex, maxIndex);
+    }
+
+    // For small structural edits that should KEEP the current selection (move, insert-above/below,
+    // add) — unlike MutateCoreAndRefresh, which rebinds in bulk and resets selection. RefreshEntries
+    // restores the selection from the mirror via its minimal diff. Suspends the Core-list subscription
+    // so the op's single Reset/ItemAdded doesn't also enqueue a second, redundant refresh.
+    private void MutateKeepingSelection(Action mutate)
+    {
+        _suspendCoreListSync = true;
+        try
+        {
+            mutate();
+            RefreshEntries(true);
+        }
+        finally
+        {
+            _suspendCoreListSync = false;
+        }
     }
 
     private void OnDeleteClick(object sender, RoutedEventArgs e)
@@ -708,28 +739,32 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         SetLogicalSelectAll(false);
     }
 
-    // Removes the given rows from the Core list and rebinds the visible set once. Both the Core
-    // removal and the view rebind are O(n); the previous per-row Remove on both the BindingList and
-    // the ObservableCollection was O(n^2) and hung the app for minutes on a large selection.
-    private void RemoveFromCoreAndRefresh(List<HostsEntry> items)
+    // Runs a bulk Core mutation and rebinds the visible set once. Suspends selection-delta tracking
+    // (the ItemsSource swap deselects every old row — a huge teardown delta we don't want to process)
+    // and the Core-list ListChanged subscription (the mutation raises one Reset, which would otherwise
+    // also enqueue the O(n^2) per-item RefreshEntries diff), rebuilds via the O(n) bulk path, then
+    // resets the selection state. Reset is in finally so a throw in the mutation or rebind can't leave
+    // a stale "all selected" / a stuck suspend flag; on the success path RefreshEntriesFiltered ->
+    // BulkPopulateEntries already reset it, so the finally reset is an idempotent no-op there.
+    private void MutateCoreAndRefresh(Action mutate)
     {
-        // Suspend selection-delta tracking across the rebind: the ItemsSource swap deselects the old
-        // rows and would otherwise make us process a huge teardown delta. We reset the mirror below.
         _suspendSelectionTracking = true;
         _suspendCoreListSync = true;
         try
         {
-            HostsFile.Instance.Entries.Remove(items);
+            mutate();
             RefreshEntriesFiltered();
         }
         finally
         {
             _suspendCoreListSync = false;
             _suspendSelectionTracking = false;
-            // In finally so a throw in RefreshEntriesFiltered can't leave a stale "all selected".
             ResetSelectionState();
         }
     }
+
+    private void RemoveFromCoreAndRefresh(List<HostsEntry> items) =>
+        MutateCoreAndRefresh(() => HostsFile.Instance.Entries.Remove(items));
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
     {
@@ -759,33 +794,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             // Anchor on the native SelectedItem when present; under a logical Select-All (no native
             // selection) fall back to the first entry. After Cut-All the list is empty (no anchor at
-            // all, and nothing selected) — append the clipboard to the end instead of no-op'ing.
+            // all, and nothing selected) — append the clipboard to the end instead of no-op'ing. Rebind
+            // in bulk (not the per-item RefreshEntries diff, which is O(n^2) for pasting a whole file).
             var current = EntriesList.SelectedItem as HostsEntry ?? Entries.FirstOrDefault();
-
-            // Rebind in bulk (not the per-item RefreshEntries diff, which is O(n^2) for a big paste —
-            // e.g. pasting back an entire cut hosts file). Suspend Core-list sync so the single Reset
-            // from the insert doesn't also enqueue that slow diff; reset the selection state in finally.
-            _suspendSelectionTracking = true;
-            _suspendCoreListSync = true;
-            try
+            var clipboard = _clipboardEntries;
+            MutateCoreAndRefresh(() =>
             {
                 if (current != null)
                 {
-                    HostsFile.Instance.Entries.Insert(current, _clipboardEntries);
+                    HostsFile.Instance.Entries.Insert(current, clipboard);
                 }
                 else
                 {
-                    HostsFile.Instance.Entries.InsertRange(_clipboardEntries);
+                    HostsFile.Instance.Entries.InsertRange(clipboard);
                 }
-
-                RefreshEntriesFiltered();
-            }
-            finally
-            {
-                _suspendCoreListSync = false;
-                _suspendSelectionTracking = false;
-                ResetSelectionState();
-            }
+            });
 
             _clipboardEntries = null;
         }
@@ -807,21 +830,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         // Duplicate copies each row after its original in one O(n) rebind (a per-row InsertAfter loop
-        // would be O(n^2) at 400K). Rebind in bulk and suspend Core-list sync so the single Reset from
-        // the insert doesn't also enqueue the O(n^2) per-item diff; reset selection state in finally.
-        _suspendSelectionTracking = true;
-        _suspendCoreListSync = true;
-        try
-        {
-            HostsFile.Instance.Entries.Duplicate(rows);
-            RefreshEntriesFiltered();
-        }
-        finally
-        {
-            _suspendCoreListSync = false;
-            _suspendSelectionTracking = false;
-            ResetSelectionState();
-        }
+        // would be O(n^2) at 400K).
+        MutateCoreAndRefresh(() => HostsFile.Instance.Entries.Duplicate(rows));
     }
 
     private async void OnDisableHostsClick(object sender, RoutedEventArgs e)
@@ -944,21 +954,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var allEnabled = rows.All(r => r.Enabled);
 
         // SetEnabled toggles without per-item PropertyChanged (O(n) instead of O(n^2)), so the ListView
-        // won't see the change — rebind in bulk. Suspend Core-list sync so the single Reset doesn't
-        // also enqueue the O(n^2) per-item diff; reset selection state in finally.
-        _suspendSelectionTracking = true;
-        _suspendCoreListSync = true;
-        try
-        {
-            HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: !allEnabled);
-            RefreshEntriesFiltered();
-        }
-        finally
-        {
-            _suspendCoreListSync = false;
-            _suspendSelectionTracking = false;
-            ResetSelectionState();
-        }
+        // won't see the change — rebind in bulk.
+        MutateCoreAndRefresh(() => HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: !allEnabled));
     }
 
     private void OnUndoClick(object sender, RoutedEventArgs e) => Utilities.UndoManager.Instance.Undo();
@@ -1079,7 +1076,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         // 2. Build target filtered list through the shared predicate (same rule as BulkPopulateEntries).
-        var newList = HostsFile.Instance.Entries.Where(EntryPassesCurrentFilter).ToList();
+        var filterText = CurrentFilterText();
+        var newList = HostsFile.Instance.Entries.Where(e => EntryPassesFilter(e, filterText)).ToList();
 
         // 3. Fast path: identical sequence -> only adjust selection/properties
         var same =

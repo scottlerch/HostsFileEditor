@@ -27,7 +27,7 @@ public class HostsFile : INotifyPropertyChanged
     // This lets load performance be measured against a large test hosts file without touching — or
     // wedging the DNS Client on — the real machine hosts file. Gated entirely on the env var and
     // the file existing, so a normal run (no such variable) is completely unaffected.
-    private static readonly string? HostsPathOverride = ResolveHostsPathOverride();
+    private static readonly string? _hostsPathOverride = ResolveHostsPathOverride();
 
     private static string? ResolveHostsPathOverride()
     {
@@ -61,7 +61,7 @@ public class HostsFile : INotifyPropertyChanged
     }
 
     public static string DefaultHostFilePath =>
-        HostsPathOverride ?? Path.Combine(DefaultHostFileDirectory, @"hosts");
+        _hostsPathOverride ?? Path.Combine(DefaultHostFileDirectory, @"hosts");
 
     /// <summary>
     /// Gets the dev/test override path (from <c>HFE_HOSTS_PATH</c> or the <c>dev-hosts-path.txt</c>
@@ -69,7 +69,7 @@ public class HostsFile : INotifyPropertyChanged
     /// obvious the app is editing an alternate file rather than the real system hosts file — the
     /// override ships in all builds, so this keeps its effect visible rather than silent.
     /// </summary>
-    public static string? OverridePath => HostsPathOverride;
+    public static string? OverridePath => _hostsPathOverride;
 
     public static readonly string DefaultBackupHostFilePath =
         Path.Combine(AppDataDirectory, "hosts.bak");

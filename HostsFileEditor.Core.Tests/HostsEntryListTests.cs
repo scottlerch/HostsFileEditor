@@ -115,6 +115,68 @@ public class HostsEntryListTests
     }
 
     [TestMethod]
+    public void MoveBefore_RaisesSingleResetListChanged()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        var c = new HostsEntry("127.0.0.1 c");
+        list.Add(a); list.Add(b); list.Add(c);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        // A move must surface as one Reset — the old per-row base.Remove + Insert loop fired many
+        // events and was O(k*n), the last O(n^2) hang in the app on a large multi-row move.
+        list.MoveBefore([c], b);
+
+        events.ShouldBe([ListChangedType.Reset]);
+        list[1].ShouldBe(c);
+        list[2].ShouldBe(b);
+    }
+
+    [TestMethod]
+    public void MoveAfter_ThenUndoThenRedo_RoundTrips()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var entries = "a b c d e".Split(' ').Select(n => new HostsEntry($"127.0.0.1 {n}")).ToList();
+        foreach (var entry in entries) { list.Add(entry); }
+
+        list.MoveAfter([entries[1], entries[2]], entries[3]); // -> a d b c e
+
+        list.Select(x => x.HostNames).ShouldBe(["a", "d", "b", "c", "e"]);
+
+        UndoManager.Instance.Undo();
+        list.Select(x => x.HostNames).ShouldBe(["a", "b", "c", "d", "e"]);
+
+        UndoManager.Instance.Redo();
+        list.Select(x => x.HostNames).ShouldBe(["a", "d", "b", "c", "e"]);
+    }
+
+    [TestMethod]
+    public void Duplicate_ThenUndoThenRedo_PreservesCopyIdentity()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        list.Add(a);
+
+        list.Duplicate([a]);
+        var copy = list[1]; // the copy created by Duplicate
+        copy.ShouldNotBeSameAs(a);
+
+        UndoManager.Instance.Undo();
+        list.Count.ShouldBe(1);
+
+        // Redo must restore the SAME copy instance (it rebuilds from the captured copy, not a fresh
+        // new HostsEntry), so object identity is stable across undo/redo.
+        UndoManager.Instance.Redo();
+        list.Count.ShouldBe(2);
+        list[1].ShouldBeSameAs(copy);
+    }
+
+    [TestMethod]
     public void InsertBefore_AnchorNotInList_AppendsWithoutThrowing()
     {
         var list = new HostsEntryList();

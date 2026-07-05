@@ -37,7 +37,9 @@ public class SelectionStateService
         Action<bool, bool> setUndoRedoVis)
     {
         _hasSelection = hasSelection ?? throw new ArgumentNullException(nameof(hasSelection));
-        _hasAnchoredSelection = hasAnchoredSelection ?? hasSelection;
+        // Required, not defaulted to hasSelection: falling back would silently enable Move/Insert under
+        // a logical Select-All (no anchor row) — exactly the case this distinct predicate exists to gate.
+        _hasAnchoredSelection = hasAnchoredSelection ?? throw new ArgumentNullException(nameof(hasAnchoredSelection));
         _setRemoveEnabled = setRemoveEnabled ?? (_ => { });
         _setDuplicateEnabled = setDuplicateEnabled ?? (_ => { });
         _setMoveUpEnabled = setMoveUpEnabled ?? (_ => { });

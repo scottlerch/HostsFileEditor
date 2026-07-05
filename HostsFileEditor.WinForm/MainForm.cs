@@ -480,13 +480,16 @@ internal sealed partial class MainForm : Form
         // Parse the hosts file off the UI thread (it can be very large) behind a loading indicator,
         // so the window paints and stays responsive instead of freezing on a huge file.
         UseWaitCursor = true;
+        // Held separately so it can be disposed below: Control.Dispose does NOT dispose a Font the
+        // caller assigned via the Font property, so `new Font(...)` inline would leak a GDI handle.
+        var loadingFont = new Font(Font.FontFamily, 12f, FontStyle.Italic);
         var loadingLabel = new Label
         {
             Text = "Loading hosts file…",
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleCenter,
             BackColor = SystemColors.Window,
-            Font = new Font(Font.FontFamily, 12f, FontStyle.Italic),
+            Font = loadingFont,
             ForeColor = SystemColors.GrayText,
         };
         dataGridViewHostsEntries.Parent!.Controls.Add(loadingLabel);
@@ -513,6 +516,7 @@ internal sealed partial class MainForm : Form
         {
             loadingLabel.Parent?.Controls.Remove(loadingLabel);
             loadingLabel.Dispose();
+            loadingFont.Dispose();
             UseWaitCursor = false;
         }
 
@@ -900,15 +904,16 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnPasteClick(object sender, EventArgs e)
     {
-        // HACK: forward Ctrl+C/X/V to the in-cell text editor ONLY when editing a cell's text
-        // with no full row selected AND there are no row-clipboard entries to paste. This grid
-        // keeps the current cell in edit mode, so without the row guard the hack fired on row
-        // selections too and copy/cut/paste never reached the row logic below (Delete worked only
-        // because it has no such check). When there ARE clipboard rows, the row paste below wins —
-        // including into an empty list after Cut-All, where nothing is selected.
+        // HACK: forward Ctrl+C/X/V to the in-cell text editor ONLY when editing a cell's text with
+        // no full row selected. This grid keeps the current cell in edit mode, so without the row
+        // guard the hack fired on row selections too and copy/cut/paste never reached the row logic
+        // below (Delete worked only because it has no such check). We must NOT also gate this on
+        // `_clipboardEntries == null`: that clipboard lingers after any row Copy/Cut, so gating on it
+        // would hijack in-cell text paste (pasting the stale copied row instead of the cell text) for
+        // the rest of the session. After Cut-All the grid is empty and NOT in edit mode, so this guard
+        // is false and the row-paste branch below still handles the paste-into-empty case.
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
-            && dataGridViewHostsEntries.SelectedRowCount == 0
-            && _clipboardEntries == null)
+            && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
             var keys = menuPaste.ShortcutKeys;
             menuPaste.ShortcutKeys = Keys.None;
