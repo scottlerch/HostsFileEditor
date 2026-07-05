@@ -169,7 +169,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         // A UI "new row" placeholder (e.g. the grid's uncommitted add-row) isn't in the list
         // yet, so IndexOf returns -1; fall back to appending rather than Insert(-1, ...) throwing.
         var index = IndexOf(entry);
-        Insert(index < 0 ? Count : index, newEntry ?? new HostsEntry());
+        InsertAll(index < 0 ? Count : index, [newEntry ?? new HostsEntry()]);
     }
 
     public void InsertAfter(HostsEntry entry, HostsEntry? newEntry = null)
@@ -177,7 +177,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         ArgumentNullException.ThrowIfNull(entry);
 
         var index = IndexOf(entry);
-        Insert(index < 0 ? Count : index + 1, newEntry ?? new HostsEntry());
+        InsertAll(index < 0 ? Count : index + 1, [newEntry ?? new HostsEntry()]);
     }
 
     public void Insert(HostsEntry entry, IEnumerable<HostsEntry> entries)
@@ -185,19 +185,83 @@ public class HostsEntryList : BindingList<HostsEntry>
         ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(entries);
 
-        var insertIndex = IndexOf(entry);
-        if (insertIndex < 0)
+        var index = IndexOf(entry);
+        InsertAll(index < 0 ? Count : index, entries as IReadOnlyList<HostsEntry> ?? [.. entries]);
+    }
+
+    // Appends entries at the end. Used to paste into an empty list (e.g. after Cut-All), where there
+    // is no anchor row to insert relative to.
+    public void InsertRange(IEnumerable<HostsEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        InsertAll(Count, entries as IReadOnlyList<HostsEntry> ?? [.. entries]);
+    }
+
+    // Inserts a copy of each of the given entries immediately after it, in a single O(n) rebind with
+    // one Reset and one undo action. Callers used to loop InsertAfter per row, but each insert is now
+    // a full O(n) rebind (see InsertAll), so duplicating a large selection that way is O(n^2) — a
+    // Duplicate-All on a 400K file would hang for many minutes. Reference identity distinguishes the
+    // originals to copy from the copies being appended, so copies are never themselves duplicated.
+    public void Duplicate(IReadOnlyCollection<HostsEntry> entries)
+    {
+        ArgumentNullException.ThrowIfNull(entries);
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        var toDuplicate = new HashSet<HostsEntry>(entries);
+        var original = this.ToList();
+        var updated = new List<HostsEntry>(original.Count + entries.Count);
+        foreach (var entry in original)
+        {
+            updated.Add(entry);
+            if (toDuplicate.Contains(entry))
+            {
+                updated.Add(new HostsEntry(entry));
+            }
+        }
+
+        if (!UndoManager.Instance.IsCapturingSuspended)
+        {
+            UndoManager.Instance.AddActions(
+                undoAction: () => ReplaceAll(original),
+                redoAction: () => ReplaceAll(updated));
+        }
+
+        ReplaceAll(updated);
+    }
+
+    // Inserts items at insertIndex by rebuilding the list in O(n) and raising a single Reset — the
+    // same reason Remove/Move do: a raw mid-list ItemAdded makes the bound DataGridView shift/unshare
+    // all rows, which is O(n^2) and hung for ~2 minutes on a single insert at 400K rows. do/undo/redo
+    // all replace the whole list, so undo/redo also raise one Reset instead of a slow per-item event.
+    private void InsertAll(int insertIndex, IReadOnlyList<HostsEntry> items)
+    {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        if (insertIndex < 0 || insertIndex > Count)
         {
             insertIndex = Count;
         }
 
-        UndoManager.Instance.BatchActions(() =>
+        var original = this.ToList();
+        var updated = new List<HostsEntry>(original.Count + items.Count);
+        updated.AddRange(original.Take(insertIndex));
+        updated.AddRange(items);
+        updated.AddRange(original.Skip(insertIndex));
+
+        if (!UndoManager.Instance.IsCapturingSuspended)
         {
-            foreach (var newEntry in entries.ToList())
-            {
-                Insert(insertIndex++, newEntry);
-            }
-        });
+            UndoManager.Instance.AddActions(
+                undoAction: () => ReplaceAll(original),
+                redoAction: () => ReplaceAll(updated));
+        }
+
+        ReplaceAll(updated);
     }
 
     public void Remove(IEnumerable<HostsEntry> entries)
@@ -270,17 +334,38 @@ public class HostsEntryList : BindingList<HostsEntry>
     {
         ArgumentNullException.ThrowIfNull(entries);
 
+        var changed = (entries as IReadOnlyList<HostsEntry> ?? [.. entries])
+            .Where(entry => entry.Enabled != isEnabled)
+            .ToList();
+        if (changed.Count == 0)
+        {
+            return;
+        }
+
+        if (!UndoManager.Instance.IsCapturingSuspended)
+        {
+            UndoManager.Instance.AddActions(
+                undoAction: () => ApplyEnabled(changed, !isEnabled),
+                redoAction: () => ApplyEnabled(changed, isEnabled));
+        }
+
+        ApplyEnabled(changed, isEnabled);
+    }
+
+    // Toggles Enabled on each entry WITHOUT per-item PropertyChanged, then raises exactly one
+    // ListChanged(Reset) via BatchUpdate. Enabling/disabling a large selection the naive way fired one
+    // PropertyChanged per row; the bound Equin BindingListView reacts to each independently (O(n^2))
+    // and hung ~2 min at 400K even with the grid detached. do/undo/redo all go through here, so undo
+    // and redo are O(n) with a single Reset too. The classic grid rebuilds on the Reset; the modern UI
+    // rebinds explicitly in its handler (its ListView won't see the silent per-item change otherwise).
+    private void ApplyEnabled(IReadOnlyList<HostsEntry> entries, bool isEnabled) =>
         this.BatchUpdate(() =>
         {
-            UndoManager.Instance.BatchActions(() =>
+            foreach (var entry in entries)
             {
-                foreach (var entry in entries)
-                {
-                    entry.Enabled = isEnabled;
-                }
-            });
+                entry.SetEnabledSilently(isEnabled);
+            }
         });
-    }
 
     protected override object AddNewCore() => new HostsEntry(string.Empty);
 

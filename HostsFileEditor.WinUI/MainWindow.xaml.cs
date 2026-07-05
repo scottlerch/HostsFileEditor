@@ -755,17 +755,39 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnPasteClick(object sender, RoutedEventArgs e)
     {
-        if (_clipboardEntries != null && (_logicalSelectAll || _selectedEntries.Count > 0))
+        if (_clipboardEntries != null)
         {
             // Anchor on the native SelectedItem when present; under a logical Select-All (no native
-            // selection) fall back to the first entry. Safe cast avoids an NRE if SelectedItem is null.
+            // selection) fall back to the first entry. After Cut-All the list is empty (no anchor at
+            // all, and nothing selected) — append the clipboard to the end instead of no-op'ing.
             var current = EntriesList.SelectedItem as HostsEntry ?? Entries.FirstOrDefault();
-            if (current != null)
+
+            // Rebind in bulk (not the per-item RefreshEntries diff, which is O(n^2) for a big paste —
+            // e.g. pasting back an entire cut hosts file). Suspend Core-list sync so the single Reset
+            // from the insert doesn't also enqueue that slow diff; reset the selection state in finally.
+            _suspendSelectionTracking = true;
+            _suspendCoreListSync = true;
+            try
             {
-                HostsFile.Instance.Entries.Insert(current, _clipboardEntries);
-                RefreshEntries();
-                _clipboardEntries = null;
+                if (current != null)
+                {
+                    HostsFile.Instance.Entries.Insert(current, _clipboardEntries);
+                }
+                else
+                {
+                    HostsFile.Instance.Entries.InsertRange(_clipboardEntries);
+                }
+
+                RefreshEntriesFiltered();
             }
+            finally
+            {
+                _suspendCoreListSync = false;
+                _suspendSelectionTracking = false;
+                ResetSelectionState();
+            }
+
+            _clipboardEntries = null;
         }
 
         _selectionService.UpdateContextMenuItems();
@@ -774,22 +796,31 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnDuplicateClick(object sender, RoutedEventArgs e)
     {
         var rows = GetSelectedEntries();
-        // Consume a logical Select-All synchronously: the operation adds rows, so "all" no longer
-        // holds. Clearing inline (not just via the deferred RefreshEntries) closes a race where a
-        // second op fired before the dispatcher ran would still see "all selected".
-        SetLogicalSelectAll(false);
-        if (rows.Count > 0)
+        if (rows.Count == 0 && EntriesList.SelectedItem is HostsEntry current)
         {
-            foreach (var entry in rows)
-            {
-                HostsFile.Instance.Entries.InsertAfter(entry, new HostsEntry(entry));
-            }
-            RefreshEntries(true);
+            rows = [current];
         }
-        else if (EntriesList.SelectedItem is HostsEntry current)
+
+        if (rows.Count == 0)
         {
-            HostsFile.Instance.Entries.InsertAfter(current, new HostsEntry(current));
-            RefreshEntries(true);
+            return;
+        }
+
+        // Duplicate copies each row after its original in one O(n) rebind (a per-row InsertAfter loop
+        // would be O(n^2) at 400K). Rebind in bulk and suspend Core-list sync so the single Reset from
+        // the insert doesn't also enqueue the O(n^2) per-item diff; reset selection state in finally.
+        _suspendSelectionTracking = true;
+        _suspendCoreListSync = true;
+        try
+        {
+            HostsFile.Instance.Entries.Duplicate(rows);
+            RefreshEntriesFiltered();
+        }
+        finally
+        {
+            _suspendCoreListSync = false;
+            _suspendSelectionTracking = false;
+            ResetSelectionState();
         }
     }
 
@@ -899,20 +930,34 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void OnCheckClick(object sender, RoutedEventArgs e)
     {
         var rows = GetSelectedEntries();
-        // Consume a logical Select-All synchronously. Toggle refreshes only via the deferred
-        // OnCoreEntriesListChanged(Reset), so without this inline clear the flag would linger until
-        // the dispatcher ran, letting a rapid follow-up op act on "all" unexpectedly.
-        SetLogicalSelectAll(false);
-        if (rows.Count > 0)
+        if (rows.Count == 0 && EntriesList.SelectedItem is HostsEntry current)
         {
-            // If all selected are enabled, then uncheck; otherwise check
-            var allEnabled = rows.All(r => r.Enabled);
-            HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: !allEnabled);
+            rows = [current];
         }
-        else if (EntriesList.SelectedItem is HostsEntry current)
+
+        if (rows.Count == 0)
         {
-            // Toggle single selection
-            HostsFile.Instance.Entries.SetEnabled([current], isEnabled: !current.Enabled);
+            return;
+        }
+
+        // If all selected are enabled, uncheck; otherwise check.
+        var allEnabled = rows.All(r => r.Enabled);
+
+        // SetEnabled toggles without per-item PropertyChanged (O(n) instead of O(n^2)), so the ListView
+        // won't see the change — rebind in bulk. Suspend Core-list sync so the single Reset doesn't
+        // also enqueue the O(n^2) per-item diff; reset selection state in finally.
+        _suspendSelectionTracking = true;
+        _suspendCoreListSync = true;
+        try
+        {
+            HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: !allEnabled);
+            RefreshEntriesFiltered();
+        }
+        finally
+        {
+            _suspendCoreListSync = false;
+            _suspendSelectionTracking = false;
+            ResetSelectionState();
         }
     }
 

@@ -346,6 +346,22 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         }
     }
 
+    // Toggles Enabled WITHOUT raising PropertyChanged or registering undo. Used by
+    // HostsEntryList.SetEnabled for a batch enable/disable: setting Enabled the normal way fires one
+    // PropertyChanged per row, which the bound Equin BindingListView reacts to per item (O(n^2); hung
+    // ~2 min at 400K). The batch raises a single ListChanged(Reset) instead so bound views refresh
+    // once. Still invalidates the serialized line so a later save reflects the new state.
+    internal void SetEnabledSilently(bool value)
+    {
+        if (_enabled == value)
+        {
+            return;
+        }
+
+        _enabled = value;
+        _unparsedTextInvalid = true;
+    }
+
     public string HostNames
     {
         get => _hostnames;

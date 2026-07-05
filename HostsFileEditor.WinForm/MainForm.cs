@@ -335,22 +335,17 @@ internal sealed partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            // Snapshot the selection first: InsertAfter mutates the bound list (and
-            // thus SelectedRows) while we enumerate, which would otherwise throw.
-            foreach (var entry in dataGridViewHostsEntries.SelectedHostEntries.ToList())
-            {
-                HostsFile.Instance.Entries.InsertAfter(entry, new HostsEntry(entry));
-            }
+            // Snapshot the selection, then clear it before the bulk duplicate: Duplicate raises a
+            // single Reset, and reconciling a huge selection against that Reset is O(n^2) in the grid
+            // (the same teardown that froze Select-All + Delete). Duplicate inserts a copy after each
+            // original in one O(n) rebind — a per-row InsertAfter loop would be O(n^2) at 400K.
+            var sel = dataGridViewHostsEntries.SelectedHostEntries.ToList();
+            dataGridViewHostsEntries.ClearSelection();
+            HostsFile.Instance.Entries.Duplicate(sel);
         }
-        else if (dataGridViewHostsEntries.CurrentRow?.DataBoundItem != null)
+        else if (dataGridViewHostsEntries.CurrentHostEntry is { } currentEntry)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
-            if (currentEntry != null)
-            {
-                HostsFile.Instance.Entries.InsertAfter(
-                    currentEntry,
-                    new HostsEntry(currentEntry));
-            }
+            HostsFile.Instance.Entries.Duplicate([currentEntry]);
         }
     }
 
@@ -906,11 +901,14 @@ internal sealed partial class MainForm : Form
     private void OnPasteClick(object sender, EventArgs e)
     {
         // HACK: forward Ctrl+C/X/V to the in-cell text editor ONLY when editing a cell's text
-        // with no full row selected. This grid keeps the current cell in edit mode, so without
-        // the row guard the hack fired on row selections too and copy/cut/paste never reached
-        // the row logic below (Delete worked only because it has no such check).
+        // with no full row selected AND there are no row-clipboard entries to paste. This grid
+        // keeps the current cell in edit mode, so without the row guard the hack fired on row
+        // selections too and copy/cut/paste never reached the row logic below (Delete worked only
+        // because it has no such check). When there ARE clipboard rows, the row paste below wins —
+        // including into an empty list after Cut-All, where nothing is selected.
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
-            && dataGridViewHostsEntries.SelectedRowCount == 0)
+            && dataGridViewHostsEntries.SelectedRowCount == 0
+            && _clipboardEntries == null)
         {
             var keys = menuPaste.ShortcutKeys;
             menuPaste.ShortcutKeys = Keys.None;
@@ -923,23 +921,28 @@ internal sealed partial class MainForm : Form
 
         dataGridViewHostsEntries.CancelEdit();
 
-        if (dataGridViewHostsEntries.SelectedRowCount > 0 &&
-            _clipboardEntries != null)
+        if (_clipboardEntries != null)
         {
+            // Paste cut/copied rows relative to the current row. After Cut-All the list is empty,
+            // so there is no current row / selection — append the clipboard to the end instead.
             var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
                 HostsFile.Instance.Entries.Insert(currentEntry, _clipboardEntries);
+            }
+            else
+            {
+                HostsFile.Instance.Entries.InsertRange(_clipboardEntries);
             }
 
             _clipboardEntries = null;
         }
         else if (dataGridViewHostsEntries.SelectedRowCount == 0)
         {
-            // Cell-level text paste, only when no full rows are selected. Previously this
-            // ran whenever there were no internal clipboard entries — including with rows
-            // selected (e.g. a second Ctrl+V after a row paste), which overwrote every cell
-            // of the selected rows with the system clipboard text.
+            // Cell-level text paste, only when no full rows are selected and there is no row
+            // clipboard. Previously this ran whenever there were no internal clipboard entries —
+            // including with rows selected (e.g. a second Ctrl+V after a row paste), which
+            // overwrote every cell of the selected rows with the system clipboard text.
             foreach (
                 DataGridViewCell cell in
                 dataGridViewHostsEntries.SelectedCells)
@@ -1314,19 +1317,16 @@ internal sealed partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            HostsFile.Instance.Entries.SetEnabled(
-                 dataGridViewHostsEntries.SelectedHostEntries,
-                 isEnabled: true);
+            // Snapshot then clear the selection before toggling: SetEnabled raises one Reset, and
+            // reconciling a huge selection against it is the same O(n^2) grid teardown that froze
+            // Select-All + Delete. (SetEnabled itself is now O(n) — it toggles without per-item events.)
+            var sel = dataGridViewHostsEntries.SelectedHostEntries.ToList();
+            dataGridViewHostsEntries.ClearSelection();
+            HostsFile.Instance.Entries.SetEnabled(sel, isEnabled: true);
         }
-        else if (dataGridViewHostsEntries.CurrentHostEntry != null)
+        else if (dataGridViewHostsEntries.CurrentHostEntry is { } currentEntry)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
-            if (currentEntry != null)
-            {
-                HostsFile.Instance.Entries.SetEnabled(
-                    [currentEntry],
-                    isEnabled: true);
-            }
+            HostsFile.Instance.Entries.SetEnabled([currentEntry], isEnabled: true);
         }
     }
 
@@ -1341,9 +1341,11 @@ internal sealed partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            HostsFile.Instance.Entries.SetEnabled(
-                 dataGridViewHostsEntries.SelectedHostEntries,
-                 isEnabled: false);
+            // See OnCheckClick: snapshot then clear the selection before SetEnabled to avoid the
+            // O(n^2) selection teardown against the single Reset on a huge hosts file.
+            var sel = dataGridViewHostsEntries.SelectedHostEntries.ToList();
+            dataGridViewHostsEntries.ClearSelection();
+            HostsFile.Instance.Entries.SetEnabled(sel, isEnabled: false);
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null)
         {

@@ -147,6 +147,77 @@ public class HostsEntryListTests
     }
 
     [TestMethod]
+    public void SetEnabled_RaisesSingleResetListChanged()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        list.Add(a); list.Add(b);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        // A batch enable/disable must surface as exactly one Reset — NOT one ItemChanged per row.
+        // Per-row events make the bound Equin BindingListView react O(n^2) (hung ~2 min at 400K).
+        list.SetEnabled([a, b], isEnabled: false);
+
+        events.ShouldBe([ListChangedType.Reset]);
+        a.Enabled.ShouldBeFalse();
+        b.Enabled.ShouldBeFalse();
+    }
+
+    [TestMethod]
+    public void SetEnabled_AllAlreadyInState_NoOp()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a"); // enabled by default
+        list.Add(a);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        list.SetEnabled([a], isEnabled: true); // already enabled
+
+        events.ShouldBeEmpty();
+    }
+
+    [TestMethod]
+    public void SetEnabled_UpdatesSerializedLine()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        list.Add(a);
+
+        list.SetEnabled([a], isEnabled: false);
+
+        // The silent toggle must still invalidate the cached line so a save writes the disabled form.
+        a.UnparsedText.ShouldStartWith("#");
+    }
+
+    [TestMethod]
+    public void SetEnabled_ThenUndoThenRedo_RoundTrips()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        var c = new HostsEntry("# comment"); // already disabled/comment; SetEnabled(true) shouldn't touch enable-state semantics
+        list.Add(a); list.Add(b); list.Add(c);
+
+        list.SetEnabled([a, b], isEnabled: false);
+        a.Enabled.ShouldBeFalse();
+        b.Enabled.ShouldBeFalse();
+
+        UndoManager.Instance.Undo();
+        a.Enabled.ShouldBeTrue();
+        b.Enabled.ShouldBeTrue();
+
+        UndoManager.Instance.Redo();
+        a.Enabled.ShouldBeFalse();
+        b.Enabled.ShouldBeFalse();
+    }
+
+    [TestMethod]
     public void InsertBefore_AddsEntry()
     {
         var list = new HostsEntryList();
@@ -307,5 +378,172 @@ public class HostsEntryListTests
         list.Count.ShouldBe(2);
         list[0].ShouldBe(a);
         list[1].ShouldBe(b);
+    }
+
+    [TestMethod]
+    public void InsertAfter_RaisesSingleResetListChanged()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        list.Add(a); list.Add(b);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        // A single insert must surface as one Reset — a raw mid-list ItemAdded makes the bound
+        // DataGridView shift/unshare every row (O(n^2); hung ~2 min on one insert at 400K).
+        list.InsertAfter(a, new HostsEntry("127.0.0.1 c"));
+
+        events.ShouldBe([ListChangedType.Reset]);
+        list.Count.ShouldBe(3);
+        list[1].HostNames.ShouldBe("c");
+    }
+
+    [TestMethod]
+    public void InsertAfter_ThenUndoThenRedo_RoundTrips()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        list.Add(a);
+
+        list.InsertAfter(a, new HostsEntry("127.0.0.1 b"));
+        list.Count.ShouldBe(2);
+
+        UndoManager.Instance.Undo();
+        list.Count.ShouldBe(1);
+        list[0].ShouldBe(a);
+
+        UndoManager.Instance.Redo();
+        list.Count.ShouldBe(2);
+        list[1].HostNames.ShouldBe("b");
+    }
+
+    [TestMethod]
+    public void InsertRange_AppendsToEndAndRaisesSingleReset()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        list.Add(a);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        list.InsertRange([new HostsEntry("127.0.0.1 b"), new HostsEntry("127.0.0.1 c")]);
+
+        events.ShouldBe([ListChangedType.Reset]);
+        list.Count.ShouldBe(3);
+        list[1].HostNames.ShouldBe("b");
+        list[2].HostNames.ShouldBe("c");
+    }
+
+    [TestMethod]
+    public void InsertRange_IntoEmptyList_Populates()
+    {
+        // Models Paste after Cut-All: the list is empty (no anchor), so the clipboard is appended.
+        var list = new HostsEntryList();
+
+        list.InsertRange([new HostsEntry("127.0.0.1 a"), new HostsEntry("127.0.0.1 b")]);
+
+        list.Count.ShouldBe(2);
+        list[0].HostNames.ShouldBe("a");
+        list[1].HostNames.ShouldBe("b");
+    }
+
+    [TestMethod]
+    public void Duplicate_InsertsCopyAfterEachOriginal()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        var c = new HostsEntry("127.0.0.1 c");
+        list.Add(a); list.Add(b); list.Add(c);
+
+        list.Duplicate([a, c]);
+
+        // a and c each get a copy immediately after them; b (not selected) is untouched.
+        list.Count.ShouldBe(5);
+        list[0].ShouldBe(a);
+        list[1].ShouldNotBeSameAs(a);
+        list[1].HostNames.ShouldBe("a");
+        list[2].ShouldBe(b);
+        list[3].ShouldBe(c);
+        list[4].ShouldNotBeSameAs(c);
+        list[4].HostNames.ShouldBe("c");
+    }
+
+    [TestMethod]
+    public void Duplicate_DoesNotDuplicateTheCopies()
+    {
+        // Duplicating every row must yield exactly 2N, not more: the freshly inserted copies must
+        // not themselves be treated as originals to duplicate.
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        list.Add(a); list.Add(b);
+
+        list.Duplicate([a, b]);
+
+        list.Count.ShouldBe(4);
+        list[0].ShouldBe(a);
+        list[1].ShouldNotBeSameAs(a);
+        list[2].ShouldBe(b);
+        list[3].ShouldNotBeSameAs(b);
+    }
+
+    [TestMethod]
+    public void Duplicate_RaisesSingleResetListChanged()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        list.Add(a); list.Add(b);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        list.Duplicate([a, b]);
+
+        events.ShouldBe([ListChangedType.Reset]);
+    }
+
+    [TestMethod]
+    public void Duplicate_EmptyCollection_NoOp()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        list.Add(a);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        list.Duplicate([]);
+
+        events.ShouldBeEmpty();
+        list.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public void Duplicate_ThenUndoThenRedo_RoundTrips()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        list.Add(a); list.Add(b);
+
+        list.Duplicate([a]);           // -> [a, a', b]
+        list.Count.ShouldBe(3);
+
+        UndoManager.Instance.Undo();   // -> [a, b]
+        list.Count.ShouldBe(2);
+        list[0].ShouldBe(a);
+        list[1].ShouldBe(b);
+
+        UndoManager.Instance.Redo();   // -> [a, a', b]
+        list.Count.ShouldBe(3);
+        list[1].HostNames.ShouldBe("a");
+        list[2].ShouldBe(b);
     }
 }
