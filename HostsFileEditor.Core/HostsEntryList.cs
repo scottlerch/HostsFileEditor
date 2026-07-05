@@ -209,33 +209,32 @@ public class HostsEntryList : BindingList<HostsEntry>
         // closure. Selecting-all then Remove/Cut on a huge file wedged the app for minutes.
         // Instead compute the survivors in one pass and replace the whole list in O(n), backed by
         // a single combined undo/redo action.
-        var removeSet = entries as HashSet<HostsEntry> ?? [.. entries];
+        // Own HashSet with the default (reference) comparer so membership can't be skewed by a
+        // caller-supplied set built with a different comparer.
+        var removeSet = new HashSet<HostsEntry>(entries);
         if (removeSet.Count == 0)
         {
             return;
         }
 
+        // Single pass builds both the pre-removal snapshot (for undo) and the survivors (for the
+        // removal itself), so Remove walks the list once instead of twice on the large-file path.
+        var original = new List<HostsEntry>(Count);
         var survivors = new List<HostsEntry>(Count);
-        var removedAny = false;
         foreach (var entry in this)
         {
-            if (removeSet.Contains(entry))
-            {
-                removedAny = true;
-            }
-            else
+            original.Add(entry);
+            if (!removeSet.Contains(entry))
             {
                 survivors.Add(entry);
             }
         }
 
-        if (!removedAny)
+        // No listed entry was actually present — nothing to do (and no spurious undo entry / event).
+        if (survivors.Count == original.Count)
         {
             return;
         }
-
-        // Snapshot the pre-removal contents so undo restores the entire list in one pass.
-        var original = this.ToList();
 
         if (!UndoManager.Instance.IsCapturingSuspended)
         {

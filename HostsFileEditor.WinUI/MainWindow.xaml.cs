@@ -53,8 +53,15 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private const int LogicalSelectAllThreshold = 20_000;
 
     // True when Ctrl+A selected "all" logically (native selection left empty). GetSelectedEntries
-    // resolves it to the full Entries list; any real selection change clears it.
+    // resolves it to the full Entries list; any real selection change clears it. Mutate only via
+    // SetLogicalSelectAll so the banner (LogicalSelectAllVisibility) stays in sync.
     private bool _logicalSelectAll;
+
+    // Since a logical Select-All shows no row highlight, surface a banner so the user can see that
+    // "all" is selected (otherwise a following Delete/Cut is a surprise).
+    public Visibility LogicalSelectAllVisibility => _logicalSelectAll ? Visibility.Visible : Visibility.Collapsed;
+
+    public string SelectAllBannerText => $"All {Entries.Count:N0} entries selected — press Esc or click a row to clear.";
 
     public Visibility LoadingVisibility => _isLoaded ? Visibility.Collapsed : Visibility.Visible;
 
@@ -204,8 +211,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         // A full rebind clears the ListView selection; keep the mirror and logical select-all flag
         // in sync (e.g. so a filter change after Ctrl+A doesn't leave "all" logically selected).
-        _selectedEntries.Clear();
-        _logicalSelectAll = false;
+        ResetSelectionState();
     }
 
     // A filter change can swap the entire visible set, so rebuild it with a single bulk rebind
@@ -250,8 +256,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        // A property update (ItemChanged — e.g. an auto-ping result) must NOT clear a pending
+        // logical Select-All; a structural change (Reset/ItemAdded/ItemDeleted from a bulk op like
+        // enable/disable-all) supersedes it. RefreshEntries clears the flag unless told to preserve.
+        var preserveLogical = e.ListChangedType == ListChangedType.ItemChanged;
+
         // Use dispatcher to ensure UI-thread update and preserve selection when possible
-        _ = DispatcherQueue.TryEnqueue(() => RefreshEntries(preserveSelection: true));
+        _ = DispatcherQueue.TryEnqueue(() => RefreshEntries(preserveSelection: true, preserveLogicalSelectAll: preserveLogical));
     }
 
     private void TrySetAppWindowTitleBar()
@@ -411,14 +422,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             // Track "all selected" logically rather than populating the native ListView selection:
             // WinUI clears SelectedItems one row at a time, so tearing down a huge native selection
             // (on the following delete/cut/filter) is O(n^2) and froze the app for minutes.
-            _logicalSelectAll = true;
             _selectedEntries.Clear();
+            SetLogicalSelectAll(true);
             _selectionService.UpdateSelectionDependentButtons();
             _selectionService.UpdateContextMenuItems();
         }
         else
         {
-            _logicalSelectAll = false;
+            SetLogicalSelectAll(false);
             EntriesList.SelectAll();
         }
     }
@@ -437,6 +448,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (e.Key == VirtualKey.A && IsKeyDown(VirtualKey.Control) && !IsTextBoxFocused())
         {
             SelectAllEntries();
+            e.Handled = true;
+            return;
+        }
+
+        // Esc clears a logical Select-All (which has no native highlight to click away).
+        if (e.Key == VirtualKey.Escape && _logicalSelectAll)
+        {
+            ResetSelectionState();
+            _selectionService.UpdateSelectionDependentButtons();
+            _selectionService.UpdateContextMenuItems();
             e.Handled = true;
             return;
         }
@@ -641,6 +662,27 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             ? [.. Entries]
             : [.. Entries.Where(_selectedEntries.Contains)];
 
+    // Single place to flip the logical-select-all flag so the banner notification can't be forgotten.
+    private void SetLogicalSelectAll(bool value)
+    {
+        if (_logicalSelectAll == value)
+        {
+            return;
+        }
+
+        _logicalSelectAll = value;
+        OnPropertyChanged(nameof(LogicalSelectAllVisibility));
+        OnPropertyChanged(nameof(SelectAllBannerText));
+    }
+
+    // Clears the whole selection state (mirror + logical flag). Used where the selection genuinely
+    // goes away — a full view rebind (filter/load) or a bulk delete/cut.
+    private void ResetSelectionState()
+    {
+        _selectedEntries.Clear();
+        SetLogicalSelectAll(false);
+    }
+
     // Removes the given rows from the Core list and rebinds the visible set once. Both the Core
     // removal and the view rebind are O(n); the previous per-row Remove on both the BindingList and
     // the ObservableCollection was O(n^2) and hung the app for minutes on a large selection.
@@ -659,10 +701,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             _suspendCoreListSync = false;
             _suspendSelectionTracking = false;
+            // In finally so a throw in RefreshEntriesFiltered can't leave a stale "all selected".
+            ResetSelectionState();
         }
-
-        _logicalSelectAll = false;
-        _selectedEntries.Clear();
     }
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
@@ -689,12 +730,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnPasteClick(object sender, RoutedEventArgs e)
     {
-        if (_clipboardEntries != null && _selectedEntries.Count > 0)
+        if (_clipboardEntries != null && (_logicalSelectAll || _selectedEntries.Count > 0))
         {
-            var current = (HostsEntry)EntriesList.SelectedItem;
-            HostsFile.Instance.Entries.Insert(current, _clipboardEntries);
-            RefreshEntries();
-            _clipboardEntries = null;
+            // Anchor on the native SelectedItem when present; under a logical Select-All (no native
+            // selection) fall back to the first entry. Safe cast avoids an NRE if SelectedItem is null.
+            var current = EntriesList.SelectedItem as HostsEntry ?? Entries.FirstOrDefault();
+            if (current != null)
+            {
+                HostsFile.Instance.Entries.Insert(current, _clipboardEntries);
+                RefreshEntries();
+                _clipboardEntries = null;
+            }
         }
 
         _selectionService.UpdateContextMenuItems();
@@ -945,7 +991,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     //    If not preserving selection, emulate old behavior (clearing destroyed selection) by clearing selection explicitly.
     // 7. Raise property changed notifications for empty / filtered visibility (only if potentially changed).
     // 8. Update selection-dependent buttons & context menu.
-    private void RefreshEntries(bool preserveSelection = false)
+    private void RefreshEntries(bool preserveSelection = false, bool preserveLogicalSelectAll = false)
     {
         // 1. Filter text
         var text = string.Empty;
@@ -1038,30 +1084,27 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             }
         }
 
-        // 6. Restore / clear selection
-        if (preserveSelection && selectedSnapshot is not null)
+        // 6. Restore / clear selection — only touch the native selection when the visible sequence
+        // actually changed. Reading/writing ListView.SelectedItems is O(n^2) for a large selection,
+        // so an ItemChanged refresh (a cell edit or an auto-ping result, where `same` is true) must
+        // leave the existing selection untouched instead of diffing it.
+        if (!same)
         {
-            // Rebuild selection to reflect items still present
-            var toSelect = Entries.Where(selectedSnapshot.Contains).ToList();
-
-            // Avoid unnecessary churn if already matches
-            var selectionDiffers =
-                EntriesList.SelectedItems.Count != toSelect.Count ||
-                EntriesList.SelectedItems.Cast<HostsEntry>().Except(toSelect).Any();
-
-            if (selectionDiffers)
+            EntriesList.SelectedItems.Clear();
+            if (preserveSelection && selectedSnapshot is not null)
             {
-                EntriesList.SelectedItems.Clear();
-                foreach (var item in toSelect)
+                foreach (var item in Entries.Where(selectedSnapshot.Contains))
                 {
                     EntriesList.SelectedItems.Add(item);
                 }
             }
         }
-        else
+
+        // A logical Select-All is superseded by any refresh from an explicit user action; only a
+        // background property update (ItemChanged) is allowed to preserve it.
+        if (!preserveLogicalSelectAll)
         {
-            // Match original behavior (clearing collection previously removed selection)
-            EntriesList.SelectedItems.Clear();
+            SetLogicalSelectAll(false);
         }
 
         // 7. Property notifications (possible count / filter changes)
@@ -1124,7 +1167,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             // A real native selection change supersedes a prior logical select-all.
             if (e.AddedItems.Count > 0 || e.RemovedItems.Count > 0)
             {
-                _logicalSelectAll = false;
+                SetLogicalSelectAll(false);
             }
 
             foreach (HostsEntry removed in e.RemovedItems)

@@ -247,6 +247,12 @@
         </Grid>
         <Grid Grid.Row="2" Background="Transparent">
             <Grid x:Name="MainHost" Margin="8,0,8,8" RowDefinitions="Auto,*" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
+                <!-- Logical Select-All (large lists) shows no row highlight, so surface a banner. -->
+                <Border Grid.Row="0" Visibility="{x:Bind LogicalSelectAllVisibility, Mode=OneWay}"
+                        Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="4" Padding="10,6">
+                    <TextBlock Text="{x:Bind SelectAllBannerText, Mode=OneWay}" TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
+                </Border>
                 <ListView x:Name="EntriesList"
                           Grid.Row="1"
                           Margin="0,8,0,0"

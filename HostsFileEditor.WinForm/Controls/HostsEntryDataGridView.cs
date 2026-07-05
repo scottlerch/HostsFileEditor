@@ -47,6 +47,13 @@ internal sealed class HostsEntryDataGridView : DataGridView
             // file froze the app for minutes (~4.5 min at 400K rows). GetRowCount(Selected) is
             // O(1); when every visible row is selected — the common Select-All case — read the
             // bound view directly and skip SelectedRows entirely.
+            //
+            // Correctness of the fast path relies on two things: (1) the grid uses full-row
+            // selection (RowHeaderSelect), so GetRowCount(Selected) counts whole selected rows;
+            // (2) BoundEntryViews() yields exactly the visible (filtered/sorted) entries — see its
+            // remarks. A selection is always a subset of the data rows, so `>= dataRowCount` can
+            // only be true when every data row is genuinely selected (no false positive that would
+            // delete unselected rows).
             var dataRowCount = RowCount - (NewRowIndex >= 0 ? 1 : 0);
             if (dataRowCount > 0 &&
                 Rows.GetRowCount(DataGridViewElementStates.Selected) >= dataRowCount)
@@ -80,7 +87,11 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// Enumerates the bound <see cref="ObjectView{HostsEntry}"/> items in the current (filtered/
     /// sorted) view order, unwrapping the grid's <see cref="BindingSource"/> to its underlying list.
     /// Used to avoid the O(n^2) <see cref="DataGridView.SelectedRows"/> getter when all rows are
-    /// selected.
+    /// selected. This is correct for an all-selected Cut/Delete under an active filter ONLY because
+    /// the grid binds through a <c>BindingListView</c> (MainForm: <c>bindingSourceView.DataSource =
+    /// _hostEntriesView</c>), so the unwrapped list yields exactly the visible filtered/sorted rows.
+    /// If the binding topology ever exposes the unfiltered list here, this would operate on hidden
+    /// rows.
     /// </summary>
     private IEnumerable<ObjectView<HostsEntry>> BoundEntryViews()
     {

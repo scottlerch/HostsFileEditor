@@ -214,6 +214,42 @@ public class HostsEntryListTests
     }
 
     [TestMethod]
+    public void Remove_EntriesNotInList_LeavesListUnchangedAndRaisesNoEvent()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        var b = new HostsEntry("127.0.0.1 b");
+        list.Add(a); list.Add(b);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        // Neither entry is in the list — must be a true no-op: no reset, no spurious undo entry.
+        list.Remove([new HostsEntry("127.0.0.1 x"), new HostsEntry("127.0.0.1 y")]);
+
+        events.ShouldBeEmpty();
+        list.Count.ShouldBe(2);
+        list[0].ShouldBe(a);
+        list[1].ShouldBe(b);
+    }
+
+    [TestMethod]
+    public void Remove_EmptyEnumerable_NoOp()
+    {
+        var list = new HostsEntryList();
+        var a = new HostsEntry("127.0.0.1 a");
+        list.Add(a);
+
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        list.Remove([]);
+
+        events.ShouldBeEmpty();
+        list.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
     public void Remove_ThenUndo_RestoresEntriesInOriginalOrder()
     {
         UndoManager.Instance.ClearHistory();
