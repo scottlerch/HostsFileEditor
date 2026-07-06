@@ -274,6 +274,7 @@
                 <ListView x:Name="EntriesList"
                           Grid.Row="1"
                           Margin="0,8,0,0"
+                          IsEnabled="{x:Bind IsEntriesInteractive, Mode=OneWay}"
                           PreviewKeyDown="OnEntriesPreviewKeyDown"
                           SelectionMode="Extended"
                           HorizontalContentAlignment="Stretch"

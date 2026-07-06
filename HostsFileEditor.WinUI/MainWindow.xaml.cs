@@ -34,6 +34,23 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // inside a binding refresh or an event handler).
     private bool _loadFailed;
 
+    // True while an async file operation (import/reload/archive-load) is rebuilding the Core list on
+    // a background thread. Used to (a) veto a window close for the duration — the continuation would
+    // otherwise skip the unsaved-changes prompt AND run against a closed window — and (b) keep the
+    // list non-interactive (via IsEntriesInteractive).
+    private bool _asyncOperationInProgress;
+
+    // Set once the window has closed, so the fire-and-forget load / async-op continuations skip their
+    // UI touches instead of hitting closed XAML (the classic edition guards the same way with IsDisposed).
+    private volatile bool _isClosed;
+
+    // The entries list is interactive only once the initial load has completed and no async file
+    // operation is running. Bound to EntriesList.IsEnabled so its TwoWay row bindings (the Enabled
+    // checkbox, the IP/host/comment TextBoxes) can't mutate HostsEntry objects the background thread
+    // is concurrently discarding — the one Instance-mutating path the per-handler _isLoaded guards
+    // can't cover. Raised wherever LoadingVisibility is.
+    public bool IsEntriesInteractive => _isLoaded;
+
     // Set while an explicit handler mutates the Core list and refreshes the view itself, so the
     // ListChanged subscription below doesn't also fire an (O(n^2)) minimal-diff refresh on top.
     // volatile: a Core ListChanged can arrive off the UI thread (an auto-ping result whose property
@@ -70,7 +87,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // ListView selection. Reason: WinUI's ListView.SelectedItems clears one item at a time, so
     // tearing down a huge native selection (on delete/cut/filter) is O(n^2) and hangs for minutes.
     // Below the threshold, native selection is used (its teardown is cheap and gives row highlight).
-    private const int LogicalSelectAllThreshold = 20_000;
+    // Shared with the classic edition via Core so the "huge selection" boundary stays in parity.
+    private const int LogicalSelectAllThreshold = HostsEntryList.HugeSelectionThreshold;
 
     // True when Ctrl+A selected "all" logically (native selection left empty). GetSelectedEntries
     // resolves it to the full Entries list; any real selection change clears it. Mutate only via
@@ -235,6 +253,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // Unsubscribe when window closes to avoid leaks
         Closed += (s, e) =>
         {
+            _isClosed = true;
             Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
             if (_isLoaded)
             {
@@ -269,6 +288,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        // The window may have been closed during the multi-second background parse; the continuation
+        // would otherwise touch disposed XAML (the classic edition guards the same way).
+        if (_isClosed)
+        {
+            return;
+        }
+
         // Back on the UI thread with the parse already done, so touching Instance is now cheap.
         HostsFile.Instance.Entries.ListChanged += OnCoreEntriesListChanged;
         _isLoaded = true;
@@ -276,6 +302,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // Same bulk rebind + notifications as a filter change; the load also hides the spinner.
         RefreshEntriesFiltered();
         OnPropertyChanged(nameof(LoadingVisibility));
+        OnPropertyChanged(nameof(IsEntriesInteractive));
     }
 
     // One-shot bulk load of the (filtered) entries: build the list off the persistent collection
@@ -495,6 +522,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
+        // An async file operation (import/reload/archive-load) is mid-flight rebuilding the Core
+        // list on a background thread. Veto the close: letting it proceed would both skip the
+        // unsaved-changes prompt (below, gated on _isLoaded which is false during the op) and run
+        // the operation's continuation against a closed window. The user can close once it finishes.
+        if (_asyncOperationInProgress)
+        {
+            args.Cancel = true;
+            return;
+        }
+
         // Before the load completes there is nothing user-modified to lose — and touching
         // HostsFile.Instance here would block the UI thread on the in-progress background parse
         // (or rethrow a cached load failure). Let the close proceed.
@@ -1053,11 +1090,15 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void MutateCoreAndRefreshPreservingSelection(Action mutate, IReadOnlyCollection<HostsEntry>? keepSelected = null)
     {
         // Snapshot BEFORE the mutation (the rebind clears the live mirror). A logical Select-All is
-        // captured as a flag, not a 400K set — unless the caller pinned an explicit keep-set.
+        // captured as a flag, not a 400K set — unless the caller pinned an explicit keep-set. A
+        // keep-set larger than the threshold is dropped anyway (RestoreSelectionAfterRebind won't
+        // repopulate a huge native selection), so skip building the snapshot for it.
         var wasLogicalSelectAll = _logicalSelectAll && keepSelected is null;
-        HashSet<HostsEntry>? snapshot = keepSelected is not null
-            ? [.. keepSelected]
-            : wasLogicalSelectAll ? null : [.. _selectedEntries];
+        HashSet<HostsEntry>? snapshot = keepSelected is { Count: > LogicalSelectAllThreshold }
+            ? null
+            : keepSelected is not null
+                ? [.. keepSelected]
+                : wasLogicalSelectAll ? null : [.. _selectedEntries];
 
         _suspendSelectionTracking = true;
         _suspendCoreListSync = true;
@@ -1156,7 +1197,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private async Task MutateCoreAndRefreshAsync(Action mutate)
     {
         _isLoaded = false;
+        _asyncOperationInProgress = true;
         OnPropertyChanged(nameof(LoadingVisibility));
+        OnPropertyChanged(nameof(IsEntriesInteractive));
 
         // Drop the (now-stale) selection state up front so selection-gated buttons visibly
         // disable for the duration instead of merely no-op'ing through their guards.
@@ -1174,11 +1217,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             _suspendCoreListSync = false;
             _isLoaded = true;
-            // Tracking stays suspended through the rebind's ItemsSource swap — see MutateCoreAndRefresh.
-            RefreshEntriesFiltered();
-            ResetSelectionState();
+            _asyncOperationInProgress = false;
+
+            // The window may have closed during the parse (a close is vetoed while the op runs — see
+            // OnAppWindowClosing — but be defensive): don't rebind against disposed XAML.
+            if (!_isClosed)
+            {
+                // Tracking stays suspended through the rebind's ItemsSource swap — see MutateCoreAndRefresh.
+                RefreshEntriesFiltered();
+                ResetSelectionState();
+                OnPropertyChanged(nameof(LoadingVisibility));
+                OnPropertyChanged(nameof(IsEntriesInteractive));
+            }
+
             _suspendSelectionTracking = false;
-            OnPropertyChanged(nameof(LoadingVisibility));
         }
     }
 
@@ -1187,6 +1239,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         var rows = GetSelectedEntries();
         if (rows.Count > 0)
         {
@@ -1444,26 +1501,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private void OnUndoAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (!_isLoaded || IsTextBoxFocused())
-        {
-            return;
-        }
-
-        Utilities.UndoManager.Instance.Undo();
-        args.Handled = true;
-    }
+        => TryInvokeUnlessTextBox(() => OnUndoClick(this, new RoutedEventArgs()), args);
 
     private void OnRedoAcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
-    {
-        if (!_isLoaded || IsTextBoxFocused())
-        {
-            return;
-        }
-
-        Utilities.UndoManager.Instance.Redo();
-        args.Handled = true;
-    }
+        => TryInvokeUnlessTextBox(() => OnRedoClick(this, new RoutedEventArgs()), args);
 
     private async void OnArchiveClick(object sender, RoutedEventArgs e)
     {
@@ -1591,7 +1632,19 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // platform's teardown exactly once.
         if (!same && _selectedEntries.Count > LogicalSelectAllThreshold)
         {
-            RefreshEntriesFiltered();
+            // Keep tracking suspended through the ItemsSource swap so its huge teardown
+            // SelectionChanged delta is skipped (the reset clears the mirror), like the Mutate helpers.
+            var wasSuspended = _suspendSelectionTracking;
+            _suspendSelectionTracking = true;
+            try
+            {
+                RefreshEntriesFiltered();
+            }
+            finally
+            {
+                _suspendSelectionTracking = wasSuspended;
+            }
+
             return;
         }
 
@@ -1601,7 +1654,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             // it, a REMOVED row was Move-bubbled to the end one adjacent swap at a time — one
             // O(n) memmove per following row, O((n-p)^2) total, a minutes-class hang at 400K from a
             // single checkbox click under an active Hide-Disabled filter (even with nothing selected).
-            var targetSet = new HashSet<HostsEntry>(newList);
+            // Built lazily: an append or an in-place move consults it zero or one times, so the
+            // ~O(n) set (up to ~8MB at 400K) is allocated only when a row actually needs removing.
+            HashSet<HostsEntry>? targetSet = null;
             for (var i = 0; i < newList.Count; i++)
             {
                 var desired = newList[i];
@@ -1609,7 +1664,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 // Drop rows that are no longer in the target BEFORE searching for the desired one.
                 while (i < Entries.Count
                     && !ReferenceEquals(Entries[i], desired)
-                    && !targetSet.Contains(Entries[i]))
+                    && !(targetSet ??= [.. newList]).Contains(Entries[i]))
                 {
                     Entries.RemoveAt(i);
                 }
@@ -1714,10 +1769,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         Archives.Clear();
 
-        // Sorted by file name (ordinal-ignore-case, matching the classic edition's archive view)
-        // instead of raw HostsArchiveList order — which is file-system enumeration order at startup
-        // and append order for new archives, so the two editions listed the same archives differently.
-        foreach (var a in HostsArchiveList.Instance.OrderBy(x => x.FileName, StringComparer.OrdinalIgnoreCase))
+        // Sorted by the shared Core comparer (ordinal-ignore-case file name), matching the classic
+        // edition's archive view — instead of raw HostsArchiveList order, which is file-system
+        // enumeration order at startup and append order for new archives.
+        foreach (var a in HostsArchiveList.Instance.Order(HostsArchive.FileNameComparer))
         {
             Archives.Add(a);
         }
