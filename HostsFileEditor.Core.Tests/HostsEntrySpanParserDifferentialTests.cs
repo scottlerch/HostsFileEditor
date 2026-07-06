@@ -125,6 +125,17 @@ public class HostsEntrySpanParserDifferentialTests
             $"#{nbsp}1.2.3.4 host",
             $"1.2.3.4{nbsp}{ideo}host",
             "1.2.3.4 host\r",
+            // Embedded CR/LF can't come from the line-splitting load path, but the public
+            // HostsEntry(string) ctor accepts them and the engines natively disagree (regex `.`/`$`
+            // stop at \n; the span scanner treats it as whitespace) — the span side delegates these
+            // to the regex engine, and these cases pin that.
+            "1.2.3.4 host #c\nd",
+            "1.2.3.4 host\n",
+            "# comment\n",
+            "\n",
+            "\r\n",
+            "1.2.3.4\rhost",
+            "a\nb",
         ];
     }
 

@@ -68,14 +68,15 @@ public class HostsEntryList : BindingList<HostsEntry>
     // Moves the given entries as a contiguous block to immediately before/after the anchor in one
     // O(n) rebuild with a single Reset. The previous per-row base.Remove + Insert loop was O(k*n)
     // (each an O(n) IndexOf + backing-store shift) and pushed 2 undo closures per row — the last
-    // O(n^2) hang left in the app on a large multi-row move. The anchor is excluded from the moving
-    // set so "move relative to a row inside the selection" stays a no-op (matches Move Up/Down, whose
-    // callers anchor on the row just outside the selection). Moving rows keep their relative order.
+    // O(n^2) hang left in the app on a large multi-row move. Moving rows keep their relative order.
+    // Anchoring on a row INSIDE the moving set is a true no-op — no reorder, no Reset, no undo step,
+    // no IsModified change. (Both UIs' Move Up/Down anchor on the row just outside the selection, so
+    // they never hit this; the contract exists for future callers such as drag-and-drop onto a row
+    // within the dragged selection.)
     private void MoveRelative(IEnumerable<HostsEntry> entries, HostsEntry anchor, bool insertAfterAnchor)
     {
         var moveSet = new HashSet<HostsEntry>(entries);
-        moveSet.Remove(anchor);
-        if (moveSet.Count == 0)
+        if (moveSet.Count == 0 || moveSet.Contains(anchor))
         {
             return;
         }
@@ -138,22 +139,29 @@ public class HostsEntryList : BindingList<HostsEntry>
         InsertAll(index < 0 ? Count : index + 1, [newEntry ?? new HostsEntry()]);
     }
 
-    public void Insert(HostsEntry entry, IEnumerable<HostsEntry> entries)
+    // Inserts the entries before the anchor. A null (or not-found) anchor appends to the end — that
+    // is the paste contract both UIs share: paste at the current row when there is one, otherwise
+    // append (e.g. into the empty list after Cut-All, or with nothing selected). Owning the fallback
+    // here keeps the two UIs from drifting apart on where an unanchored paste lands.
+    public void Insert(HostsEntry? entry, IEnumerable<HostsEntry> entries)
     {
-        ArgumentNullException.ThrowIfNull(entry);
         ArgumentNullException.ThrowIfNull(entries);
 
-        var index = IndexOf(entry);
-        InsertAll(index < 0 ? Count : index, entries as IReadOnlyList<HostsEntry> ?? [.. entries]);
+        var index = entry is null ? Count : IndexOf(entry);
+        InsertAll(index < 0 ? Count : index, SnapshotOf(entries));
     }
 
-    // Appends entries at the end. Used to paste into an empty list (e.g. after Cut-All), where there
-    // is no anchor row to insert relative to.
+    // Appends entries at the end.
     public void InsertRange(IEnumerable<HostsEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
-        InsertAll(Count, entries as IReadOnlyList<HostsEntry> ?? [.. entries]);
+        InsertAll(Count, SnapshotOf(entries));
     }
+
+    // Always copies the caller's collection: InsertAll captures the items into a redo closure that
+    // re-runs later, so aliasing a caller-owned list (e.g. a clipboard buffer that gets cleared and
+    // refilled) would silently change what a redo re-inserts.
+    private static List<HostsEntry> SnapshotOf(IEnumerable<HostsEntry> entries) => [.. entries];
 
     // Inserts a copy of each of the given entries immediately after it, in a single O(n) rebind with
     // one Reset and one undo action. Callers used to loop InsertAfter per row, but each insert is now
@@ -209,7 +217,7 @@ public class HostsEntryList : BindingList<HostsEntry>
     // same reason Remove/Move do: a raw mid-list ItemAdded makes the bound DataGridView shift/unshare
     // all rows, which is O(n^2) and hung for ~2 minutes on a single insert at 400K rows. do/undo/redo
     // all replace the whole list, so undo/redo also raise one Reset instead of a slow per-item event.
-    private void InsertAll(int insertIndex, IReadOnlyList<HostsEntry> items)
+    private void InsertAll(int insertIndex, List<HostsEntry> items)
     {
         if (items.Count == 0)
         {
@@ -256,29 +264,35 @@ public class HostsEntryList : BindingList<HostsEntry>
         ReplaceAllUndoable(original, () => original.Where(entry => !removeSet.Contains(entry)).ToList());
     }
 
-    // Registers a single undoable "replace the whole list" step and applies it, raising exactly one
+    // Applies a single undoable "replace the whole list" step, raising exactly one
     // ListChanged(Reset) for do / undo / redo. It retains only the pre-op snapshot (needed for undo);
     // the post-op list is rebuilt by buildUpdated (which closes over the small delta) rather than
     // snapshotted, so a bulk op holds O(original) references plus its delta, not two full copies.
+    // The undo/redo pair is registered only AFTER the mutation succeeds, so a throw mid-rebuild
+    // (OOM, a ListChanged handler failing) cannot leave a history entry whose captured snapshot no
+    // longer matches the live list.
     // MUST be called as a standalone operation, never nested inside an outer UndoManager.BatchActions:
     // the whole-list undo would clobber sibling mutations recorded in the same group.
     private void ReplaceAllUndoable(List<HostsEntry> original, Func<List<HostsEntry>> buildUpdated)
     {
+        ReplaceAll(buildUpdated());
+
         if (!UndoManager.Instance.IsCapturingSuspended)
         {
             UndoManager.Instance.AddActions(
                 undoAction: () => ReplaceAll(original),
                 redoAction: () => ReplaceAll(buildUpdated()));
         }
-
-        ReplaceAll(buildUpdated());
     }
 
     // Replaces the entire list content in O(n): ClearItems unhooks every row's change tracking,
     // then the rows are re-added (re-hooking survivors). Wrapped in BatchUpdate so bound views get
-    // exactly one ListChanged(Reset), and with undo capture suspended because callers register
-    // their own combined undo/redo action.
-    private void ReplaceAll(List<HostsEntry> target) =>
+    // exactly one ListChanged(Reset). The SuspendUndoRedo wrapper is purely defensive — the
+    // base.InsertItem/ClearItems calls bypass the capturing overrides, so nothing here records undo
+    // even without it — but it makes the "callers own the combined undo/redo action" contract
+    // explicit and future-proofs against a mutation being routed through a capturing path.
+    private void ReplaceAll(List<HostsEntry> target)
+    {
         this.BatchUpdate(() =>
             UndoManager.Instance.SuspendUndoRedo(() =>
             {
@@ -288,6 +302,7 @@ public class HostsEntryList : BindingList<HostsEntry>
                     base.InsertItem(Count, entry);
                 }
             }));
+    }
 
     public void Add() => Add(new HostsEntry());
 
@@ -302,14 +317,16 @@ public class HostsEntryList : BindingList<HostsEntry>
             return;
         }
 
+        // Mutate first, then register: a throw mid-apply must not leave a history entry (same
+        // ordering rationale as ReplaceAllUndoable).
+        ApplyEnabled(changed, isEnabled);
+
         if (!UndoManager.Instance.IsCapturingSuspended)
         {
             UndoManager.Instance.AddActions(
                 undoAction: () => ApplyEnabled(changed, !isEnabled),
                 redoAction: () => ApplyEnabled(changed, isEnabled));
         }
-
-        ApplyEnabled(changed, isEnabled);
     }
 
     // Toggles Enabled on each entry WITHOUT per-item PropertyChanged, then raises exactly one
@@ -318,7 +335,8 @@ public class HostsEntryList : BindingList<HostsEntry>
     // and hung ~2 min at 400K even with the grid detached. do/undo/redo all go through here, so undo
     // and redo are O(n) with a single Reset too. The classic grid rebuilds on the Reset; the modern UI
     // rebinds explicitly in its handler (its ListView won't see the silent per-item change otherwise).
-    private void ApplyEnabled(IReadOnlyList<HostsEntry> entries, bool isEnabled) =>
+    private void ApplyEnabled(IReadOnlyList<HostsEntry> entries, bool isEnabled)
+    {
         this.BatchUpdate(() =>
         {
             foreach (var entry in entries)
@@ -326,6 +344,7 @@ public class HostsEntryList : BindingList<HostsEntry>
                 entry.SetEnabledSilently(isEnabled);
             }
         });
+    }
 
     protected override object AddNewCore() => new HostsEntry(string.Empty);
 

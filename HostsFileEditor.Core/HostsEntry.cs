@@ -131,9 +131,10 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     }
 
     // Reference engine (the original regex). Kept as the oracle the differential test compares the
-    // span engine against. It is dead in production (only ParseViaRegexForTest calls it): the WinUI
-    // publish trims it as unreferenced, and its cost in the untrimmed WinForm exe is a few KB — not
-    // worth #if-gating, which would break `dotnet build -c Release` of the test project.
+    // span engine against, and as the fallback ParseStructuralSpan delegates to for inputs with
+    // embedded CR/LF (which the two engines would otherwise disagree on). Effectively cold in
+    // production — line-split loading never produces CR/LF — and a few KB in size, not worth
+    // #if-gating, which would break `dotnet build -c Release` of the test project.
     private static StructuralParse ParseStructuralRegex(string line)
     {
         var match = ValidHostsRegex().Match(line);
@@ -168,6 +169,16 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     // the regex's alt1-fail -> comment behavior). See the differential test.
     private static StructuralParse ParseStructuralSpan(string line)
     {
+        // Embedded CR/LF cannot occur on the normal load path (lines are already split), but the two
+        // engines disagree on them: the regex alternatives' non-Multiline anchors and `.` stop at a
+        // newline while this scanner would treat it as ordinary whitespace. Delegate the exotic case
+        // to the regex oracle so both engines agree by construction, instead of hand-porting .NET's
+        // `$`-before-trailing-newline subtleties.
+        if (line.AsSpan().IndexOfAny('\r', '\n') >= 0)
+        {
+            return ParseStructuralRegex(line);
+        }
+
         var s = line.AsSpan();
         var n = s.Length;
 
@@ -301,6 +312,16 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public static bool AutoPingIPAddress { get; set; }
+
+    /// <summary>
+    /// UI-thread synchronization context used to marshal ping-failure notifications when the ping
+    /// was started off the UI thread. Both apps parse the hosts file on a background thread
+    /// (<c>HostsFile.PreloadAsync</c>), so auto-pings started during that parse capture a null
+    /// <see cref="SynchronizationContext.Current"/> — without this fallback their PropertyChanged
+    /// would fire on the thread pool into bound UI (a cross-thread violation in both WinForms and
+    /// WinUI). Each app assigns this once at startup on its UI thread.
+    /// </summary>
+    public static SynchronizationContext? UiSynchronizationContext { get; set; }
 
     public string Error => _errors is null ? string.Empty : string.Join(Environment.NewLine, _errors.Values);
 
@@ -486,9 +507,13 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
             OnPropertyChanged(nameof(IpAddress));
         }
 
-        if (syncContext is not null)
+        // Prefer the context captured at Ping() time; fall back to the app-registered UI context
+        // (pings started during the background parse capture null). Only report inline when neither
+        // exists (headless/tests) — never onto bound UI from the thread pool.
+        var context = syncContext ?? UiSynchronizationContext;
+        if (context is not null)
         {
-            syncContext.Post(_ => ReportFailure(), null);
+            context.Post(_ => ReportFailure(), null);
         }
         else
         {

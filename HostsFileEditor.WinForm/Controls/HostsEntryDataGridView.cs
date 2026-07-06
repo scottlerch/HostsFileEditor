@@ -35,6 +35,14 @@ internal sealed class HostsEntryDataGridView : DataGridView
     public Action ClearSort { get; set; }
 
     /// <summary>
+    /// Above this many rows, the selection-restore setter highlights only the first matched row
+    /// instead of the whole set: each <c>Rows[i].Selected = true</c> walks the grid's internal
+    /// selected-band list (O(selected-so-far)), so restoring a huge selection is O(k^2) inside the
+    /// framework — minutes at 400K — no matter how cheaply the rows are matched.
+    /// </summary>
+    private const int MaxSelectionRestoreCount = 20000;
+
+    /// <summary>
     /// Gets the selected host entries.
     /// </summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -42,95 +50,97 @@ internal sealed class HostsEntryDataGridView : DataGridView
     {
         get
         {
-            // DataGridView.SelectedRows is O(n^2) for a large selection: its collection does an
-            // O(n) duplicate check per added row, so Select-All then Cut/Remove on a huge hosts
-            // file froze the app for minutes (~4.5 min at 400K rows). GetRowCount(Selected) is
-            // O(1); when every visible row is selected — the common Select-All case — read the
-            // bound view directly and skip SelectedRows entirely.
+            // One O(n) pass for ANY selection shape: walk the selected row indices with
+            // GetFirstRow/GetNextRow and map them positionally onto the bound view. This replaces
+            // two buggy branches: DataGridView.SelectedRows (O(k^2) collection build for a large
+            // selection — the original ~4.5-minute Select-All hang — AND it enumerates in
+            // reverse-of-selection order, so a partial-selection Copy->Paste reinserted the block
+            // reversed), and a count-based "all selected" fast path whose guard miscounted when the
+            // new-row placeholder was selected (Ctrl+A also selects the placeholder, so Ctrl+A then
+            // deselect-one still passed `>= dataRowCount` and returned EVERY row — deleting a row
+            // the user had excluded). The placeholder is now skipped explicitly, and the result is
+            // always in visible row order.
             //
-            // Correctness of the fast path relies on two things: (1) the grid uses full-row
-            // selection (RowHeaderSelect), so GetRowCount(Selected) counts whole selected rows;
-            // (2) BoundEntryViews() yields exactly the visible (filtered/sorted) entries — see its
-            // remarks. A selection is always a subset of the data rows, so `>= dataRowCount` can
-            // only be true when every data row is genuinely selected (no false positive that would
-            // delete unselected rows). If the grid is ever switched away from full-row selection,
-            // revisit this — GetRowCount(Selected) would then count cells, not rows.
+            // Positional mapping is correct because the grid binds through the BindingListView
+            // (MainForm: bindingSourceView.DataSource = _hostEntriesView), so the unwrapped list is
+            // exactly the visible (filtered/sorted) rows in grid row order, with the placeholder
+            // (never part of the view) last.
             //
-            // Both branches materialize eagerly (ToList): callers routinely snapshot the selection,
-            // then ClearSelection() or mutate the bound list before enumerating (e.g. Cut/Duplicate/
-            // enable). A deferred sequence would re-read the now-changed grid/list and yield wrong
-            // rows or throw "collection modified", so the snapshot must be taken here.
-            var dataRowCount = RowCount - (NewRowIndex >= 0 ? 1 : 0);
-            if (dataRowCount > 0 &&
-                Rows.GetRowCount(DataGridViewElementStates.Selected) >= dataRowCount)
+            // Materialized eagerly: callers snapshot the selection, then ClearSelection() or mutate
+            // the bound list before enumerating. A deferred sequence would re-read the changed
+            // grid/list and yield wrong rows or throw "collection modified".
+            var result = new List<HostsEntry>();
+            if (BoundViewList() is not { } views)
             {
-                return BoundEntryViews()
-                    .Where(view => view?.Object != null)
-                    .Select(view => view!.Object)
-                    .ToList();
+                return result;
             }
 
-            return SelectedRows
-                .Cast<DataGridViewRow>()
-                .Select(row => row.DataBoundItem as ObjectView<HostsEntry>)
-                .Where(view => view?.Object != null)
-                .Select(view => view!.Object)
-                .ToList();
+            for (var rowIndex = Rows.GetFirstRow(DataGridViewElementStates.Selected);
+                 rowIndex >= 0;
+                 rowIndex = Rows.GetNextRow(rowIndex, DataGridViewElementStates.Selected))
+            {
+                if (rowIndex == NewRowIndex || rowIndex >= views.Count)
+                {
+                    continue;
+                }
+
+                if (views[rowIndex] is ObjectView<HostsEntry> { Object: { } entry })
+                {
+                    result.Add(entry);
+                }
+            }
+
+            return result;
         }
 
         set
         {
-            // Restore a selection cheaply on a huge grid. The old body did Rows.Cast<DataGridViewRow>()
-            // with value.Contains per row: iterating Rows unshares all 400K DataGridViewRows and
-            // List.Contains is O(m), so restoring a large selection after a Move took seconds (O(n^2)
-            // in the worst case). Instead clear once, then walk the bound view (cheap ObjectView refs,
-            // no row unsharing) and select ONLY the matched rows by their index — the view order equals
-            // the grid's row order, and only the selected rows get realized via Rows[index].
-            var selected = value as ISet<HostsEntry> ?? new HashSet<HostsEntry>(value);
+            // Restore a selection cheaply on a huge grid: clear once, then select ONLY the matched
+            // rows by their view index (view order == grid row order; only matched rows get realized
+            // via Rows[index]). Membership uses our own reference-comparer set — like Core's Remove —
+            // so a caller-supplied set with a value-based comparer can't match the wrong duplicate
+            // row. Restores beyond MaxSelectionRestoreCount select just the first matched row (see
+            // the constant's remarks for why full restores are O(k^2) inside the framework).
+            var selected = new HashSet<HostsEntry>(value);
             ClearSelection();
-            if (selected.Count == 0)
+            if (selected.Count == 0 || BoundViewList() is not { } views)
             {
                 return;
             }
 
-            var index = 0;
-            foreach (var view in BoundEntryViews())
+            var restoreAll = selected.Count <= MaxSelectionRestoreCount;
+            var count = Math.Min(views.Count, RowCount);
+            for (var index = 0; index < count; index++)
             {
-                if (index >= RowCount)
-                {
-                    break;
-                }
-
-                if (view?.Object != null && selected.Contains(view.Object))
+                if (views[index] is ObjectView<HostsEntry> { Object: { } entry } && selected.Contains(entry))
                 {
                     Rows[index].Selected = true;
-                }
 
-                index++;
+                    if (!restoreAll)
+                    {
+                        break;
+                    }
+                }
             }
         }
     }
 
     /// <summary>
-    /// Enumerates the bound <see cref="ObjectView{HostsEntry}"/> items in the current (filtered/
-    /// sorted) view order, unwrapping the grid's <see cref="BindingSource"/> to its underlying list.
-    /// Used to avoid the O(n^2) <see cref="DataGridView.SelectedRows"/> getter when all rows are
-    /// selected. This is correct for an all-selected Cut/Delete under an active filter ONLY because
-    /// the grid binds through a <c>BindingListView</c> (MainForm: <c>bindingSourceView.DataSource =
-    /// _hostEntriesView</c>), so the unwrapped list yields exactly the visible filtered/sorted rows.
-    /// If the binding topology ever exposes the unfiltered list here, this would operate on hidden
-    /// rows.
+    /// Unwraps the grid's <see cref="BindingSource"/> chain to the underlying bound list — the
+    /// <c>BindingListView</c> whose items are <see cref="ObjectView{HostsEntry}"/> in the current
+    /// (filtered/sorted) VISIBLE order, index-aligned with the grid's data rows. Both the
+    /// <see cref="SelectedHostEntries"/> getter and setter rely on that index alignment; if the
+    /// binding topology ever exposes the unfiltered list here, they would operate on hidden rows.
     /// </summary>
-    private IEnumerable<ObjectView<HostsEntry>> BoundEntryViews()
+    private System.Collections.IList? BoundViewList()
     {
-        object? source = DataSource;
+        var source = DataSource;
         while (source is BindingSource bindingSource)
         {
             source = bindingSource.List;
         }
 
-        return (source as System.Collections.IEnumerable)?.OfType<ObjectView<HostsEntry>>()
-            ?? [];
+        return source as System.Collections.IList;
     }
 
     /// <summary>

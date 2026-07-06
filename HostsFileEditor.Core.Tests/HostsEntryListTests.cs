@@ -608,4 +608,71 @@ public class HostsEntryListTests
         list[1].HostNames.ShouldBe("a");
         list[2].ShouldBe(b);
     }
+
+    [TestMethod]
+    public void Insert_NullAnchor_AppendsToEnd()
+    {
+        var list = new HostsEntryList();
+        list.Add(new HostsEntry("127.0.0.1 a"));
+
+        // The paste contract both UIs share: no anchor row -> append (e.g. after Cut-All, or with
+        // nothing selected). Core owns the fallback so the UIs can't drift.
+        list.Insert(null, [new HostsEntry("127.0.0.1 b"), new HostsEntry("127.0.0.1 c")]);
+
+        list.Count.ShouldBe(3);
+        list[1].HostNames.ShouldBe("b");
+        list[2].HostNames.ShouldBe("c");
+    }
+
+    [TestMethod]
+    public void MoveBefore_AnchorInsideMovingSet_IsTrueNoOp()
+    {
+        UndoManager.Instance.ClearHistory();
+        var list = new HostsEntryList();
+        var entries = "a b c d".Split(' ').Select(n => new HostsEntry($"127.0.0.1 {n}")).ToList();
+        foreach (var entry in entries)
+        {
+            list.Add(entry);
+        }
+
+        UndoManager.Instance.ClearHistory();
+        var events = new List<ListChangedType>();
+        list.ListChanged += (_, e) => events.Add(e.ListChangedType);
+
+        // Anchor b sits INSIDE the moving set — the contract is a complete no-op: no reorder,
+        // no ListChanged, no undo step, no IsModified change. (An anchor mid-set would otherwise
+        // ambiguously reorder the remaining rows around it.)
+        list.MoveBefore([entries[1], entries[2]], entries[1]);
+
+        list.Select(x => x.HostNames).ShouldBe(["a", "b", "c", "d"]);
+        events.ShouldBeEmpty();
+        UndoManager.Instance.CanUndo.ShouldBeFalse();
+    }
+
+    [TestMethod]
+    public void UndoAll_AfterHistoryEviction_TokenDoesNotReportClean()
+    {
+        UndoManager.Instance.ClearHistory();
+        var cleanToken = UndoManager.Instance.CurrentStateToken;
+
+        var list = new HostsEntryList();
+
+        // One more op than MaximumHistorySize (1000), so the oldest group is evicted.
+        for (var i = 0; i < 1001; i++)
+        {
+            list.Add(new HostsEntry($"127.0.0.1 h{i}"));
+        }
+
+        while (UndoManager.Instance.CanUndo)
+        {
+            UndoManager.Instance.Undo();
+        }
+
+        // The oldest Add(s) were evicted and can never be undone: their entries are still applied,
+        // so the state is NOT back at the captured baseline. The token must not compare clean —
+        // this is what keeps HostsFile.IsModified from skipping the unsaved-changes prompt after a
+        // long editing session followed by undo-all.
+        list.Count.ShouldBeGreaterThan(0);
+        UndoManager.Instance.CurrentStateToken.ShouldNotBeSameAs(cleanToken);
+    }
 }

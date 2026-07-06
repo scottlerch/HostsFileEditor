@@ -43,11 +43,21 @@ public class UndoManager
     //     caller mutates the list under single-sided suspension, so that gap is not exercised.
     public bool IsCapturingSuspended => _suspendAddActions || (_undoInProgress && _redoInProgress);
 
+    // Surrogate identity for the sentinel (empty-history) position. The sentinel NODE survives both
+    // ClearHistory (a new node is allocated, but callers hold tokens, not nodes) and capacity
+    // eviction — yet after TrimOldest discards the oldest real group, "back at the sentinel" no
+    // longer means "back at the state the sentinel used to represent" (the evicted ops can never be
+    // undone). Replacing this object on eviction/clear makes stale sentinel tokens compare unequal,
+    // so HostsFile.IsModified can't report clean after undoing to a truncated history's floor.
+    private object _sentinelStateToken = new();
+
     // Opaque token identifying the current position in the undo history. It reference-compares
-    // equal only when the history is back at the same position, so callers can detect whether
-    // anything has changed since a captured token (e.g. unsaved edits since the last save). It
-    // changes as actions are added/undone/redone and whenever the history is cleared.
-    public object CurrentStateToken => _undoActionsPosition;
+    // equal only when the history is back at the same position AND that position still represents
+    // the same state, so callers can detect whether anything has changed since a captured token
+    // (e.g. unsaved edits since the last save). It changes as actions are added/undone/redone,
+    // whenever the history is cleared, and whenever capacity eviction rebases the sentinel.
+    public object CurrentStateToken =>
+        _undoActionsPosition == _undoActions.First ? _sentinelStateToken : _undoActionsPosition;
 
     // Event raised when the undo/redo history changes (so UI can update)
     public event EventHandler? HistoryChanged;
@@ -217,13 +227,22 @@ public class UndoManager
         _redoActions.Clear();
         _redoActionsPosition = _redoActions.AddLast(new LinkedList<Action>());
 
+        // A cleared history is a new state baseline; tokens captured before the clear must not
+        // compare equal to the fresh sentinel position.
+        _sentinelStateToken = new object();
+
         OnHistoryChanged();
     }
+
+    // All three suspend helpers save and RESTORE the prior flag values (rather than resetting to
+    // false) so they are safe to nest: an inner ReplaceAll's SuspendUndoRedo must not silently end
+    // an outer suspension scope and let the rest of a bulk operation start capturing undo again.
 
     public void SuspendUndo(Action action)
     {
         ArgumentNullException.ThrowIfNull(action);
 
+        var previous = _undoInProgress;
         _undoInProgress = true;
 
         try
@@ -232,7 +251,7 @@ public class UndoManager
         }
         finally
         {
-            _undoInProgress = false;
+            _undoInProgress = previous;
         }
     }
 
@@ -240,6 +259,7 @@ public class UndoManager
     {
         ArgumentNullException.ThrowIfNull(action);
 
+        var previous = _redoInProgress;
         _redoInProgress = true;
 
         try
@@ -248,7 +268,7 @@ public class UndoManager
         }
         finally
         {
-            _redoInProgress = false;
+            _redoInProgress = previous;
         }
     }
 
@@ -256,6 +276,8 @@ public class UndoManager
     {
         ArgumentNullException.ThrowIfNull(action);
 
+        var previousUndo = _undoInProgress;
+        var previousRedo = _redoInProgress;
         _undoInProgress = true;
         _redoInProgress = true;
 
@@ -265,8 +287,8 @@ public class UndoManager
         }
         finally
         {
-            _undoInProgress = false;
-            _redoInProgress = false;
+            _undoInProgress = previousUndo;
+            _redoInProgress = previousRedo;
         }
     }
 
@@ -284,26 +306,34 @@ public class UndoManager
 
     private void EnforceCapacity()
     {
-        TrimOldest(_undoActions, ref _undoActionsPosition);
+        if (TrimOldest(_undoActions, ref _undoActionsPosition))
+        {
+            // The evicted group can never be undone, so the sentinel no longer represents the state
+            // tokens captured against it (e.g. HostsFile's clean-at-load marker). Rebase its identity
+            // so those stale tokens read as "modified" instead of falsely clean after an undo-all.
+            _sentinelStateToken = new object();
+        }
+
         TrimOldest(_redoActions, ref _redoActionsPosition);
     }
 
     // Evicts the oldest real action group (the node right after the sentinel First
     // node) while preserving the sentinel. If the current position points at the
     // node being evicted, it is advanced to the sentinel so navigation stays valid.
-    private static void TrimOldest(
+    // Returns whether a group was evicted.
+    private static bool TrimOldest(
         LinkedList<LinkedList<Action>> actions,
         ref LinkedListNode<LinkedList<Action>> position)
     {
         if (actions.Count <= MaximumHistorySize)
         {
-            return;
+            return false;
         }
 
         var oldest = actions.First!.Next;
         if (oldest is null)
         {
-            return;
+            return false;
         }
 
         if (position == oldest)
@@ -312,6 +342,7 @@ public class UndoManager
         }
 
         actions.Remove(oldest);
+        return true;
     }
 
     private void OnHistoryChanged() => HistoryChanged?.Invoke(this, EventArgs.Empty);

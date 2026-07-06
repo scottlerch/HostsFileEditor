@@ -28,6 +28,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // evaluation during InitializeComponent doesn't trigger that parse on the UI thread.
     private bool _isLoaded;
 
+    // Set when the initial hosts-file load failed. The Lazy<HostsFile> has CACHED that exception —
+    // every later HostsFile.Instance touch rethrows it — so the visibility getters and handlers must
+    // short-circuit on this flag instead of dereferencing Instance (which would crash the app from
+    // inside a binding refresh or an event handler).
+    private bool _loadFailed;
+
     // Set while an explicit handler mutates the Core list and refreshes the view itself, so the
     // ListChanged subscription below doesn't also fire an (O(n^2)) minimal-diff refresh on top.
     // volatile: a Core ListChanged can arrive off the UI thread (an auto-ping result whose property
@@ -38,6 +44,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // Guards against re-enqueuing the selection-state refresh while one is already pending, so a
     // burst of SelectionChanged events (e.g. Ctrl+A over a large list) collapses to one update.
     private bool _selectionUpdatePending;
+
+    // Coalesce Core ListChanged bursts (e.g. hundreds of thousands of auto-ping results) into one
+    // queued view refresh per dispatcher pass; _pendingStructuralRefresh remembers whether any event
+    // in the burst was structural (Reset/ItemAdded/ItemDeleted), which upgrades the queued refresh to
+    // the bulk rebind. volatile: ListChanged can arrive off the UI thread (see _suspendCoreListSync).
+    private volatile bool _coreRefreshPending;
+    private volatile bool _pendingStructuralRefresh;
 
     // Our own mirror of the ListView selection, maintained from the cheap SelectionChanged deltas.
     // Reading ListView.SelectedItems (its Count or enumeration) is O(n^2) for a large selection and
@@ -67,7 +80,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public string SelectAllBannerText => $"All {Entries.Count:N0} entries selected — press Esc or click a row to clear.";
 
-    public Visibility LoadingVisibility => _isLoaded ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility LoadingVisibility => _isLoaded || _loadFailed ? Visibility.Collapsed : Visibility.Visible;
 
     // Dev/test HFE_HOSTS_PATH override indicator for the title bar (OneTime — set at startup).
     public string OverrideIndicatorText => HostsFile.OverridePath is { } p ? $"[{p}]" : string.Empty;
@@ -98,9 +111,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public Visibility ArchiveViewVisibility => IsArchiveVisible ? Visibility.Visible : Visibility.Collapsed;
 
-    public Visibility EntriesEmptyVisibility => _isLoaded && HostsFile.Instance.Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    // Both getters check _loadFailed BEFORE dereferencing HostsFile.Instance — see _loadFailed.
+    public Visibility EntriesEmptyVisibility =>
+        _loadFailed || (_isLoaded && HostsFile.Instance.Entries.Count == 0) ? Visibility.Visible : Visibility.Collapsed;
 
-    public Visibility EntriesFilteredVisibility => _isLoaded && HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility EntriesFilteredVisibility =>
+        !_loadFailed && _isLoaded && HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public bool IsFilterCommentsHidden { get; private set; }
 
@@ -146,6 +162,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
                 CtxRedo?.Visibility = redo ? Visibility.Visible : Visibility.Collapsed;
             });
+
+        // Auto-pings started during the off-UI-thread parse capture a null SynchronizationContext;
+        // register the UI context so their failure notifications marshal here instead of updating
+        // x:Bind-bound rows from the thread pool (RPC_E_WRONG_THREAD).
+        HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
 
         // Apply persisted settings BEFORE the first HostsFile.Instance access (RefreshEntries
         // below): that access loads the hosts file and constructs every HostsEntry, so
@@ -205,8 +226,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             // LoadEntriesAsync is started fire-and-forget, so an exception from the off-thread load
             // (locked/denied hosts file, failed backup copy, bad HFE_HOSTS_PATH target) would be
-            // unobserved. Stop the spinner, show the error, and leave an empty list.
-            _isLoaded = true;
+            // unobserved. Set _loadFailed (NOT _isLoaded — the visibility getters would dereference
+            // HostsFile.Instance, whose Lazy has cached this exception and would rethrow it out of
+            // the binding refresh, killing the app before the dialog appears), stop the spinner,
+            // show the error, and leave an inert empty list.
+            _loadFailed = true;
             OnPropertyChanged(nameof(LoadingVisibility));
             OnPropertyChanged(nameof(EntriesEmptyVisibility));
             OnPropertyChanged(nameof(EntriesFilteredVisibility));
@@ -243,6 +267,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // Selection is reset, which is the expected behavior when the filter changes.
     private void RefreshEntriesFiltered()
     {
+        // Inert until the initial load completes (and forever if it failed, or while an async
+        // reload is rebuilding the Core list on a background thread) — BulkPopulateEntries
+        // dereferences HostsFile.Instance and enumerates its Entries.
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         BulkPopulateEntries();
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
@@ -252,10 +284,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // Resolves the trimmed filter text once (a visual-tree FindName lookup). Hoist this before a
     // Where(...) so an O(n) filter pass over the entries doesn't re-run FindName + Trim per row —
     // on a 400K-entry file that was ~400K tree walks and allocations per rebuild/keystroke/ItemChanged.
-    private string CurrentFilterText() =>
-        Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb && ftb.Text is string s
+    private string CurrentFilterText()
+    {
+        return Content is FrameworkElement root && root.FindName("FilterTextBox") is TextBox ftb && ftb.Text is string s
             ? s.Trim()
             : string.Empty;
+    }
 
     private bool EntryPassesFilter(HostsEntry e, string filterText)
     {
@@ -281,13 +315,38 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // A property update (ItemChanged — e.g. an auto-ping result) must NOT clear a pending
-        // logical Select-All; a structural change (Reset/ItemAdded/ItemDeleted from a bulk op like
-        // enable/disable-all) supersedes it. RefreshEntries clears the flag unless told to preserve.
-        var preserveLogical = e.ListChangedType == ListChangedType.ItemChanged;
+        // Structural events that reach here unsuppressed are whole-list Resets from undo/redo
+        // (explicit handlers suspend the subscription). Route them to the bulk rebind: the per-item
+        // minimal diff is O(n^2) against a wholesale change — Ctrl+Z after Cut-All would re-insert
+        // 400K rows one at a time and hang for minutes — and the bulk swap also re-realizes every
+        // row container, which is what makes an undone enable/disable-all (a silent per-item toggle)
+        // repaint its checkboxes. Only ItemChanged (a ping result, a cell edit) takes the cheap diff,
+        // and it must NOT clear a pending logical Select-All.
+        _pendingStructuralRefresh |= e.ListChangedType != ListChangedType.ItemChanged;
 
-        // Use dispatcher to ensure UI-thread update and preserve selection when possible
-        _ = DispatcherQueue.TryEnqueue(() => RefreshEntries(preserveSelection: true, preserveLogicalSelectAll: preserveLogical));
+        // Coalesce: a burst of ListChanged events (auto-ping results streaming in on a large file)
+        // must collapse to one queued refresh per dispatcher pass, not one O(n) rebuild per event.
+        if (_coreRefreshPending)
+        {
+            return;
+        }
+
+        _coreRefreshPending = true;
+        _ = DispatcherQueue.TryEnqueue(() =>
+        {
+            _coreRefreshPending = false;
+            var structural = _pendingStructuralRefresh;
+            _pendingStructuralRefresh = false;
+
+            if (structural)
+            {
+                RefreshEntriesFiltered();
+            }
+            else
+            {
+                RefreshEntries(preserveSelection: true, preserveLogicalSelectAll: true);
+            }
+        });
     }
 
     private void TrySetAppWindowTitleBar()
@@ -323,7 +382,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        if (_forceClose || !HostsFile.Instance.IsModified)
+        // Before the load completes there is nothing user-modified to lose — and touching
+        // HostsFile.Instance here would block the UI thread on the in-progress background parse
+        // (or rethrow a cached load failure). Let the close proceed.
+        if (!_isLoaded || _forceClose || !HostsFile.Instance.IsModified)
         {
             return;
         }
@@ -447,6 +509,27 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             // Track "all selected" logically rather than populating the native ListView selection:
             // WinUI clears SelectedItems one row at a time, so tearing down a huge native selection
             // (on the following delete/cut/filter) is O(n^2) and froze the app for minutes.
+            //
+            // Any PRE-EXISTING native selection must be cleared first, or its rows stay visibly
+            // highlighted (and SelectedItem stays stale, mis-anchoring a later paste) while the
+            // selection state says nothing is natively selected — e.g. click a row, Ctrl+A, Esc
+            // would leave a highlighted row with every selection-gated command disabled. Clearing
+            // is cheap for the small selections users click together; a huge native range
+            // (Shift+Click) pays the platform's own teardown cost once, here, instead of
+            // desyncing.
+            if (_selectedEntries.Count > 0 || EntriesList.SelectedItem is not null)
+            {
+                _suspendSelectionTracking = true;
+                try
+                {
+                    EntriesList.SelectedItems.Clear();
+                }
+                finally
+                {
+                    _suspendSelectionTracking = false;
+                }
+            }
+
             _selectedEntries.Clear();
             SetLogicalSelectAll(true);
             _selectionService.UpdateSelectionDependentButtons();
@@ -516,13 +599,19 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnImportClick(object sender, RoutedEventArgs e)
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         try
         {
             var path = Win32FileDialogs.OpenFileDialog(GetHwnd(), "All Files (*.*)|*.*");
             if (!string.IsNullOrWhiteSpace(path))
             {
-                HostsFile.Instance.Import(path);
-                RefreshEntries();
+                // Bulk rebind: an import replaces every entry, so the per-item RefreshEntries diff
+                // would be O(n^2) against all-new references (an hour-class hang on a large file).
+                MutateCoreAndRefresh(() => HostsFile.Instance.Import(path));
             }
         }
         catch (Exception ex)
@@ -533,6 +622,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnSaveClick(object sender, RoutedEventArgs e)
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         try
         {
             HostsFile.Instance.Save();
@@ -552,6 +646,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnSaveAsClick(object sender, RoutedEventArgs e)
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         try
         {
             var path = Win32FileDialogs.SaveFileDialog(GetHwnd(), "hosts", "Hosts (*.txt;*.hosts)|*.txt;*.hosts|Text (*.txt)|*.txt|All Files (*.*)|*.*");
@@ -588,9 +687,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // be added invisibly and be uneditable. Clear filters first so the user can see and edit it.
         ClearAllFilters();
 
-        // RefreshEntries (inside the helper) rebuilds the (filtered) view from the core list — do not
-        // also insert into the view directly, which would add the entry twice and ignore filters.
-        MutateKeepingSelection(() =>
+        // Bulk rebind, NOT the minimal diff: clearing an active filter here swaps the whole visible
+        // set (the diff against a small filtered view would be O(n^2) inserts on a large file — the
+        // exact case RefreshEntriesFiltered exists to avoid). The helper's rebind also raises the
+        // empty/filtered visibility notifications; the view rebuilds from the core list, so nothing
+        // is inserted into the view directly (which would add the entry twice and ignore filters).
+        MutateCoreAndRefresh(() =>
         {
             var first = HostsFile.Instance.Entries.FirstOrDefault();
             if (first != null)
@@ -602,9 +704,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 HostsFile.Instance.Entries.Add();
             }
         });
-
-        OnPropertyChanged(nameof(EntriesEmptyVisibility));
-        OnPropertyChanged(nameof(EntriesFilteredVisibility));
     }
 
     private void ClearAllFilters()
@@ -633,7 +732,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         // Anchor on the entry immediately above the selection (in the visible/filtered view), not on
         // an entry within the selection itself: MoveBefore(x, x) is a no-op.
-        MutateKeepingSelection(() => HostsFile.Instance.Entries.MoveBefore(selected, Entries[minIndex - 1]));
+        MoveEntries(selected, () => HostsFile.Instance.Entries.MoveBefore(selected, Entries[minIndex - 1]));
     }
 
     private void OnMoveDownClick(object sender, RoutedEventArgs e)
@@ -646,7 +745,24 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         // Anchor on the entry immediately below the selection (in the visible/filtered view), not on
         // an entry within the selection itself: MoveAfter(x, x) is a no-op.
-        MutateKeepingSelection(() => HostsFile.Instance.Entries.MoveAfter(selected, Entries[maxIndex + 1]));
+        MoveEntries(selected, () => HostsFile.Instance.Entries.MoveAfter(selected, Entries[maxIndex + 1]));
+    }
+
+    // A small block move keeps its selection (the pleasant UX); a huge one (a Shift+Click range —
+    // Ctrl+A above the threshold is logical and disables Move) must go through the bulk rebind:
+    // the minimal diff issues one ObservableCollection.Move per selected row (O(k*n) memmoves) and
+    // the native-selection restore is the O(k^2) WinUI teardown. Dropping the selection on an
+    // enormous move beats minutes of hang.
+    private void MoveEntries(List<HostsEntry> selected, Action move)
+    {
+        if (selected.Count > LogicalSelectAllThreshold)
+        {
+            MutateCoreAndRefresh(move);
+        }
+        else
+        {
+            MutateKeepingSelection(move);
+        }
     }
 
     // One O(n) scan yields the selected entries (visible order) and the first/last selected indices,
@@ -677,18 +793,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // For small structural edits that should KEEP the current selection (move, insert-above/below,
     // add) — unlike MutateCoreAndRefresh, which rebinds in bulk and resets selection. RefreshEntries
     // restores the selection from the mirror via its minimal diff. Suspends the Core-list subscription
-    // so the op's single Reset/ItemAdded doesn't also enqueue a second, redundant refresh.
+    // so the op's single Reset/ItemAdded doesn't also enqueue a second, redundant refresh. The refresh
+    // lives in finally so a throw mid-mutation (whose suppressed Reset may already have fired) can't
+    // leave the view desynced from what Save would write.
     private void MutateKeepingSelection(Action mutate)
     {
         _suspendCoreListSync = true;
         try
         {
             mutate();
-            RefreshEntries(true);
         }
         finally
         {
             _suspendCoreListSync = false;
+            RefreshEntries(true);
         }
     }
 
@@ -709,14 +827,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // touching ListView.SelectedItems (whose Count and enumeration are both O(n^2) for a large
     // selection — the actual cause of the multi-minute Select-All + Remove/Cut hang). Both branches
     // are O(n) with O(1) hash lookups and preserve visible order.
-    private List<HostsEntry> GetSelectedEntries() =>
+    private List<HostsEntry> GetSelectedEntries()
+    {
         // Key the "all" fast path on the explicit logical flag only. A count-based short-circuit
         // (_selectedEntries.Count >= Entries.Count) would wrongly return every row if the mirror
         // ever drifted above the visible count; the Where already returns all rows when everything
         // is natively selected, so the flag is the sole trigger.
-        _logicalSelectAll
+        return _logicalSelectAll
             ? [.. Entries]
             : [.. Entries.Where(_selectedEntries.Contains)];
+    }
 
     // Single place to flip the logical-select-all flag so the banner notification can't be forgotten.
     private void SetLogicalSelectAll(bool value)
@@ -743,9 +863,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // (the ItemsSource swap deselects every old row — a huge teardown delta we don't want to process)
     // and the Core-list ListChanged subscription (the mutation raises one Reset, which would otherwise
     // also enqueue the O(n^2) per-item RefreshEntries diff), rebuilds via the O(n) bulk path, then
-    // resets the selection state. Reset is in finally so a throw in the mutation or rebind can't leave
-    // a stale "all selected" / a stuck suspend flag; on the success path RefreshEntriesFiltered ->
-    // BulkPopulateEntries already reset it, so the finally reset is an idempotent no-op there.
+    // resets the selection state. The rebind and reset live in finally so a throw mid-mutation can't
+    // leave the view desynced from what Save would write (the suppressed Reset may already have
+    // fired), a stuck suspend flag, or a stale "all selected".
     private void MutateCoreAndRefresh(Action mutate)
     {
         _suspendSelectionTracking = true;
@@ -753,13 +873,40 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         try
         {
             mutate();
-            RefreshEntriesFiltered();
         }
         finally
         {
             _suspendCoreListSync = false;
             _suspendSelectionTracking = false;
+            RefreshEntriesFiltered();
             ResetSelectionState();
+        }
+    }
+
+    // Async twin of MutateCoreAndRefresh for mutations that re-read a file from disk (reload /
+    // archive load): the multi-second parse runs off the UI thread so the window stays responsive.
+    // The window re-enters the "loading" state for the duration — the spinner returns, and every
+    // Instance-touching command and view rebuild no-ops via its _isLoaded guard, because the Core
+    // list is being cleared and re-filled on a background thread and enumerating it concurrently
+    // (a filter keystroke, a paste) would throw or read a half-built list.
+    private async Task MutateCoreAndRefreshAsync(Action mutate)
+    {
+        _isLoaded = false;
+        OnPropertyChanged(nameof(LoadingVisibility));
+        _suspendSelectionTracking = true;
+        _suspendCoreListSync = true;
+        try
+        {
+            await Task.Run(mutate);
+        }
+        finally
+        {
+            _suspendCoreListSync = false;
+            _suspendSelectionTracking = false;
+            _isLoaded = true;
+            RefreshEntriesFiltered();
+            ResetSelectionState();
+            OnPropertyChanged(nameof(LoadingVisibility));
         }
     }
 
@@ -792,23 +939,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (_clipboardEntries != null)
         {
-            // Anchor on the native SelectedItem when present; under a logical Select-All (no native
-            // selection) fall back to the first entry. After Cut-All the list is empty (no anchor at
-            // all, and nothing selected) — append the clipboard to the end instead of no-op'ing. Rebind
-            // in bulk (not the per-item RefreshEntries diff, which is O(n^2) for pasting a whole file).
-            var current = EntriesList.SelectedItem as HostsEntry ?? Entries.FirstOrDefault();
+            // Anchor on the native SelectedItem when present; with no anchor (logical Select-All,
+            // nothing selected, or the empty list after Cut-All) Core APPENDS — matching the classic
+            // edition, and never silently inserting at the top of the file (which would change
+            // resolution precedence). Rebind in bulk (not the per-item RefreshEntries diff, which is
+            // O(n^2) for pasting a whole file).
+            var current = EntriesList.SelectedItem as HostsEntry;
             var clipboard = _clipboardEntries;
-            MutateCoreAndRefresh(() =>
-            {
-                if (current != null)
-                {
-                    HostsFile.Instance.Entries.Insert(current, clipboard);
-                }
-                else
-                {
-                    HostsFile.Instance.Entries.InsertRange(clipboard);
-                }
-            });
+            MutateCoreAndRefresh(() => HostsFile.Instance.Entries.Insert(current, clipboard));
 
             _clipboardEntries = null;
         }
@@ -836,6 +974,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnDisableHostsClick(object sender, RoutedEventArgs e)
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         var isChecked = !HostsFile.IsEnabled; // current binding value
         try
         {
@@ -867,6 +1010,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         var confirmed = await ShowConfirmationAsync("Reload hosts file?", "You will lose any unsaved changes. Continue?");
         if (!confirmed)
         {
@@ -876,9 +1024,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         try
         {
             // Honor the "remove default text" setting on reload, matching initial load and
-            // Import; passing nothing would always strip the default hosts header.
-            HostsFile.Instance.Refresh(HostsFile.RemoveDefaultText);
-            RefreshEntries();
+            // Import; passing nothing would always strip the default hosts header. The reload
+            // re-reads and re-parses the whole file — run it off the UI thread behind the loading
+            // indicator like the initial load, instead of freezing the window for the parse.
+            await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Refresh(HostsFile.RemoveDefaultText));
         }
         catch (Exception ex)
         {
@@ -888,8 +1037,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnRestoreClick(object sender, RoutedEventArgs e)
     {
-        HostsFile.Instance.RestoreDefault();
-        RefreshEntries();
+        if (!_isLoaded)
+        {
+            return;
+        }
+
+        // The default hosts text is a small embedded resource — a synchronous bulk rebind is fine.
+        MutateCoreAndRefresh(() => HostsFile.Instance.RestoreDefault());
     }
 
     private void OnOpenInTextEditorClick(object sender, RoutedEventArgs e) => Utilities.FileOpener.OpenTextFile(HostsFile.DefaultHostFilePath);
@@ -986,6 +1140,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnArchiveClick(object sender, RoutedEventArgs e)
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         var name = _dialogService is not null
             ? await _dialogService.ShowInputAsync(Content.XamlRoot, "Create Archive", "Archive name", "OK", "Cancel")
             : null;
@@ -1018,12 +1177,18 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnArchiveLoadClick(object sender, RoutedEventArgs e)
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         if (ArchiveList.SelectedItem is HostsArchive archive)
         {
             try
             {
-                HostsFile.Instance.Import(archive.FilePath);
-                RefreshEntries();
+                // An archive can be as large as the hosts file itself: parse it off the UI thread
+                // and rebind in bulk (the per-item diff is O(n^2) against all-new references).
+                await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Import(archive.FilePath));
             }
             catch (Exception ex)
             {
@@ -1049,25 +1214,30 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnBackClick(object sender, RoutedEventArgs e) => await ToggleArchiveVisibilityAsync(false);
 
-    // Optimized to update Entries in-place to minimize ListView flicker.
-    // Pseudocode:
-    // 1. Capture filter text (trim).
-    // 2. If preserveSelection: capture selected items into HashSet.
-    // 3. Build filtered target list (newList) applying comment/disabled filters + text filter.
-    // 4. Fast path: if counts equal AND all items in same order (reference equality), skip collection mutation.
-    // 5. Otherwise perform minimal diff:
-    //    For i from 0 .. newList.Count-1:
-    //      a. If i >= Entries.Count -> Entries.Add(newItem)
-    //      b. Else if Entries[i] != newItem:
-    //           i.   Try find newItem in Entries at index j > i. If found -> move (remove at j, insert at i).
-    //           ii.  Else insert newItem at i.
-    //    After loop, remove any trailing items in Entries (while Entries.Count > newList.Count).
-    // 6. Restore selection if preserveSelection: clear current selection and re-add items present in snapshot.
-    //    If not preserving selection, emulate old behavior (clearing destroyed selection) by clearing selection explicitly.
-    // 7. Raise property changed notifications for empty / filtered visibility (only if potentially changed).
+    // Minimal-diff refresh: updates Entries in place so a SMALL change (one insert, one move, an
+    // ItemChanged from a ping result or cell edit) doesn't flicker the ListView or lose scroll
+    // position. Steps (numbers match the inline comments; there is deliberately no step 4):
+    // 1. Capture the current selection from the mirror (never ListView.SelectedItems — O(k^2)).
+    // 2. Build the filtered target list (filter text hoisted to one read).
+    // 3. Fast path: identical reference sequence -> skip all collection mutation AND leave the
+    //    native selection untouched.
+    // 5. Otherwise minimal per-index diff (Add / Move / Insert, then trim trailing extras). This is
+    //    O(k*n) for k out-of-place rows — fine for a single insert/move, which is all that reaches
+    //    it; wholesale changes (bulk ops, undo/redo Resets, filter changes) go through
+    //    RefreshEntriesFiltered's one-shot rebind instead.
+    // 6. Restore (or clear) the native selection when the sequence changed; huge restores are
+    //    dropped rather than replayed (WinUI's SelectedItems is O(k^2)).
+    // 7. Property notifications for empty/filtered visibility and the select-all banner.
     // 8. Update selection-dependent buttons & context menu.
     private void RefreshEntries(bool preserveSelection = false, bool preserveLogicalSelectAll = false)
     {
+        // Inert until the initial load completes / while an async reload rebuilds the Core list on
+        // a background thread — see RefreshEntriesFiltered.
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         // 1. Capture selection if needed (from the mirror, not the O(n^2) SelectedItems collection)
         HashSet<HostsEntry>? selectedSnapshot = null;
         if (preserveSelection && _selectedEntries.Count > 0)
@@ -1137,16 +1307,26 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // 6. Restore / clear selection — only touch the native selection when the visible sequence
         // actually changed. Reading/writing ListView.SelectedItems is O(n^2) for a large selection,
         // so an ItemChanged refresh (a cell edit or an auto-ping result, where `same` is true) must
-        // leave the existing selection untouched instead of diffing it.
+        // leave the existing selection untouched instead of diffing it. Restores beyond the logical
+        // select-all threshold are dropped rather than replayed: re-Adding a huge native selection
+        // (reachable via Shift+Click ranges, which the Ctrl+A interception can't gate) is the
+        // documented O(k^2) WinUI teardown — losing the highlight beats a minutes-long hang.
         if (!same)
         {
             EntriesList.SelectedItems.Clear();
-            if (preserveSelection && selectedSnapshot is not null)
+            if (preserveSelection
+                && selectedSnapshot is not null
+                && selectedSnapshot.Count <= LogicalSelectAllThreshold)
             {
                 foreach (var item in Entries.Where(selectedSnapshot.Contains))
                 {
                     EntriesList.SelectedItems.Add(item);
                 }
+            }
+            else if (selectedSnapshot is not null)
+            {
+                // The native selection is gone and the mirror must agree.
+                ResetSelectionState();
             }
         }
 

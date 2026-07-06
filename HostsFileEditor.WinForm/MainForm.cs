@@ -177,12 +177,21 @@ internal sealed partial class MainForm : Form
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
             && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
+            // Restore in finally: if SendWait throws (blocked SendInput under UIPI etc.), leaving the
+            // shortcuts cleared would permanently kill Ctrl+C for the rest of the session.
             var keys = menuCopy.ShortcutKeys;
             menuCopy.ShortcutKeys = Keys.None;
             menuContextCopy.ShortcutKeys = Keys.None;
-            SendKeys.SendWait("^(C)");
-            menuCopy.ShortcutKeys = keys;
-            menuContextCopy.ShortcutKeys = keys;
+            try
+            {
+                SendKeys.SendWait("^(C)");
+            }
+            finally
+            {
+                menuCopy.ShortcutKeys = keys;
+                menuContextCopy.ShortcutKeys = keys;
+            }
+
             return;
         }
 
@@ -226,12 +235,20 @@ internal sealed partial class MainForm : Form
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
             && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
+            // Restore in finally — see OnCopyClick.
             var keys = menuCut.ShortcutKeys;
             menuCut.ShortcutKeys = Keys.None;
             menuContextCut.ShortcutKeys = Keys.None;
-            SendKeys.SendWait("^(X)");
-            menuCut.ShortcutKeys = keys;
-            menuContextCut.ShortcutKeys = keys;
+            try
+            {
+                SendKeys.SendWait("^(X)");
+            }
+            finally
+            {
+                menuCut.ShortcutKeys = keys;
+                menuContextCut.ShortcutKeys = keys;
+            }
+
             return;
         }
 
@@ -288,12 +305,20 @@ internal sealed partial class MainForm : Form
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
             && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
+            // Restore in finally — see OnCopyClick.
             var keys = menuDelete.ShortcutKeys;
             menuDelete.ShortcutKeys = Keys.None;
             menuContextDelete.ShortcutKeys = Keys.None;
-            SendKeys.SendWait("{DEL}");
-            menuDelete.ShortcutKeys = keys;
-            menuContextDelete.ShortcutKeys = keys;
+            try
+            {
+                SendKeys.SendWait("{DEL}");
+            }
+            finally
+            {
+                menuDelete.ShortcutKeys = keys;
+                menuContextDelete.ShortcutKeys = keys;
+            }
+
             return;
         }
 
@@ -467,6 +492,11 @@ internal sealed partial class MainForm : Form
     /// </param>
     private async void OnFomLoad(object sender, EventArgs e)
     {
+        // Auto-pings started during the off-UI-thread parse capture a null SynchronizationContext;
+        // register the UI context so their failure notifications marshal here instead of firing
+        // PropertyChanged into the bound grid from the thread pool.
+        HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
+
         LoadSettings();
 
         _hostsArchiveView = new BindingListView<HostsArchive>(components)
@@ -478,7 +508,12 @@ internal sealed partial class MainForm : Form
         _hostsArchiveView.Sort = nameof(HostsArchive.FileName);
 
         // Parse the hosts file off the UI thread (it can be very large) behind a loading indicator,
-        // so the window paints and stays responsive instead of freezing on a huge file.
+        // so the window paints and stays responsive instead of freezing on a huge file. Disable the
+        // command surfaces while it runs: any command that touches HostsFile.Instance (Save, Disable,
+        // Import…) would otherwise block the UI thread on the in-progress load and then act on a form
+        // whose grid bindings are not wired up yet.
+        menuStrip.Enabled = false;
+        toolStrip.Enabled = false;
         UseWaitCursor = true;
         // Held separately so it can be disposed below: Control.Dispose does NOT dispose a Font the
         // caller assigned via the Font property, so `new Font(...)` inline would leak a GDI handle.
@@ -503,21 +538,42 @@ internal sealed partial class MainForm : Form
         {
             // OnFomLoad is `async void`, so an exception from the off-thread load (locked/denied
             // hosts file, failed backup copy, bad HFE_HOSTS_PATH target) would otherwise escape
-            // unobserved and crash. Surface it and leave an empty grid instead.
-            MessageBox.Show(
-                this,
-                "The hosts file could not be loaded:" + Environment.NewLine + Environment.NewLine + ex.Message,
-                Text,
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Error);
+            // unobserved and crash. Surface it, then close: the Lazy<HostsFile> has CACHED the
+            // exception, so every later touch of HostsFile.Instance (any menu command) would
+            // rethrow it as an unhandled crash — a clean exit is strictly better.
+            if (!IsDisposed)
+            {
+                MessageBox.Show(
+                    this,
+                    "The hosts file could not be loaded:" + Environment.NewLine + Environment.NewLine + ex.Message,
+                    Text,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                Close();
+            }
+
             return;
         }
         finally
         {
-            loadingLabel.Parent?.Controls.Remove(loadingLabel);
+            // The user may have closed the window during the multi-second load; the continuation
+            // then runs against disposed controls, so only touch live UI when the form survives.
+            // Dispose is idempotent and safe either way.
+            if (!IsDisposed)
+            {
+                loadingLabel.Parent?.Controls.Remove(loadingLabel);
+                UseWaitCursor = false;
+                menuStrip.Enabled = true;
+                toolStrip.Enabled = true;
+            }
+
             loadingLabel.Dispose();
             loadingFont.Dispose();
-            UseWaitCursor = false;
+        }
+
+        if (IsDisposed)
+        {
+            return;
         }
 
         bindingSourceHostFile.DataSource = HostsFile.Instance;
@@ -819,6 +875,10 @@ internal sealed partial class MainForm : Form
 
             if (belowEntry != null)
             {
+                // Clear the (possibly huge) selection before the move's single Reset — the same
+                // O(n^2) selection-vs-Reset teardown avoidance as Delete/Cut. The setter restores
+                // the selection afterwards (capped for enormous selections).
+                dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveAfter(selectedEntries, belowEntry);
 
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
@@ -861,6 +921,8 @@ internal sealed partial class MainForm : Form
 
             if (aboveEntry != null)
             {
+                // See OnMoveDownClick: clear before the Reset, restore (capped) afterwards.
+                dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveBefore(selectedEntries, aboveEntry);
 
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
@@ -915,39 +977,45 @@ internal sealed partial class MainForm : Form
         if (dataGridViewHostsEntries.IsCurrentCellInEditMode
             && dataGridViewHostsEntries.SelectedRowCount == 0)
         {
+            // Restore in finally — see OnCopyClick.
             var keys = menuPaste.ShortcutKeys;
             menuPaste.ShortcutKeys = Keys.None;
             menuContextPaste.ShortcutKeys = Keys.None;
-            SendKeys.SendWait("^(V)");
-            menuPaste.ShortcutKeys = keys;
-            menuContextPaste.ShortcutKeys = keys;
+            try
+            {
+                SendKeys.SendWait("^(V)");
+            }
+            finally
+            {
+                menuPaste.ShortcutKeys = keys;
+                menuContextPaste.ShortcutKeys = keys;
+            }
+
             return;
         }
 
         dataGridViewHostsEntries.CancelEdit();
 
-        if (_clipboardEntries != null)
+        // Row paste takes precedence only with a full-row selection (a lingering row clipboard must
+        // not hijack a cell-level text paste — pre-PR behavior), or when the grid has no current row
+        // at all (paste into the empty grid after Cut-All, where nothing CAN be selected).
+        var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
+        if (_clipboardEntries != null
+            && (dataGridViewHostsEntries.SelectedRowCount > 0 || currentEntry is null))
         {
-            // Paste cut/copied rows relative to the current row. After Cut-All the list is empty,
-            // so there is no current row / selection — append the clipboard to the end instead.
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
-            if (currentEntry != null)
-            {
-                HostsFile.Instance.Entries.Insert(currentEntry, _clipboardEntries);
-            }
-            else
-            {
-                HostsFile.Instance.Entries.InsertRange(_clipboardEntries);
-            }
-
+            // Clear the (possibly huge) selection before the insert's single Reset — the same O(n^2)
+            // selection-vs-Reset teardown avoidance as Delete/Cut. The anchor is the current row,
+            // which survives ClearSelection; Core appends when the anchor is null.
+            dataGridViewHostsEntries.ClearSelection();
+            HostsFile.Instance.Entries.Insert(currentEntry, _clipboardEntries);
             _clipboardEntries = null;
         }
         else if (dataGridViewHostsEntries.SelectedRowCount == 0)
         {
-            // Cell-level text paste, only when no full rows are selected and there is no row
-            // clipboard. Previously this ran whenever there were no internal clipboard entries —
-            // including with rows selected (e.g. a second Ctrl+V after a row paste), which
-            // overwrote every cell of the selected rows with the system clipboard text.
+            // Cell-level text paste, only when no full rows are selected. Previously this ran
+            // whenever there were no internal clipboard entries — including with rows selected
+            // (e.g. a second Ctrl+V after a row paste), which overwrote every cell of the selected
+            // rows with the system clipboard text.
             foreach (
                 DataGridViewCell cell in
                 dataGridViewHostsEntries.SelectedCells)
@@ -995,6 +1063,9 @@ internal sealed partial class MainForm : Form
             var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
+                // Clear any (possibly huge) selection before the insert's single Reset — same
+                // O(n^2) teardown avoidance as Delete/Cut. The current-row anchor survives.
+                dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.InsertBefore(currentEntry);
             }
         }
@@ -1018,6 +1089,8 @@ internal sealed partial class MainForm : Form
             var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
             if (currentEntry != null)
             {
+                // See OnInsertAboveClick: clear before the Reset.
+                dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.InsertAfter(currentEntry);
             }
         }
@@ -1352,15 +1425,9 @@ internal sealed partial class MainForm : Form
             dataGridViewHostsEntries.ClearSelection();
             HostsFile.Instance.Entries.SetEnabled(sel, isEnabled: false);
         }
-        else if (dataGridViewHostsEntries.CurrentHostEntry != null)
+        else if (dataGridViewHostsEntries.CurrentHostEntry is { } currentEntry)
         {
-            var currentEntry = dataGridViewHostsEntries.CurrentHostEntry;
-            if (currentEntry != null)
-            {
-                HostsFile.Instance.Entries.SetEnabled(
-                    [currentEntry],
-                    isEnabled: false);
-            }
+            HostsFile.Instance.Entries.SetEnabled([currentEntry], isEnabled: false);
         }
     }
 

@@ -136,7 +136,10 @@ public class HostsFile : INotifyPropertyChanged
     /// The clean token is a specific undo-history position (reference-compared). If enough edits
     /// push it out of the capped history (<see cref="UndoManager"/> trims oldest), it can never be
     /// reference-equal again — which is correct: those undo steps are gone, so the file genuinely
-    /// cannot be returned to the saved state via undo and IsModified should stay true.
+    /// cannot be returned to the saved state via undo and IsModified should stay true. That also
+    /// holds when the clean token is the load-time EMPTY-history position: the UndoManager rebases
+    /// its sentinel token on every eviction, so undoing all the way down after 1000+ edits does not
+    /// falsely compare clean (the evicted edits are still applied and unsaved).
     /// </remarks>
     public bool IsModified => !ReferenceEquals(UndoManager.Instance.CurrentStateToken, _cleanStateToken);
 
