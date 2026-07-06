@@ -29,8 +29,16 @@
     <!-- CA5392: the Windows App SDK self-contained mode compiles in a Microsoft-generated
          UndockedRegFreeWinRT-AutoInitializer.cs whose bootstrap P/Invoke lacks
          DefaultDllImportSearchPaths. It's third-party generated code we can't edit; our own
-         P/Invokes (in Core) remain CA5392-compliant. -->
-    <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081;CA5392</NoWarn>
+         P/Invokes (in Core) remain CA5392-compliant.
+         IL2081/IL2026/IL3050: System.ComponentModel.BindingList<T> (Core's HostsEntryList /
+         HostsArchiveList base) carries reflective PropertyDescriptor/TypeConverter paths that the
+         AOT+trim analyzers flag (IL2026 RequiresUnreferencedCode, IL3050 RequiresDynamicCode via
+         Enum.GetValues in the descriptor/converter machinery). This app never data-binds to those
+         BindingLists — it enumerates them / rebinds an ObservableCollection — so the reflective
+         paths are unreachable at runtime; Core already suppresses IL2026 per-method with the same
+         justification. Suppressed here so the trimmed/AOT publish (which globally treats warnings
+         as errors) can build; keep this list minimal. -->
+    <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081;IL2026;IL3050;CA5392</NoWarn>
     <ApplicationIcon>Assets\HostsFileEditor.ico</ApplicationIcon>
     <PackagingFlavor>modern</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\modern\</OutputPackagingDir>
