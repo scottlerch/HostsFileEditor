@@ -109,6 +109,55 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void Parse_FqdnTrailingDot_IsValid()
+    {
+        // Tailscale MagicDNS writes every entry as a fully-qualified name ending in a root dot.
+        // The trailing dot must not demote the line to a comment, and it must round-trip.
+        const string raw = "100.64.0.1 host.tailnet.ts.net. host";
+        var entry = new HostsEntry(raw);
+        entry.Valid.ShouldBeTrue();
+        entry.IpAddress.ShouldBe("100.64.0.1");
+        entry.HostNames.ShouldBe("host.tailnet.ts.net. host");
+        entry.UnparsedText.ShouldBe(raw);
+    }
+
+    [TestMethod]
+    public void Parse_FqdnTrailingDot_WithAfterComment()
+    {
+        var entry = new HostsEntry("100.64.0.1 host.tailnet.ts.net. host # note");
+        entry.Valid.ShouldBeTrue();
+        entry.IpAddress.ShouldBe("100.64.0.1");
+        entry.HostNames.ShouldBe("host.tailnet.ts.net. host");
+        entry.Comment.ShouldBe("note");
+    }
+
+    [TestMethod]
+    public void Parse_FqdnTrailingDot_IPv6()
+    {
+        // Tailscale MagicDNS also writes AAAA entries in the fd7a:115c::/48 range.
+        var entry = new HostsEntry("fd7a:115c:a1e0::1 host.tailnet.ts.net. host");
+        entry.Valid.ShouldBeTrue();
+        entry.IpAddress.ShouldBe("fd7a:115c:a1e0::1");
+        entry.HostNames.ShouldBe("host.tailnet.ts.net. host");
+    }
+
+    [TestMethod]
+    [DataRow("# TailscaleHostsSectionStart")]
+    [DataRow("# This section contains MagicDNS entries for Tailscale.")]
+    [DataRow("# Do not edit this section manually.")]
+    public void Parse_ProseComment_EndingInDot_StaysComment(string raw)
+    {
+        // Prose comment lines that happen to end in '.' must not be captured as (invalid)
+        // disabled entries now that hostnames accept a trailing dot. The leading '#' with a
+        // non-IP first token must keep them comment-only and round-trip verbatim.
+        var entry = new HostsEntry(raw);
+        entry.HasCommentOnly.ShouldBeTrue();
+        entry.Valid.ShouldBeFalse();
+        entry.Enabled.ShouldBeFalse();
+        entry.UnparsedText.ShouldBe(raw);
+    }
+
+    [TestMethod]
     public void Parse_IPv6()
     {
         var entry = new HostsEntry("::1 localhost");

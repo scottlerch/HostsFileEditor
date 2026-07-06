@@ -605,7 +605,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     [GeneratedRegex(@"[ ]{2,}")]
     private static partial Regex TwoSpaceMatchRegex();
 
-    [GeneratedRegex(@"^([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*$")]
+    [GeneratedRegex(@"^([\w-]+\.)*([\w-]+)\.?((\s)+([\w-]+\.)*([\w-]+)\.?)*$")]
     private static partial Regex HostNameRegex();
 
     // Each alternative is anchored with ^...$ so a line must match a pattern in full. Without
@@ -620,6 +620,10 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     // " # 1.2.3.4 host") to a plain comment.
     // No RegexOptions.Compiled: the source generator already emits the fully compiled matcher, so
     // Compiled would only add redundant runtime IL compilation at startup.
-    [GeneratedRegex(@"^(\s*(?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$")]
+    //
+    // Each hostname token allows one optional trailing '.' so fully-qualified names (e.g. the
+    // Tailscale MagicDNS "host.tailnet.ts.net.") parse as entries rather than falling through
+    // to the comment alternative.
+    [GeneratedRegex(@"^(\s*(?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)\.?((\s)+([\w-]+\.)*([\w-]+)\.?)*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$")]
     private static partial Regex ValidHostsRegex();
 }

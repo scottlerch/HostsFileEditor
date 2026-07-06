@@ -59,6 +59,17 @@ public class HostsEntrySpanParserDifferentialTests
         // trailing/leading oddities
         " ", "\r", "1.2.3.4 host\r", "1.2.3.4 host ",
         "#comment ends with spaces   ",
+        // FQDN trailing dot (issue #65 / PR #66): Tailscale MagicDNS writes a root '.', and each
+        // hostname label may now carry one optional trailing dot. The span tokenizer captures the
+        // dot (it stops only at whitespace / '#') and defers validity to HostNameRegex, so the two
+        // engines must agree — including on the adversarial double-dot which neither accepts.
+        "100.64.0.1 host.tailnet.ts.net.",
+        "100.64.0.1 host.tailnet.ts.net. # magicdns",
+        "# 100.64.0.1 host.tailnet.ts.net.",
+        "1.2.3.4 host.",
+        "1.2.3.4 a. b. c.",
+        "1.2.3.4 host.. doubledot",
+        "fe80::1 host.example.com.",
     ];
 
     private static IEnumerable<string> GeneratedCorpus()
