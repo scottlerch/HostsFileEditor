@@ -29,6 +29,16 @@ public class HostsArchive
 
     public string FileName => Path.GetFileName(FilePath);
 
+    /// <summary>
+    /// Orders archives by file name, case-insensitively — the single ordering both editions' archive
+    /// lists use (classic sorts its <c>BindingListView</c> by it, modern sorts <c>RefreshArchives</c>
+    /// by it). Shared here so the two can't silently diverge (the modern list once sorted by
+    /// file-system enumeration order while classic sorted by name).
+    /// </summary>
+    public static IComparer<HostsArchive> FileNameComparer { get; } =
+        Comparer<HostsArchive>.Create(
+            static (a, b) => string.Compare(a?.FileName, b?.FileName, StringComparison.OrdinalIgnoreCase));
+
     public static bool Validate(string filePath, out string error)
     {
         error = string.Empty;

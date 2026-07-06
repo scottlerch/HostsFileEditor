@@ -126,55 +126,54 @@ public class UndoManager
         // (and a UI CanUndo/IsModified re-read) in the middle of a bulk replay. The call-site
         // guards in HostsEntryList remain purely as a hot-path optimization: they skip BUILDING the
         // throwaway undo/redo closures, which this callee-side check cannot do.
+        // (IsCapturingSuspended folds in _suspendAddActions, so the former `if (!_suspendAddActions)`
+        // wrapper around the rest of this method was always true after the early-return and is gone.)
         if (IsCapturingSuspended)
         {
             return;
         }
 
-        if (!_suspendAddActions)
+        if (!_undoInProgress)
         {
-            if (!_undoInProgress)
+            if (_batchingActions)
             {
-                if (_batchingActions)
-                {
-                    _undoActionsPosition.Value.AddFirst(undoAction);
-                }
-                else
-                {
-                    // A new action invalidates the redo branch (the undone groups after
-                    // the current position); discard them before appending so redo can't
-                    // walk into stale history.
-                    RemoveNodesAfter(_undoActions, _undoActionsPosition);
-
-                    _undoActions.AddAfter(
-                        _undoActionsPosition,
-                        new LinkedList<Action>([undoAction]));
-
-                    _undoActionsPosition = _undoActionsPosition.Next!;
-                }
+                _undoActionsPosition.Value.AddFirst(undoAction);
             }
-
-            if (!_redoInProgress)
+            else
             {
-                if (_batchingActions)
-                {
-                    _redoActionsPosition.Value.AddLast(redoAction);
-                }
-                else
-                {
-                    RemoveNodesAfter(_redoActions, _redoActionsPosition);
+                // A new action invalidates the redo branch (the undone groups after
+                // the current position); discard them before appending so redo can't
+                // walk into stale history.
+                RemoveNodesAfter(_undoActions, _undoActionsPosition);
 
-                    _redoActions.AddAfter(
-                        _redoActionsPosition,
-                        new LinkedList<Action>([redoAction]));
+                _undoActions.AddAfter(
+                    _undoActionsPosition,
+                    new LinkedList<Action>([undoAction]));
 
-                    _redoActionsPosition = _redoActionsPosition.Next!;
-                }
+                _undoActionsPosition = _undoActionsPosition.Next!;
             }
-
-            EnforceCapacity();
-            OnHistoryChanged();
         }
+
+        if (!_redoInProgress)
+        {
+            if (_batchingActions)
+            {
+                _redoActionsPosition.Value.AddLast(redoAction);
+            }
+            else
+            {
+                RemoveNodesAfter(_redoActions, _redoActionsPosition);
+
+                _redoActions.AddAfter(
+                    _redoActionsPosition,
+                    new LinkedList<Action>([redoAction]));
+
+                _redoActionsPosition = _redoActionsPosition.Next!;
+            }
+        }
+
+        EnforceCapacity();
+        OnHistoryChanged();
     }
 
     public void Undo()

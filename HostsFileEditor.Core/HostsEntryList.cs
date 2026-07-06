@@ -19,8 +19,16 @@ public class HostsEntryList : BindingList<HostsEntry>
         [Environment.NewLine],
         StringSplitOptions.None);
 
+    /// <summary>
+    /// Above this many selected rows, both UIs DROP the selection on a bulk rebind rather than
+    /// restore it: re-establishing a huge native selection is O(k^2) in each framework (WinForms'
+    /// selected-band list, WinUI's SelectedItems vector). Shared so the two editions' "huge
+    /// selection" boundary can't silently drift apart (classic's MaxSelectionRestoreCount and modern's
+    /// LogicalSelectAllThreshold both derive from it).
+    /// </summary>
+    public const int HugeSelectionThreshold = 20_000;
+
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList's Enum.GetValues-based descriptor machinery is unreachable — see the IL2026 justification.")]
     public HostsEntryList(IEnumerable<string> entryLines, bool filterDefault)
         : this()
     {
@@ -28,7 +36,6 @@ public class HostsEntryList : BindingList<HostsEntry>
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList's Enum.GetValues-based descriptor machinery is unreachable — see the IL2026 justification.")]
     public HostsEntryList()
     {
         AllowEdit = true;
@@ -301,7 +308,6 @@ public class HostsEntryList : BindingList<HostsEntry>
     // even without it — but it makes the "callers own the combined undo/redo action" contract
     // explicit and future-proofs against a mutation being routed through a capturing path.
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList's Enum.GetValues-based descriptor machinery is unreachable — see the IL2026 justification.")]
     private void ReplaceAll(List<HostsEntry> target)
     {
         this.BatchUpdate(() =>
@@ -347,7 +353,6 @@ public class HostsEntryList : BindingList<HostsEntry>
     // and redo are O(n) with a single Reset too. The classic grid rebuilds on the Reset; the modern UI
     // rebinds explicitly in its handler (its ListView won't see the silent per-item change otherwise).
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList's Enum.GetValues-based descriptor machinery is unreachable — see the IL2026 justification.")]
     private void ApplyEnabled(IReadOnlyList<HostsEntry> entries, bool isEnabled)
     {
         this.BatchUpdate(() =>
