@@ -7,7 +7,14 @@
     xmlns:local="using:HostsFileEditor"
     mc:Ignorable="d"
     Title="Hosts File Editor">
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Background="Transparent" MinWidth="300" MinHeight="480">
+    <!-- No MinWidth/MinHeight here: a Grid min taller/wider than the window overflow-clips its edge
+         rows (it hid the bottom status bar when shortened). The minimum window size is enforced on
+         the AppWindow presenter instead (see TrySetAppWindowTitleBar).
+         The status row (last) is a FIXED height, not Auto: an Auto status row measured to ~0 against
+         the huge virtualized list, so the star content row took the whole height (the list ran to
+         the bottom) and the status text overflowed its zero-height cell onto the last rows. A fixed
+         height reserves the band so the list is bounded above it. -->
+    <Grid RowDefinitions="Auto,Auto,*,32" Background="Transparent">
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="OnCopyAcceleratorInvoked"/>
             <KeyboardAccelerator Key="X" Modifiers="Control" Invoked="OnCutAcceleratorInvoked"/>
@@ -355,17 +362,33 @@
             </Grid>
         </Grid>
         <!-- Status bar: total lines + host (enabled) entries, mirroring the classic edition's
-             StatusStrip. Especially useful on very large hosts files. -->
-        <Border Grid.Row="3"
-                Background="{ThemeResource LayerFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                BorderThickness="0,1,0,0"
-                Padding="14,5"
-                Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
-            <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       VerticalAlignment="Center"/>
-        </Border>
+             StatusStrip. Background is Transparent and borderless, so it blends seamlessly into the
+             window's Mica backdrop; it sits in its own fixed-height grid row, so no list content is
+             ever laid out behind it.
+
+             The backplate underneath exists because of a WinUI composition bug with enormous
+             virtualized lists: past roughly 2^20 device-independent pixels of panel extent
+             (~32K rows here), the renderer stops clipping the list's bottom-edge rows — the last
+             partially-visible row paints in FULL, plus the next cache row — straight through the
+             ListView's viewport clip, an explicit ancestor UIElement.Clip,
+             CanContentRenderOutsideBounds=False, and CacheLength=0 (all verified ineffective;
+             element bounds via UIA stay correct, so it is a raster-level escape, not layout). The
+             stray pixels land under this transparent band and show through it. They only ever paint
+             DOWNWARD past the list (title/command bars stay clean), and opaque content drawn later
+             in the tree occludes them — so when the list is large enough for the bug to trigger,
+             an opaque backplate in SolidBackgroundFillColorBase (the exact base color Mica tints,
+             i.e. "Mica minus the desktop tint") slides in behind the text. Normal-sized files
+             (≤10K rows, empirically clean with margin: breakage sets in between 10K and 50K) keep
+             the true-Mica look. -->
+        <Grid Grid.Row="3" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
+            <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                    Visibility="{x:Bind StatusBackplateVisibility, Mode=OneWay}"/>
+            <Border Background="Transparent" Padding="14,5">
+                <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center"/>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

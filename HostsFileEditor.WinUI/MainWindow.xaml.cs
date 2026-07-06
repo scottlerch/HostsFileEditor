@@ -89,6 +89,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public string StatusText => _statusText;
 
+    // Above this many visible rows, show the opaque backplate behind the status bar. WinUI stops
+    // clipping the bottom-edge rows of an enormous virtualized list (see the XAML comment on the
+    // status-bar Grid for the full investigation) and the strays would show through the transparent
+    // Mica band. Empirically clean at 10K rows and broken between 10K and 50K (at 200% scale);
+    // 10K keeps a wide safety margin across DPI scales while every realistic hosts file stays on
+    // the true-Mica look.
+    private const int StatusBackplateThreshold = 10_000;
+
+    public Visibility StatusBackplateVisibility =>
+        Entries.Count > StatusBackplateThreshold ? Visibility.Visible : Visibility.Collapsed;
+
     // Dev/test HFE_HOSTS_PATH override indicator for the title bar (OneTime — set at startup).
     public string OverrideIndicatorText => HostsFile.OverridePath is { } p ? $"[{p}]" : string.Empty;
 
@@ -303,6 +314,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _statusText = text;
             OnPropertyChanged(nameof(StatusText));
         }
+
+        // Cheap: x:Bind just re-reads Entries.Count. Raised on every recount so the backplate
+        // tracks the visible row count through loads, filters, and bulk edits.
+        OnPropertyChanged(nameof(StatusBackplateVisibility));
     }
 
     // A filter change can swap the entire visible set, so rebuild it with a single bulk rebind
@@ -410,6 +425,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             appWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
             appWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+
+            // Enforce the minimum window size at the window level. A root-Grid MinHeight can't do
+            // this: when the window is shorter than it, the Grid overflows and the OS clips the
+            // bottom row (the status bar) off-screen instead of shrinking the star content row — so
+            // the status bar vanished when the window was shortened even with room to spare.
+            if (appWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.PreferredMinimumWidth = 300;
+                presenter.PreferredMinimumHeight = 320;
+            }
 
             // Keep content clear of the caption buttons area
             appWindow.Changed += (_, __) => UpdateTitleBarPadding(appWindow);
