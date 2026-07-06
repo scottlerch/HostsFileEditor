@@ -109,6 +109,19 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void Parse_FqdnTrailingDot_IsValid()
+    {
+        // Tailscale MagicDNS writes every entry as a fully-qualified name ending in a root dot.
+        // The trailing dot must not demote the line to a comment, and it must round-trip.
+        const string raw = "100.64.0.1 host.tailnet.ts.net. host";
+        var entry = new HostsEntry(raw);
+        entry.Valid.ShouldBeTrue();
+        entry.IpAddress.ShouldBe("100.64.0.1");
+        entry.HostNames.ShouldBe("host.tailnet.ts.net. host");
+        entry.UnparsedText.ShouldBe(raw);
+    }
+
+    [TestMethod]
     public void Parse_IPv6()
     {
         var entry = new HostsEntry("::1 localhost");

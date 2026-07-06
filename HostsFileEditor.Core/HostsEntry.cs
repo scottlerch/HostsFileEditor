@@ -387,7 +387,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     [GeneratedRegex(@"[ ]{2,}")]
     private static partial Regex TwoSpaceMatchRegex();
 
-    [GeneratedRegex(@"^([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*$")]
+    [GeneratedRegex(@"^([\w-]+\.)*([\w-]+)\.?((\s)+([\w-]+\.)*([\w-]+)\.?)*$")]
     private static partial Regex HostNameRegex();
 
     // Each alternative is anchored with ^...$ so a line must match a pattern in full. Without
@@ -400,6 +400,10 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     // optional '#' still parses as an entry (issue #22). Without it, \s* consumed the leading
     // space and '#' was captured as the ipaddress, demoting a valid disabled entry (e.g.
     // " # 1.2.3.4 host") to a plain comment.
-    [GeneratedRegex(@"^(\s*(?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)((\s)+([\w-]+\.)*([\w-]+))*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$", RegexOptions.Compiled)]
+    //
+    // Each hostname token allows one optional trailing '.' so fully-qualified names (e.g. the
+    // Tailscale MagicDNS "host.tailnet.ts.net.") parse as entries rather than falling through
+    // to the comment alternative.
+    [GeneratedRegex(@"^(\s*(?<disabled>#+)?\s*(?<ipaddress>[^\s]+)\s+(?<hostname>([\w-]+\.)*([\w-]+)\.?((\s)+([\w-]+\.)*([\w-]+)\.?)*)\s*(#+(?<aftercomment>.*))?)$|^(\s*#+\s?(?<comment>.*))$|^(?<blank>\s*)$", RegexOptions.Compiled)]
     private static partial Regex ValidHostsRegex();
 }
