@@ -286,7 +286,6 @@ partial class MainForm
         this.dataGridViewHostsEntries.AllowUserToResizeRows = false;
         this.dataGridViewHostsEntries.AutoGenerateColumns = false;
         this.dataGridViewHostsEntries.BorderStyle = System.Windows.Forms.BorderStyle.None;
-        this.dataGridViewHostsEntries.ClearSort = null;
         this.dataGridViewHostsEntries.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
         this.dataGridViewHostsEntries.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
         this.columnValid,

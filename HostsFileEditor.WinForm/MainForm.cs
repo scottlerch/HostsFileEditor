@@ -505,7 +505,15 @@ internal sealed partial class MainForm : Form
         };
 
         bindingSourceArchive.DataSource = _hostsArchiveView;
-        _hostsArchiveView.Sort = nameof(HostsArchive.FileName);
+
+        // Sort archives by file name through an EXTERNAL comparer. Equin's property/string sort
+        // (Sort = "FileName") emits a Reflection.Emit comparer whose IL the .NET 10 JIT rejects
+        // (BadImageFormatException "Bad IL format"); ApplySort(IComparer<T>) routes through its
+        // non-emitting external comparer instead. The archive grid has no visible headers, so this
+        // initial sort — reused whenever the archive list changes — is the only sort it ever runs.
+        _hostsArchiveView.ApplySort(
+            Comparer<HostsArchive>.Create(
+                (a, b) => string.Compare(a?.FileName, b?.FileName, StringComparison.OrdinalIgnoreCase)));
 
         // Parse the hosts file off the UI thread (it can be very large) behind a loading indicator,
         // so the window paints and stays responsive instead of freezing on a huge file. Disable the
@@ -592,17 +600,10 @@ internal sealed partial class MainForm : Form
 
         _hostEntriesView.AddingNew += (s, args) => args.NewObject = new HostsEntry(string.Empty);
 
-        // Tell grid how to clear sort of underlying data source
-        // since it doesn't know how by itself
-        dataGridViewHostsEntries.ClearSort = () =>
-        {
-            _hostEntriesView.RemoveSort();
-            UpdateMoveControlsEnabled();
-        };
-
-        // Move Up/Down reorders the underlying file, which is meaningless (and silently
-        // destructive to resolution precedence) while a column sort is applied. Disable those
-        // controls whenever a sort is active.
+        // Move Up/Down reorders the underlying file, which is meaningless (and silently destructive
+        // to resolution precedence) while a column sort is applied. The grid sorts programmatically
+        // via an external comparer and raises Sorted on every sort/clear, so keep the move controls
+        // in sync from here.
         dataGridViewHostsEntries.Sorted += (s, e) => UpdateMoveControlsEnabled();
 
         bindingSourceView.DataSource = _hostEntriesView;
@@ -1366,8 +1367,9 @@ internal sealed partial class MainForm : Form
     /// <param name="e">The <see cref="System.EventArgs"/> instance containing the event data.</param>
     private void OnRemoveSortClick(object sender, EventArgs e)
     {
-        _hostEntriesView?.RemoveSort();
-        UpdateMoveControlsEnabled();
+        // Clears the sort, resets the header glyph, and raises Sorted (which refreshes the move
+        // controls via the handler wired in setup).
+        dataGridViewHostsEntries.ClearColumnSort();
     }
 
     /// <summary>
@@ -1377,7 +1379,7 @@ internal sealed partial class MainForm : Form
     /// </summary>
     private void UpdateMoveControlsEnabled()
     {
-        var canMove = dataGridViewHostsEntries.SortOrder == SortOrder.None;
+        var canMove = dataGridViewHostsEntries.ActiveSortOrder == SortOrder.None;
         menuMoveUp.Enabled = canMove;
         menuMoveDown.Enabled = canMove;
         menuContextMoveUp.Enabled = canMove;
