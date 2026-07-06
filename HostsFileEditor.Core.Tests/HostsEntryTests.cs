@@ -122,6 +122,26 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void Parse_FqdnTrailingDot_WithAfterComment()
+    {
+        var entry = new HostsEntry("100.64.0.1 host.tailnet.ts.net. host # note");
+        entry.Valid.ShouldBeTrue();
+        entry.IpAddress.ShouldBe("100.64.0.1");
+        entry.HostNames.ShouldBe("host.tailnet.ts.net. host");
+        entry.Comment.ShouldBe("note");
+    }
+
+    [TestMethod]
+    public void Parse_FqdnTrailingDot_IPv6()
+    {
+        // Tailscale MagicDNS also writes AAAA entries in the fd7a:115c::/48 range.
+        var entry = new HostsEntry("fd7a:115c:a1e0::1 host.tailnet.ts.net. host");
+        entry.Valid.ShouldBeTrue();
+        entry.IpAddress.ShouldBe("fd7a:115c:a1e0::1");
+        entry.HostNames.ShouldBe("host.tailnet.ts.net. host");
+    }
+
+    [TestMethod]
     public void Parse_IPv6()
     {
         var entry = new HostsEntry("::1 localhost");
