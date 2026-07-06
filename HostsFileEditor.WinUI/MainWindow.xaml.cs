@@ -82,6 +82,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public Visibility LoadingVisibility => _isLoaded || _loadFailed ? Visibility.Collapsed : Visibility.Visible;
 
+    // Bottom status bar text: total lines and host (enabled) entries, mirroring the classic edition's
+    // status strip (HostsFile.LineCount / EnabledCount). Recomputed on each view refresh; see
+    // UpdateStatusCounts.
+    private string _statusText = string.Empty;
+
+    public string StatusText => _statusText;
+
     // Dev/test HFE_HOSTS_PATH override indicator for the title bar (OneTime — set at startup).
     public string OverrideIndicatorText => HostsFile.OverridePath is { } p ? $"[{p}]" : string.Empty;
 
@@ -259,6 +266,43 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // A full rebind clears the ListView selection; keep the mirror and logical select-all flag
         // in sync (e.g. so a filter change after Ctrl+A doesn't leave "all" logically selected).
         ResetSelectionState();
+
+        UpdateStatusCounts();
+    }
+
+    // Recomputes the status-bar counts from the whole hosts file (not the filtered view) — total
+    // lines and enabled ("host") entries, matching the classic edition. One O(n) pass; called from
+    // the (coalesced) refresh paths, so a burst of changes collapses to a single recount. Individual
+    // checkbox toggles reach here via the Core ListChanged -> OnCoreEntriesListChanged -> RefreshEntries
+    // path, so the enabled count stays live without hooking every row.
+    private void UpdateStatusCounts()
+    {
+        string text;
+        if (!_isLoaded)
+        {
+            text = string.Empty;
+        }
+        else
+        {
+            var entries = HostsFile.Instance.Entries;
+            var total = entries.Count;
+            var enabled = 0;
+            for (var i = 0; i < total; i++)
+            {
+                if (entries[i].Enabled)
+                {
+                    enabled++;
+                }
+            }
+
+            text = $"Line Count: {total:N0}      Host Entries: {enabled:N0}";
+        }
+
+        if (_statusText != text)
+        {
+            _statusText = text;
+            OnPropertyChanged(nameof(StatusText));
+        }
     }
 
     // A filter change can swap the entire visible set, so rebuild it with a single bulk rebind
@@ -883,6 +927,92 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    // Like MutateCoreAndRefresh, but PRESERVES the selection: the selected entries survive these ops
+    // (Check/Uncheck toggles Enabled in place; Duplicate keeps the originals), so re-select them after
+    // the one-shot bulk rebind instead of dropping the selection. Same perf as the resetting variant —
+    // a single O(n) rebind (which also re-realizes the row containers so checkbox visuals reflect the
+    // silent SetEnabled) — plus an O(k) reselect bounded by the logical-select-all threshold.
+    private void MutateCoreAndRefreshPreservingSelection(Action mutate)
+    {
+        // Snapshot BEFORE the mutation (the rebind clears the live mirror). A logical Select-All is
+        // captured as a flag, not a 400K set.
+        var wasLogicalSelectAll = _logicalSelectAll;
+        HashSet<HostsEntry>? snapshot = wasLogicalSelectAll ? null : [.. _selectedEntries];
+
+        _suspendSelectionTracking = true;
+        _suspendCoreListSync = true;
+        try
+        {
+            mutate();
+        }
+        finally
+        {
+            _suspendCoreListSync = false;
+
+            if (_isLoaded)
+            {
+                // One-shot bulk rebind (swaps ItemsSource, clears native selection + mirror, updates
+                // counts) then restore the selection against the rebuilt view.
+                BulkPopulateEntries();
+                RestoreSelectionAfterRebind(wasLogicalSelectAll, snapshot);
+            }
+
+            _suspendSelectionTracking = false;
+
+            OnPropertyChanged(nameof(EntriesEmptyVisibility));
+            OnPropertyChanged(nameof(EntriesFilteredVisibility));
+            _selectionService.UpdateSelectionDependentButtons();
+            _selectionService.UpdateContextMenuItems();
+        }
+    }
+
+    // Re-applies a snapshotted selection to the freshly rebuilt view. Sets the native ListView
+    // selection AND the mirror directly (selection tracking is suspended by the caller, so the
+    // SelectionChanged events won't do it for us). Entries that a toggle just filtered out of the view
+    // (e.g. Hide Disabled + Uncheck) are simply absent from the rebuilt list and drop out correctly.
+    private void RestoreSelectionAfterRebind(bool wasLogicalSelectAll, HashSet<HostsEntry>? snapshot)
+    {
+        if (wasLogicalSelectAll)
+        {
+            if (Entries.Count > LogicalSelectAllThreshold)
+            {
+                SetLogicalSelectAll(true);
+            }
+            else
+            {
+                EntriesList.SelectAll();
+                foreach (var entry in Entries)
+                {
+                    _selectedEntries.Add(entry);
+                }
+            }
+
+            return;
+        }
+
+        if (snapshot is null || snapshot.Count == 0)
+        {
+            return;
+        }
+
+        var survivors = Entries.Where(snapshot.Contains).ToList();
+        foreach (var entry in survivors)
+        {
+            _selectedEntries.Add(entry);
+        }
+
+        // Re-populate the native selection for a normal-sized selection; skip it for an enormous one
+        // (a Shift+Click range beyond the threshold) — re-Adding is the O(k^2) WinUI populate we avoid
+        // elsewhere. The mirror still holds it, so selection-gated commands keep working.
+        if (survivors.Count <= LogicalSelectAllThreshold)
+        {
+            foreach (var entry in survivors)
+            {
+                EntriesList.SelectedItems.Add(entry);
+            }
+        }
+    }
+
     // Async twin of MutateCoreAndRefresh for mutations that re-read a file from disk (reload /
     // archive load): the multi-second parse runs off the UI thread so the window stays responsive.
     // The window re-enters the "loading" state for the duration — the spinner returns, and every
@@ -968,8 +1098,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         // Duplicate copies each row after its original in one O(n) rebind (a per-row InsertAfter loop
-        // would be O(n^2) at 400K).
-        MutateCoreAndRefresh(() => HostsFile.Instance.Entries.Duplicate(rows));
+        // would be O(n^2) at 400K). Preserve the selection: the originals remain, so keep them selected.
+        MutateCoreAndRefreshPreservingSelection(() => HostsFile.Instance.Entries.Duplicate(rows));
     }
 
     private async void OnDisableHostsClick(object sender, RoutedEventArgs e)
@@ -1108,8 +1238,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         var allEnabled = rows.All(r => r.Enabled);
 
         // SetEnabled toggles without per-item PropertyChanged (O(n) instead of O(n^2)), so the ListView
-        // won't see the change — rebind in bulk.
-        MutateCoreAndRefresh(() => HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: !allEnabled));
+        // won't see the change — rebind in bulk. Preserve the selection: the toggled rows are the same
+        // entries and stay selected (unless Hide Disabled now filters an unchecked one out).
+        MutateCoreAndRefreshPreservingSelection(() => HostsFile.Instance.Entries.SetEnabled(rows, isEnabled: !allEnabled));
     }
 
     private void OnUndoClick(object sender, RoutedEventArgs e) => Utilities.UndoManager.Instance.Undo();
@@ -1345,6 +1476,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             OnPropertyChanged(nameof(SelectAllBannerText));
         }
+
+        UpdateStatusCounts();
 
         // 8. Update dependent UI
         _selectionService.UpdateSelectionDependentButtons();
