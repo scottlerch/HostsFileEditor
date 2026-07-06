@@ -48,8 +48,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // operation is running. Bound to EntriesList.IsEnabled so its TwoWay row bindings (the Enabled
     // checkbox, the IP/host/comment TextBoxes) can't mutate HostsEntry objects the background thread
     // is concurrently discarding — the one Instance-mutating path the per-handler _isLoaded guards
-    // can't cover. Raised wherever LoadingVisibility is.
-    public bool IsEntriesInteractive => _isLoaded;
+    // can't cover. Raised wherever LoadingVisibility is. Both flags are checked (not just _isLoaded)
+    // so a future async path that forgets to also clear _isLoaded can't silently re-enable the list.
+    public bool IsEntriesInteractive => _isLoaded && !_asyncOperationInProgress;
 
     // Set while an explicit handler mutates the Core list and refreshes the view itself, so the
     // ListChanged subscription below doesn't also fire an (O(n^2)) minimal-diff refresh on top.
@@ -432,7 +433,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _coreRefreshPending = true;
-        _ = DispatcherQueue.TryEnqueue(() =>
+        if (!DispatcherQueue.TryEnqueue(() =>
         {
             // A ListChanged (e.g. a streaming ping result) can enqueue this after the window has
             // closed; the awaited load/async continuations guard on _isClosed, and so must this
@@ -456,7 +457,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             {
                 RefreshEntries(preserveSelection: true, preserveLogicalSelectAll: true, updateCounts);
             }
-        });
+        }))
+        {
+            // Enqueue failed (dispatcher shutting down): reset the coalescing flag so a later
+            // ListChanged can re-enqueue instead of being suppressed forever by a stuck pending flag.
+            _coreRefreshPending = false;
+        }
     }
 
     private void TrySetAppWindowTitleBar()
@@ -500,9 +506,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 ApplyMinimumWindowSize();
                 if (Content is FrameworkElement rootElement)
                 {
+                    var xamlRootChangedHooked = false;
                     rootElement.Loaded += (_, _) =>
                     {
                         ApplyMinimumWindowSize();
+
+                        // Loaded can fire more than once (content re-parenting / some theme or DPI
+                        // transitions); subscribe XamlRoot.Changed only once, or a handler accretes on
+                        // every Loaded and each DPI change then runs the work N times for the app's life.
+                        if (xamlRootChangedHooked || rootElement.XamlRoot is null)
+                        {
+                            return;
+                        }
+
+                        xamlRootChangedHooked = true;
                         rootElement.XamlRoot.Changed += (_, _) =>
                         {
                             ApplyMinimumWindowSize();
@@ -1862,12 +1879,18 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         _selectionUpdatePending = true;
-        _ = DispatcherQueue.TryEnqueue(() =>
+        if (!DispatcherQueue.TryEnqueue(() =>
         {
             _selectionUpdatePending = false;
             _selectionService.UpdateSelectionDependentButtons();
             _selectionService.UpdateContextMenuItems();
-        });
+        }))
+        {
+            // Enqueue can fail while the dispatcher is shutting down (window closing). Don't leave the
+            // flag stuck true, or every later SelectionChanged would early-return and stop refreshing
+            // the selection-dependent UI.
+            _selectionUpdatePending = false;
+        }
     }
 
     private void OnArchiveSelectionChanged(object sender, SelectionChangedEventArgs e)
