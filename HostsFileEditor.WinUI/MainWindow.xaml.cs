@@ -434,6 +434,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _coreRefreshPending = true;
         _ = DispatcherQueue.TryEnqueue(() =>
         {
+            // A ListChanged (e.g. a streaming ping result) can enqueue this after the window has
+            // closed; the awaited load/async continuations guard on _isClosed, and so must this
+            // fire-and-forget callback, or RefreshEntries touches torn-down XAML (RO_E_CLOSED).
+            if (_isClosed)
+            {
+                return;
+            }
+
             _coreRefreshPending = false;
             var structural = _pendingStructuralRefresh;
             _pendingStructuralRefresh = false;
@@ -710,8 +718,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        // Esc clears a logical Select-All (which has no native highlight to click away).
-        if (e.Key == VirtualKey.Escape && _logicalSelectAll)
+        // Esc clears a logical Select-All (which has no native highlight to click away). Skip it while
+        // a cell TextBox is focused (as the Ctrl+A branch does): a logical Select-All can still be
+        // active during an in-cell edit, and swallowing Esc here would eat the TextBox's own revert.
+        if (e.Key == VirtualKey.Escape && _logicalSelectAll && !IsTextBoxFocused())
         {
             ResetSelectionState();
             _selectionService.UpdateSelectionDependentButtons();
@@ -1567,6 +1577,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnArchiveDeleteClick(object sender, RoutedEventArgs e)
     {
+        // The archive panel stays enabled during an async archive load/import (IsEntriesInteractive
+        // disables only the entries list), so without this guard a Delete could race File.Delete
+        // against the still-open read handle of the archive being imported (IOException -> crash).
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         if (ArchiveList.SelectedItem is HostsArchive archive)
         {
             HostsArchiveList.Instance.Delete(archive);
