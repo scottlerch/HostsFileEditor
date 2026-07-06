@@ -62,7 +62,7 @@ public sealed partial class MainWindow
                 IsArchiveVisible = true;
                 ArchivesColumnWidth = new GridLength(1, GridUnitType.Star);
                 LocalSettings.SetBool("ArchiveVisible", true);
-                OnPropertiesChanged(nameof(IsArchiveVisible), nameof(ArchivesColumnWidth), nameof(IsBackEnabled), nameof(MainViewVisibility), nameof(ArchiveViewVisibility));
+                OnPropertiesChanged(nameof(IsArchiveVisible), nameof(ArchivesColumnWidth), nameof(IsBackEnabled), nameof(MainViewVisibility), nameof(ArchiveViewVisibility), nameof(StatusRowHeight));
 
                 if (ArchiveHost.Visibility == Visibility.Visible)
                 {
@@ -80,7 +80,7 @@ public sealed partial class MainWindow
                 IsArchiveVisible = false;
                 ArchivesColumnWidth = new GridLength(0);
                 LocalSettings.SetBool("ArchiveVisible", false);
-                OnPropertiesChanged(nameof(IsArchiveVisible), nameof(ArchivesColumnWidth), nameof(IsBackEnabled), nameof(MainViewVisibility), nameof(ArchiveViewVisibility));
+                OnPropertiesChanged(nameof(IsArchiveVisible), nameof(ArchivesColumnWidth), nameof(IsBackEnabled), nameof(MainViewVisibility), nameof(ArchiveViewVisibility), nameof(StatusRowHeight));
             }
         }
         finally

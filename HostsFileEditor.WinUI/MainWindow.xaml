@@ -13,8 +13,15 @@
          The status row (last) is a FIXED height, not Auto: an Auto status row measured to ~0 against
          the huge virtualized list, so the star content row took the whole height (the list ran to
          the bottom) and the status text overflowed its zero-height cell onto the last rows. A fixed
-         height reserves the band so the list is bounded above it. -->
-    <Grid RowDefinitions="Auto,Auto,*,32" Background="Transparent">
+         height reserves the band so the list is bounded above it — and it is bound (32 or 0) so the
+         archive view, whose bar collapses via MainViewVisibility, doesn't keep a dead 32px band. -->
+    <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="{x:Bind StatusRowHeight, Mode=OneWay}"/>
+        </Grid.RowDefinitions>
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="OnCopyAcceleratorInvoked"/>
             <KeyboardAccelerator Key="X" Modifiers="Control" Invoked="OnCutAcceleratorInvoked"/>
@@ -309,16 +316,20 @@
                                      definitions line up across rows automatically — no per-content
                                      measuring. The previous SharedColumnWidth attached behavior recomputed
                                      widths from the realized (virtualized) rows on every load/scroll/edit,
-                                     which made the columns visibly jitter while loading a large file. -->
+                                     which made the columns visibly jitter while loading a large file.
+                                     200px fits every IPv4 and most compressed IPv6 literals; full-form
+                                     IPv6 (up to 45 chars) still clips, so the IP cell carries a tooltip
+                                     with the complete value (a TextBox hard-cuts with no ellipsis and
+                                     the list has no horizontal scroll). -->
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>
-                                        <ColumnDefinition Width="170"/>
+                                        <ColumnDefinition Width="200"/>
                                         <ColumnDefinition Width="2*"/>
                                         <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{x:Bind Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                    <TextBox Grid.Column="1" Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{x:Bind IpAddress, Mode=OneWay}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
                                     <TextBox Grid.Column="2" Text="{x:Bind HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
                                     <TextBox Grid.Column="3" Text="{x:Bind Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>
