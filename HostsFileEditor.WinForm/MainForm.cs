@@ -256,15 +256,11 @@ internal sealed partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            // Snapshot the actual selected entries so we remove THOSE, then clone independent
-            // copies for the clipboard. Removing the clones (as before) matched nothing by
-            // reference, so Cut silently behaved like Copy.
-            var selected = dataGridViewHostsEntries.SelectedHostEntries.ToList();
+            // Snapshot+clear in one call (the grid helper owns the clear-before-Reset hazard), then
+            // clone independent copies for the clipboard. Removing the clones (as before) matched
+            // nothing by reference, so Cut silently behaved like Copy.
+            var selected = dataGridViewHostsEntries.TakeSelectedHostEntries();
             _clipboardEntries = [.. selected.Select(entry => new HostsEntry(entry))];
-
-            // Clear the selection before removing — see OnDeleteClick: removing selected rows makes
-            // the DataGridView reconcile a huge selection O(n^2) afterwards (a multi-minute hang).
-            dataGridViewHostsEntries.ClearSelection();
             HostsFile.Instance.Entries.Remove(selected);
         }
         else
@@ -324,13 +320,10 @@ internal sealed partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            // Snapshot the selection, then CLEAR it before removing the rows. Removing rows while
-            // they are still selected makes the DataGridView reconcile the (huge) selection
-            // row-by-row in a posted operation that is O(n^2) — it froze the UI for over a minute on
-            // a 400K-row file even though OnDeleteClick itself returned in ~30ms. Clearing first is
-            // O(n) and the rows are being deleted anyway.
-            var selected = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            dataGridViewHostsEntries.ClearSelection();
+            // Snapshot+clear via the grid helper (removing rows while they are still selected makes
+            // the grid reconcile the huge selection in a posted O(n^2) pass — it froze the UI for
+            // over a minute at 400K even though this handler returned in ~30ms).
+            var selected = dataGridViewHostsEntries.TakeSelectedHostEntries();
             HostsFile.Instance.Entries.Remove(selected);
         }
         else
@@ -360,13 +353,14 @@ internal sealed partial class MainForm : Form
     {
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            // Snapshot the selection, then clear it before the bulk duplicate: Duplicate raises a
-            // single Reset, and reconciling a huge selection against that Reset is O(n^2) in the grid
-            // (the same teardown that froze Select-All + Delete). Duplicate inserts a copy after each
-            // original in one O(n) rebind — a per-row InsertAfter loop would be O(n^2) at 400K.
-            var sel = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            dataGridViewHostsEntries.ClearSelection();
+            // Snapshot+clear via the grid helper (Duplicate raises a single Reset; reconciling a
+            // huge selection against it is the O(n^2) teardown that froze Select-All + Delete),
+            // then restore the selection: the originals survive a duplicate, so keep them selected
+            // — matching the modern edition and the Move Up/Down handlers (the restore setter is
+            // the same capped, post-Reset-safe path they already use).
+            var sel = dataGridViewHostsEntries.TakeSelectedHostEntries();
             HostsFile.Instance.Entries.Duplicate(sel);
+            dataGridViewHostsEntries.SelectedHostEntries = sel;
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry is { } currentEntry)
         {
@@ -546,9 +540,12 @@ internal sealed partial class MainForm : Form
         {
             // OnFomLoad is `async void`, so an exception from the off-thread load (locked/denied
             // hosts file, failed backup copy, bad HFE_HOSTS_PATH target) would otherwise escape
-            // unobserved and crash. Surface it, then close: the Lazy<HostsFile> has CACHED the
-            // exception, so every later touch of HostsFile.Instance (any menu command) would
-            // rethrow it as an unhandled crash — a clean exit is strictly better.
+            // unobserved and crash. Surface it, then EXIT — via Application.Exit, not Close():
+            // Close() raises FormClosing with CloseReason.UserClosing, which OnFormClosing cancels
+            // and hides to the tray, leaving a zombie process whose every command (including tray
+            // Exit, which reads HostsFile.Instance.IsModified) rethrows the CACHED Lazy<HostsFile>
+            // exception. Application.Exit closes with CloseReason.ApplicationExitCall, which
+            // OnFormClosing lets through (and it persists settings on that path).
             if (!IsDisposed)
             {
                 MessageBox.Show(
@@ -557,7 +554,7 @@ internal sealed partial class MainForm : Form
                     Text,
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                Close();
+                Application.Exit();
             }
 
             return;
@@ -615,6 +612,10 @@ internal sealed partial class MainForm : Form
 
         HostsFile.Instance.Entries.ResetBindings();
 
+        // Size the columns to real content now that the grid is bound (Shown fired against an
+        // empty grid while the parse ran off-thread — see OnFormShown).
+        AutoSizeEntryColumns();
+
         menuDisable.Checked = !HostsFile.IsEnabled;
         buttonDisable.Checked = !HostsFile.IsEnabled;
         menuContextDisable.Checked = !HostsFile.IsEnabled;
@@ -655,6 +656,26 @@ internal sealed partial class MainForm : Form
 
 
     /// <summary>
+    /// Sizes the entry columns to their content. <c>AllCells</c> measures EVERY row — an O(n)
+    /// text-measure pass that would hang for seconds at 400K rows — so huge files size to the
+    /// displayed cells instead (visible rows only; cheap and close enough).
+    /// </summary>
+    private void AutoSizeEntryColumns()
+    {
+        var mode = HostsFile.Instance.Entries.Count <= 5000
+            ? DataGridViewAutoSizeColumnMode.AllCells
+            : DataGridViewAutoSizeColumnMode.DisplayedCells;
+
+        dataGridViewHostsEntries.AutoResizeColumn(columnEnabled.Index, mode);
+        dataGridViewHostsEntries.AutoResizeColumn(columnIpAddress.Index, mode);
+
+        // Add room for error provider
+        columnIpAddress.Width += 20;
+
+        dataGridViewHostsEntries.AutoResizeColumn(columnHostnames.Index, mode);
+    }
+
+    /// <summary>
     /// Occurs when form is closing.
     /// </summary>
     /// <param name="sender">
@@ -692,20 +713,9 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnFormShown(object sender, EventArgs e)
     {
-        dataGridViewHostsEntries.AutoResizeColumn(
-            columnEnabled.Index,
-            DataGridViewAutoSizeColumnMode.AllCells);
-
-        dataGridViewHostsEntries.AutoResizeColumn(
-            columnIpAddress.Index,
-            DataGridViewAutoSizeColumnMode.AllCells);
-
-        // Add room for error provider
-        columnIpAddress.Width += 20;
-
-        dataGridViewHostsEntries.AutoResizeColumn(
-            columnHostnames.Index,
-            DataGridViewAutoSizeColumnMode.AllCells);
+        // Column auto-sizing moved to AutoSizeEntryColumns, called from OnFomLoad AFTER the async
+        // load binds the grid: Shown fires while the grid is still empty (the parse runs off-thread),
+        // so sizing here measured header-only widths and long hostnames/IPv6 came up truncated.
 
         // HACK: calling focus causes cell validate to occur
         // which causes row to be committed
@@ -1397,12 +1407,13 @@ internal sealed partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            // Snapshot then clear the selection before toggling: SetEnabled raises one Reset, and
-            // reconciling a huge selection against it is the same O(n^2) grid teardown that froze
-            // Select-All + Delete. (SetEnabled itself is now O(n) — it toggles without per-item events.)
-            var sel = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            dataGridViewHostsEntries.ClearSelection();
+            // Snapshot+clear via the grid helper (SetEnabled raises one Reset; reconciling a huge
+            // selection against it is the O(n^2) teardown that froze Select-All + Delete), then
+            // restore: the toggled rows stay the same entries, and keeping them selected lets the
+            // user re-toggle or move them immediately — matching the modern edition.
+            var sel = dataGridViewHostsEntries.TakeSelectedHostEntries();
             HostsFile.Instance.Entries.SetEnabled(sel, isEnabled: true);
+            dataGridViewHostsEntries.SelectedHostEntries = sel;
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry is { } currentEntry)
         {
@@ -1421,11 +1432,10 @@ internal sealed partial class MainForm : Form
 
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
-            // See OnCheckClick: snapshot then clear the selection before SetEnabled to avoid the
-            // O(n^2) selection teardown against the single Reset on a huge hosts file.
-            var sel = dataGridViewHostsEntries.SelectedHostEntries.ToList();
-            dataGridViewHostsEntries.ClearSelection();
+            // See OnCheckClick: snapshot+clear via the grid helper, toggle, then restore.
+            var sel = dataGridViewHostsEntries.TakeSelectedHostEntries();
             HostsFile.Instance.Entries.SetEnabled(sel, isEnabled: false);
+            dataGridViewHostsEntries.SelectedHostEntries = sel;
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry is { } currentEntry)
         {

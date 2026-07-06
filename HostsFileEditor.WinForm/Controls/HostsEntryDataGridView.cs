@@ -1,5 +1,7 @@
 using Equin.ApplicationFramework;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace HostsFileEditor.Controls;
 
@@ -8,6 +10,32 @@ namespace HostsFileEditor.Controls;
 /// </summary>
 internal sealed class HostsEntryDataGridView : DataGridView
 {
+    // Equin's public RemoveSort() does NOT restore source order: it installs a SortComparer over an
+    // EMPTY sort-description collection whose Compare always returns 0, and FilterAndSort still runs
+    // List.Sort with it — .NET's unstable introsort then PERMUTES the all-equal sequence, so the
+    // "unsorted" view shows a scrambled order that no longer matches what Save writes. The only way
+    // to truly clear the sort is to null the view's private comparer and rebuild: these members are
+    // resolved once from the (dead, unchanging) Equin 1.4.5222.35545 assembly. The classic app is
+    // published without trimming, so private reflection is safe here. Null members = fall back to
+    // RemoveSort (scrambled beats broken).
+    private static readonly FieldInfo? ViewSortsField = FindViewMember(t => t.GetField("_sorts", BindingFlags.Instance | BindingFlags.NonPublic));
+    private static readonly FieldInfo? ViewComparerField = FindViewMember(t => t.GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic));
+    private static readonly MethodInfo? ViewFilterAndSortMethod = FindViewMember(t => t.GetMethod("FilterAndSort", BindingFlags.Instance | BindingFlags.NonPublic));
+
+    private static T? FindViewMember<T>(Func<Type, T?> lookup)
+        where T : MemberInfo
+    {
+        for (var type = typeof(BindingListView<HostsEntry>); type is not null; type = type.BaseType)
+        {
+            if (lookup(type) is { } member)
+            {
+                return member;
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// The column the grid is currently sorted by, or <see langword="null"/> when unsorted. Tracked
     /// here because sorting is applied programmatically (see <see cref="OnColumnAdded"/>), so the
@@ -37,10 +65,10 @@ internal sealed class HostsEntryDataGridView : DataGridView
     public SortOrder ActiveSortOrder => _sortDirection;
 
     /// <summary>
-    /// Above this many rows, the selection-restore setter highlights only the first matched row
-    /// instead of the whole set: each <c>Rows[i].Selected = true</c> walks the grid's internal
-    /// selected-band list (O(selected-so-far)), so restoring a huge selection is O(k^2) inside the
-    /// framework — minutes at 400K — no matter how cheaply the rows are matched.
+    /// Above this many rows, the selection-restore setter restores nothing (and nulls the current
+    /// cell): each <c>Rows[i].Selected = true</c> walks the grid's internal selected-band list
+    /// (O(selected-so-far)), so restoring a huge selection is O(k^2) inside the framework —
+    /// minutes at 400K — no matter how cheaply the rows are matched.
     /// </summary>
     private const int MaxSelectionRestoreCount = 20000;
 
@@ -72,7 +100,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
             // the bound list before enumerating. A deferred sequence would re-read the changed
             // grid/list and yield wrong rows or throw "collection modified".
             var result = new List<HostsEntry>();
-            if (BoundViewList() is not { } views)
+            if (BoundView() is not { } views)
             {
                 return result;
             }
@@ -86,7 +114,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
                     continue;
                 }
 
-                if (views[rowIndex] is ObjectView<HostsEntry> { Object: { } entry })
+                if (views[rowIndex] is { Object: { } entry })
                 {
                     result.Add(entry);
                 }
@@ -101,54 +129,59 @@ internal sealed class HostsEntryDataGridView : DataGridView
             // rows by their view index (view order == grid row order; only matched rows get realized
             // via Rows[index]). Membership uses our own reference-comparer set — like Core's Remove —
             // so a caller-supplied set with a value-based comparer can't match the wrong duplicate
-            // row. Restores beyond MaxSelectionRestoreCount select just the first matched row (see
+            // row. Restores beyond MaxSelectionRestoreCount restore nothing at all (see below and
             // the constant's remarks for why full restores are O(k^2) inside the framework).
             var selected = new HashSet<HostsEntry>(value);
             ClearSelection();
-            if (selected.Count == 0 || BoundViewList() is not { } views)
+            if (selected.Count == 0 || BoundView() is not { } views)
             {
                 return;
             }
 
-            var restoreAll = selected.Count <= MaxSelectionRestoreCount;
+            if (selected.Count > MaxSelectionRestoreCount)
+            {
+                // Restore NOTHING above the cap (an honest empty selection), and null the current
+                // cell too: with the selection gone, the command handlers fall through to their
+                // CurrentHostEntry fallback, so a survived current row would make the user's next
+                // repeat gesture (e.g. Alt+Up after moving a >20K block) silently act on ONE row —
+                // tearing it out of the block they believe is still selected. The earlier behavior
+                // of selecting just the first matched row caused exactly that corruption.
+                CurrentCell = null;
+                return;
+            }
+
             var count = Math.Min(views.Count, RowCount);
             for (var index = 0; index < count; index++)
             {
-                if (views[index] is ObjectView<HostsEntry> { Object: { } entry } && selected.Contains(entry))
+                if (views[index] is { Object: { } entry } && selected.Contains(entry))
                 {
                     Rows[index].Selected = true;
-
-                    if (!restoreAll)
-                    {
-                        break;
-                    }
                 }
             }
         }
     }
 
     /// <summary>
-    /// Unwraps the grid's <see cref="BindingSource"/> chain to the underlying bound list — the
-    /// <c>BindingListView</c> whose items are <see cref="ObjectView{HostsEntry}"/> in the current
-    /// (filtered/sorted) VISIBLE order, index-aligned with the grid's data rows. Both the
-    /// <see cref="SelectedHostEntries"/> getter and setter rely on that index alignment; if the
-    /// binding topology ever exposes the unfiltered list here, they would operate on hidden rows.
+    /// Snapshots the selected entries and clears the selection in one call. Every bulk mutation
+    /// must clear BEFORE raising the list Reset: reconciling a huge selection against a Reset is a
+    /// posted O(n^2) operation inside the grid (it froze the UI for minutes at 400K rows). Owning
+    /// the sequence here keeps that hazard knowledge in one place instead of five call sites.
     /// </summary>
-    private System.Collections.IList? BoundViewList()
+    public List<HostsEntry> TakeSelectedHostEntries()
     {
-        var source = DataSource;
-        while (source is BindingSource bindingSource)
-        {
-            source = bindingSource.List;
-        }
-
-        return source as System.Collections.IList;
+        var selected = SelectedHostEntries.ToList();
+        ClearSelection();
+        return selected;
     }
 
     /// <summary>
     /// Unwraps the grid's <see cref="BindingSource"/> chain to the bound Equin
     /// <see cref="BindingListView{T}"/> — the sortable view whose items are the visible
-    /// (filtered/sorted) rows in grid order. Used by the sort methods to apply an external comparer.
+    /// (filtered/sorted) rows in grid order, index-aligned with the grid's data rows. The
+    /// <see cref="SelectedHostEntries"/> getter/setter rely on that index alignment (if the binding
+    /// topology ever exposes the unfiltered list here they would operate on hidden rows), and the
+    /// sort methods use it to apply/clear the external comparer — one unwrap so the two can never
+    /// disagree about which list they address.
     /// </summary>
     private BindingListView<HostsEntry>? BoundView()
     {
@@ -238,10 +271,37 @@ internal sealed class HostsEntryDataGridView : DataGridView
         base.OnColumnAdded(e);
     }
 
+    /// <summary>
+    /// Re-flips any later assignment of <see cref="DataGridViewColumnSortMode.Automatic"/> back to
+    /// Programmatic. <see cref="OnColumnAdded"/> alone is NOT enough: the designer assigns
+    /// <c>SortMode = Automatic</c> to the two checkbox columns AFTER <c>Columns.AddRange</c> (their
+    /// add-time default is NotSortable, so the add-time flip never fires), which left the .NET 10
+    /// Equin sort crash live on the Valid/Enabled headers. This hook makes the invariant hold for
+    /// any assignment order, including future designer regeneration. The re-entrant second change
+    /// event (Automatic -> Programmatic) is a no-op under the guard.
+    /// </summary>
+    protected override void OnColumnSortModeChanged(DataGridViewColumnEventArgs e)
+    {
+        if (e.Column.SortMode == DataGridViewColumnSortMode.Automatic)
+        {
+            e.Column.SortMode = DataGridViewColumnSortMode.Programmatic;
+        }
+
+        base.OnColumnSortModeChanged(e);
+    }
+
     /// <inheritdoc />
     protected override void OnColumnHeaderMouseClick(DataGridViewCellMouseEventArgs e)
     {
         base.OnColumnHeaderMouseClick(e);
+
+        // The framework's automatic sort was left-click-only; keep that contract. Without this,
+        // right-clicking a header to open the grid context menu would also cycle the sort (an
+        // O(n log n) reorder plus a Reset at 400K rows) and middle clicks would too.
+        if (e.Button != MouseButtons.Left)
+        {
+            return;
+        }
 
         if (e.ColumnIndex < 0 || e.ColumnIndex >= Columns.Count)
         {
@@ -288,6 +348,15 @@ internal sealed class HostsEntryDataGridView : DataGridView
             return;
         }
 
+        // Commit an in-progress cell edit BEFORE the sort's Reset, exactly like the framework's
+        // automatic sort did (its SortInternal validates the current cell first): the Reset tears
+        // the editing control down with no commit anywhere in that path, silently discarding the
+        // typed value. Mirror the framework and bail out if validation fails.
+        if (!EndEdit())
+        {
+            return;
+        }
+
         view.ApplySort(ComparerFor(column.DataPropertyName, direction));
 
         if (_sortColumn is not null && _sortColumn != column)
@@ -302,44 +371,95 @@ internal sealed class HostsEntryDataGridView : DataGridView
     }
 
     /// <summary>
-    /// Removes any active sort from the bound view, clears the header glyph, and raises
-    /// <see cref="DataGridView.Sorted"/> so sort-dependent UI (e.g. Move Up/Down) refreshes.
+    /// Removes any active sort from the bound view — genuinely restoring FILE order — clears the
+    /// header glyph, and raises <see cref="DataGridView.Sorted"/> so sort-dependent UI (e.g. Move
+    /// Up/Down) refreshes. A no-op when no sort is active, so the Remove Sort menu can't disturb an
+    /// unsorted view (Equin's RemoveSort is NOT harmless when idle — see RestoreSourceOrder).
     /// </summary>
     public void ClearColumnSort()
     {
-        BoundView()?.RemoveSort();
-
-        if (_sortColumn is not null)
+        // Nothing to clear: skip the view work entirely. Important beyond perf — calling Equin's
+        // RemoveSort on an unsorted view would INSTALL its all-equal comparer and scramble (below).
+        if (_sortColumn is null)
         {
-            _sortColumn.HeaderCell.SortGlyphDirection = SortOrder.None;
+            return;
         }
 
+        // Same contract as ApplyColumnSort: commit the in-progress edit before the Reset.
+        if (!EndEdit())
+        {
+            return;
+        }
+
+        if (BoundView() is { } view)
+        {
+            RestoreSourceOrder(view);
+        }
+
+        _sortColumn.HeaderCell.SortGlyphDirection = SortOrder.None;
         _sortColumn = null;
         _sortDirection = SortOrder.None;
         OnSorted(EventArgs.Empty);
     }
 
     /// <summary>
-    /// Builds an emit-free <see cref="IComparer{T}"/> over <see cref="HostsEntry"/> for the given
-    /// bound property and direction. Direct property access avoids both reflection and the Equin/.NET 10
-    /// emit crash; <see cref="Comparer{T}.Default"/> over the boxed value gives null-safe
-    /// <see cref="IComparable"/> ordering, matching the value semantics of the framework's original
-    /// property sort.
+    /// Truly un-sorts the view. Equin's own <c>RemoveSort()</c> replaces the comparer with a
+    /// SortComparer over an EMPTY description collection whose Compare always returns 0 — and
+    /// FilterAndSort still runs List.Sort with it, whose unstable introsort PERMUTES an all-equal
+    /// sequence: the "unsorted" grid showed a scrambled order that re-scrambled on every Reset and
+    /// no longer matched what Save writes. Fix: mirror RemoveSort's state transitions but null the
+    /// private comparer (sorting is skipped entirely when it is null) and rebuild once — the view
+    /// returns to source (file) order and stays there. Falls back to plain RemoveSort if the
+    /// reflected members are missing (wrong-but-alive beats broken).
+    /// </summary>
+    private static void RestoreSourceOrder(BindingListView<HostsEntry> view)
+    {
+        if (ViewSortsField is null || ViewComparerField is null || ViewFilterAndSortMethod is null)
+        {
+            view.RemoveSort();
+            return;
+        }
+
+        ViewSortsField.SetValue(view, new ListSortDescriptionCollection());
+        ViewComparerField.SetValue(view, null);
+        ViewFilterAndSortMethod.Invoke(view, null);
+    }
+
+    /// <summary>
+    /// Builds an emit-free, allocation-free comparer over <see cref="HostsEntry"/> for the given
+    /// bound property and direction. Direct TYPED property access avoids reflection, the
+    /// Equin/.NET 10 emit crash, and per-comparison boxing (the earlier <c>Comparer&lt;object&gt;</c>
+    /// variant boxed ~15M bools per header click on a 400K-row checkbox sort). String columns use
+    /// culture-sensitive comparison for parity with the framework's original property sort
+    /// (which routed through <see cref="string.CompareTo(string)"/>).
     /// </summary>
     private static Comparer<HostsEntry> ComparerFor(string dataPropertyName, SortOrder direction)
     {
-        Func<HostsEntry, object?> key = dataPropertyName switch
+        var comparer = dataPropertyName switch
         {
-            nameof(HostsEntry.Enabled) => entry => entry.Enabled,
-            nameof(HostsEntry.Valid) => entry => entry.Valid,
-            nameof(HostsEntry.IpAddress) => entry => entry.IpAddress,
-            nameof(HostsEntry.HostNames) => entry => entry.HostNames,
-            nameof(HostsEntry.Comment) => entry => entry.Comment,
-            nameof(HostsEntry.UnparsedText) => entry => entry.UnparsedText,
-            _ => entry => entry.ToString(),
+            nameof(HostsEntry.Enabled) => Comparer<HostsEntry>.Create(static (x, y) => x.Enabled.CompareTo(y.Enabled)),
+            nameof(HostsEntry.Valid) => Comparer<HostsEntry>.Create(static (x, y) => x.Valid.CompareTo(y.Valid)),
+            nameof(HostsEntry.IpAddress) => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.IpAddress, y.IpAddress, StringComparison.CurrentCulture)),
+            nameof(HostsEntry.HostNames) => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.HostNames, y.HostNames, StringComparison.CurrentCulture)),
+            nameof(HostsEntry.Comment) => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.Comment, y.Comment, StringComparison.CurrentCulture)),
+            nameof(HostsEntry.UnparsedText) => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.UnparsedText, y.UnparsedText, StringComparison.CurrentCulture)),
+            _ => UnknownColumnComparer(dataPropertyName),
         };
 
-        var sign = direction == SortOrder.Descending ? -1 : 1;
-        return Comparer<HostsEntry>.Create((x, y) => sign * Comparer<object>.Default.Compare(key(x), key(y)));
+        return direction == SortOrder.Descending
+            ? Comparer<HostsEntry>.Create((x, y) => comparer.Compare(y, x))
+            : comparer;
+    }
+
+    /// <summary>
+    /// Loud fallback for a column property this switch does not know: a silently "working" fallback
+    /// (the old <c>ToString()</c> concatenation) would make a future column compile clean and sort
+    /// by IP+hostnames+comment with no error — wrong order discovered only by users. Debug builds
+    /// fail fast; release keeps the grid alive with the documented approximation.
+    /// </summary>
+    private static Comparer<HostsEntry> UnknownColumnComparer(string dataPropertyName)
+    {
+        Debug.Fail($"No sort comparer for column property '{dataPropertyName}' — add a case to {nameof(ComparerFor)}.");
+        return Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.ToString(), y.ToString(), StringComparison.CurrentCulture));
     }
 }
