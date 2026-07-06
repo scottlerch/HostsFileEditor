@@ -119,6 +119,18 @@ public class UndoManager
 
     public void AddActions(Action undoAction, Action redoAction)
     {
+        // A fully suspended capture must be a TRUE no-op. Without this early-out, a caller that
+        // skipped its own IsCapturingSuspended guard would — under SuspendUndoRedo, where
+        // _suspendAddActions is false but both replay flags are set — fall through both inner
+        // blocks yet still run EnforceCapacity + OnHistoryChanged, firing a phantom HistoryChanged
+        // (and a UI CanUndo/IsModified re-read) in the middle of a bulk replay. The call-site
+        // guards in HostsEntryList remain purely as a hot-path optimization: they skip BUILDING the
+        // throwaway undo/redo closures, which this callee-side check cannot do.
+        if (IsCapturingSuspended)
+        {
+            return;
+        }
+
         if (!_suspendAddActions)
         {
             if (!_undoInProgress)

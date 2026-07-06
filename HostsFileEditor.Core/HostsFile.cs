@@ -4,6 +4,7 @@ using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using HostsFileEditor.Win32;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HostsFileEditor;
 
@@ -184,6 +185,11 @@ public class HostsFile : INotifyPropertyChanged
         _filePath = DefaultHostFilePath;
     }
 
+    // IL2026/IL3050: the BatchUpdate Reset walks BindingList's reflective descriptor machinery in
+    // the trim/AOT analyzers' eyes only — the apps never data-bind through PropertyDescriptors, so
+    // Enum.GetValues/TypeDescriptor paths are unreachable (same justification as HostsEntryList).
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList descriptor machinery unreachable; see comment.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList descriptor machinery unreachable; see comment.")]
     public void Import(string importFilePath)
     {
         if (_filePath != importFilePath)
@@ -212,6 +218,8 @@ public class HostsFile : INotifyPropertyChanged
         HostsArchiveList.Instance.Add(archive);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList descriptor machinery unreachable; see Import.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList descriptor machinery unreachable; see Import.")]
     public void RestoreDefault()
     {
         UndoManager.Instance.ClearHistory();
@@ -253,6 +261,8 @@ public class HostsFile : INotifyPropertyChanged
             Entries.Select(entry => entry.UnparsedText));
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList descriptor machinery unreachable; see Import.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList descriptor machinery unreachable; see Import.")]
     public void Refresh(bool removeDefault = true)
     {
         // Read before mutating so a failed read leaves the current entries intact rather

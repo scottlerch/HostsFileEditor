@@ -6,6 +6,13 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace HostsFileEditor;
 
+// IL3050 (type level): ILC attributes one Enum.GetValues(Type) reach to the TYPE itself (a
+// synthesized member of the BindingList<T> instantiation, not any method we declare), so it cannot
+// be suppressed per-method. Scope is still just this class — the trim/AOT analyzers stay armed for
+// the rest of the AOT-published app. The reflective descriptor machinery is unreachable at runtime:
+// nothing data-binds to this list through PropertyDescriptors (the WinUI app rebinds an
+// ObservableCollection; WinForms binds through Equin's view).
+[UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList descriptor machinery unreachable; see type comment.")]
 public class HostsEntryList : BindingList<HostsEntry>
 {
     public static readonly string[] DefaultLines = Resources.hosts.Split(
@@ -13,6 +20,7 @@ public class HostsEntryList : BindingList<HostsEntry>
         StringSplitOptions.None);
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList's Enum.GetValues-based descriptor machinery is unreachable — see the IL2026 justification.")]
     public HostsEntryList(IEnumerable<string> entryLines, bool filterDefault)
         : this()
     {
@@ -20,6 +28,7 @@ public class HostsEntryList : BindingList<HostsEntry>
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList's Enum.GetValues-based descriptor machinery is unreachable — see the IL2026 justification.")]
     public HostsEntryList()
     {
         AllowEdit = true;
@@ -291,6 +300,8 @@ public class HostsEntryList : BindingList<HostsEntry>
     // base.InsertItem/ClearItems calls bypass the capturing overrides, so nothing here records undo
     // even without it — but it makes the "callers own the combined undo/redo action" contract
     // explicit and future-proofs against a mutation being routed through a capturing path.
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList's Enum.GetValues-based descriptor machinery is unreachable — see the IL2026 justification.")]
     private void ReplaceAll(List<HostsEntry> target)
     {
         this.BatchUpdate(() =>
@@ -335,6 +346,8 @@ public class HostsEntryList : BindingList<HostsEntry>
     // and hung ~2 min at 400K even with the grid detached. do/undo/redo all go through here, so undo
     // and redo are O(n) with a single Reset too. The classic grid rebuilds on the Reset; the modern UI
     // rebinds explicitly in its handler (its ListView won't see the silent per-item change otherwise).
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList only used for basic add/remove/change notifications; PropertyDescriptor reflective paths not used.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList's Enum.GetValues-based descriptor machinery is unreachable — see the IL2026 justification.")]
     private void ApplyEnabled(IReadOnlyList<HostsEntry> entries, bool isEnabled)
     {
         this.BatchUpdate(() =>
