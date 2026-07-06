@@ -39,10 +39,17 @@ internal sealed partial class MainForm : Form
     private bool _addingNew;
 
     /// <summary>
-    /// Ignore adding new in progress. Used for ugly hacks setup in load 
+    /// Ignore adding new in progress. Used for ugly hacks setup in load
     /// event.
     /// </summary>
     private bool _ignoreAddingNew;
+
+    /// <summary>
+    /// Set when the initial hosts-file load failed. The <c>Lazy&lt;HostsFile&gt;</c> has cached the
+    /// exception, so any later <c>HostsFile.Instance</c> touch rethrows it — commands that read
+    /// Instance (e.g. the exit prompt's IsModified check) must short-circuit instead of crashing.
+    /// </summary>
+    private bool _loadFailed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainForm"/> class.
@@ -351,6 +358,10 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnDuplicateClick(object sender, EventArgs e)
     {
+        // Commit/cancel the in-progress edit before Duplicate raises its Reset — the Reset tears the
+        // editor down uncommitted otherwise (matching Cut/Check/Uncheck; the sort paths do the same).
+        dataGridViewHostsEntries.CancelEdit();
+
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             // Snapshot+clear via the grid helper (Duplicate raises a single Reset; reconciling a
@@ -505,9 +516,8 @@ internal sealed partial class MainForm : Form
         // (BadImageFormatException "Bad IL format"); ApplySort(IComparer<T>) routes through its
         // non-emitting external comparer instead. The archive grid has no visible headers, so this
         // initial sort — reused whenever the archive list changes — is the only sort it ever runs.
-        _hostsArchiveView.ApplySort(
-            Comparer<HostsArchive>.Create(
-                (a, b) => string.Compare(a?.FileName, b?.FileName, StringComparison.OrdinalIgnoreCase)));
+        // The comparer lives in Core so the modern edition orders archives identically.
+        _hostsArchiveView.ApplySort(HostsArchive.FileNameComparer);
 
         // Parse the hosts file off the UI thread (it can be very large) behind a loading indicator,
         // so the window paints and stays responsive instead of freezing on a huge file. Disable the
@@ -516,6 +526,11 @@ internal sealed partial class MainForm : Form
         // whose grid bindings are not wired up yet.
         menuStrip.Enabled = false;
         toolStrip.Enabled = false;
+        // The grid and tray context menus also carry Instance-touching commands (Disable hosts,
+        // paste, tray Exit); disable them for the load span so a right-click / tray click can't block
+        // the UI thread on the in-progress Lazy parse (or, after a failure, rethrow its exception).
+        contextMenuGrid.Enabled = false;
+        contextMenuTray.Enabled = false;
         UseWaitCursor = true;
         // Held separately so it can be disposed below: Control.Dispose does NOT dispose a Font the
         // caller assigned via the Font property, so `new Font(...)` inline would leak a GDI handle.
@@ -546,8 +561,13 @@ internal sealed partial class MainForm : Form
             // Exit, which reads HostsFile.Instance.IsModified) rethrows the CACHED Lazy<HostsFile>
             // exception. Application.Exit closes with CloseReason.ApplicationExitCall, which
             // OnFormClosing lets through (and it persists settings on that path).
+            _loadFailed = true;
             if (!IsDisposed)
             {
+                // Keep the command surfaces disabled through the exit: the tray/grid context menus
+                // are still live during the modal MessageBox, and any command that reads
+                // HostsFile.Instance would rethrow the cached load exception. _loadFailed guards the
+                // exit prompt (ConfirmDiscardUnsavedChanges); leaving menus disabled covers the rest.
                 MessageBox.Show(
                     this,
                     "The hosts file could not be loaded:" + Environment.NewLine + Environment.NewLine + ex.Message,
@@ -564,12 +584,17 @@ internal sealed partial class MainForm : Form
             // The user may have closed the window during the multi-second load; the continuation
             // then runs against disposed controls, so only touch live UI when the form survives.
             // Dispose is idempotent and safe either way.
-            if (!IsDisposed)
+            // Re-enable the command surfaces only on a SUCCESSFUL load — after a failure they must
+            // stay disabled (the app is exiting, and any Instance touch would rethrow the cached
+            // exception).
+            if (!IsDisposed && !_loadFailed)
             {
                 loadingLabel.Parent?.Controls.Remove(loadingLabel);
                 UseWaitCursor = false;
                 menuStrip.Enabled = true;
                 toolStrip.Enabled = true;
+                contextMenuGrid.Enabled = true;
+                contextMenuTray.Enabled = true;
             }
 
             loadingLabel.Dispose();
@@ -780,7 +805,9 @@ internal sealed partial class MainForm : Form
     /// </summary>
     private bool ConfirmDiscardUnsavedChanges()
     {
-        if (!HostsFile.Instance.IsModified)
+        // A failed load never built any state to lose, and touching HostsFile.Instance would rethrow
+        // the cached load exception (tray/File Exit reach here even after a failed load).
+        if (_loadFailed || !HostsFile.Instance.IsModified)
         {
             return true;
         }
@@ -1080,8 +1107,11 @@ internal sealed partial class MainForm : Form
                 HostsFile.Instance.Entries.InsertBefore(currentEntry);
             }
         }
-        else
+        else if (HostsFile.Instance.Entries.Count == 0)
         {
+            // Only the genuinely empty grid appends a first row. A null current row on a NON-empty
+            // grid means the anchor was dropped (e.g. after a >20K selection restore nulled
+            // CurrentCell) — appending a blank row invisibly at the file bottom is not an insert.
             dataGridViewHostsEntries.CancelEdit();
             HostsFile.Instance.Entries.Add();
         }
@@ -1105,8 +1135,9 @@ internal sealed partial class MainForm : Form
                 HostsFile.Instance.Entries.InsertAfter(currentEntry);
             }
         }
-        else
+        else if (HostsFile.Instance.Entries.Count == 0)
         {
+            // See OnInsertAboveClick: only the empty grid appends a first row.
             dataGridViewHostsEntries.CancelEdit();
             HostsFile.Instance.Entries.Add();
         }

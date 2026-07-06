@@ -11,30 +11,18 @@ namespace HostsFileEditor.Controls;
 internal sealed class HostsEntryDataGridView : DataGridView
 {
     // Equin's public RemoveSort() does NOT restore source order: it installs a SortComparer over an
-    // EMPTY sort-description collection whose Compare always returns 0, and FilterAndSort still runs
-    // List.Sort with it — .NET's unstable introsort then PERMUTES the all-equal sequence, so the
-    // "unsorted" view shows a scrambled order that no longer matches what Save writes. The only way
-    // to truly clear the sort is to null the view's private comparer and rebuild: these members are
-    // resolved once from the (dead, unchanging) Equin 1.4.5222.35545 assembly. The classic app is
-    // published without trimming, so private reflection is safe here. Null members = fall back to
-    // RemoveSort (scrambled beats broken).
-    private static readonly FieldInfo? ViewSortsField = FindViewMember(t => t.GetField("_sorts", BindingFlags.Instance | BindingFlags.NonPublic));
-    private static readonly FieldInfo? ViewComparerField = FindViewMember(t => t.GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic));
-    private static readonly MethodInfo? ViewFilterAndSortMethod = FindViewMember(t => t.GetMethod("FilterAndSort", BindingFlags.Instance | BindingFlags.NonPublic));
+    // EMPTY sort-description collection whose Compare always returns 0, and FilterAndSort then runs
+    // List.Sort with it — .NET's unstable introsort PERMUTES the all-equal sequence, so the
+    // "unsorted" view shows a scrambled order that no longer matches what Save writes. To truly clear
+    // the sort we null the view's private comparer/sorts and call the PUBLIC Refresh() (see
+    // RestoreSourceOrder). These private fields live on Equin's public AggregateBindingListView<T>
+    // base; resolved once (the classic app is untrimmed, so private reflection is safe). A null field
+    // => fall back to RemoveSort (scrambled, but at least notified — beats a silent wrong-order view).
+    private static readonly FieldInfo? _viewSortsField =
+        typeof(AggregateBindingListView<HostsEntry>).GetField("_sorts", BindingFlags.Instance | BindingFlags.NonPublic);
 
-    private static T? FindViewMember<T>(Func<Type, T?> lookup)
-        where T : MemberInfo
-    {
-        for (var type = typeof(BindingListView<HostsEntry>); type is not null; type = type.BaseType)
-        {
-            if (lookup(type) is { } member)
-            {
-                return member;
-            }
-        }
-
-        return null;
-    }
+    private static readonly FieldInfo? _viewComparerField =
+        typeof(AggregateBindingListView<HostsEntry>).GetField("_comparer", BindingFlags.Instance | BindingFlags.NonPublic);
 
     /// <summary>
     /// The column the grid is currently sorted by, or <see langword="null"/> when unsorted. Tracked
@@ -68,9 +56,10 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// Above this many rows, the selection-restore setter restores nothing (and nulls the current
     /// cell): each <c>Rows[i].Selected = true</c> walks the grid's internal selected-band list
     /// (O(selected-so-far)), so restoring a huge selection is O(k^2) inside the framework —
-    /// minutes at 400K — no matter how cheaply the rows are matched.
+    /// minutes at 400K — no matter how cheaply the rows are matched. Shared with the modern edition
+    /// via Core so the "huge selection" boundary stays in parity.
     /// </summary>
-    private const int MaxSelectionRestoreCount = 20000;
+    private const int MaxSelectionRestoreCount = HostsEntryList.HugeSelectionThreshold;
 
     /// <summary>
     /// Gets the selected host entries.
@@ -131,14 +120,18 @@ internal sealed class HostsEntryDataGridView : DataGridView
             // so a caller-supplied set with a value-based comparer can't match the wrong duplicate
             // row. Restores beyond MaxSelectionRestoreCount restore nothing at all (see below and
             // the constant's remarks for why full restores are O(k^2) inside the framework).
-            var selected = new HashSet<HostsEntry>(value);
             ClearSelection();
-            if (selected.Count == 0 || BoundView() is not { } views)
+
+            // Count before building the membership set (a >20K restore is dropped, so the set — up
+            // to ~8MB at 400K — would be allocated only to read its Count). Callers pass a List, so
+            // this is O(1).
+            var requested = value as ICollection<HostsEntry> ?? [.. value];
+            if (requested.Count == 0)
             {
                 return;
             }
 
-            if (selected.Count > MaxSelectionRestoreCount)
+            if (requested.Count > MaxSelectionRestoreCount)
             {
                 // Restore NOTHING above the cap (an honest empty selection), and null the current
                 // cell too: with the selection gone, the command handlers fall through to their
@@ -150,6 +143,12 @@ internal sealed class HostsEntryDataGridView : DataGridView
                 return;
             }
 
+            if (BoundView() is not { } views)
+            {
+                return;
+            }
+
+            var selected = new HashSet<HostsEntry>(requested);
             var count = Math.Min(views.Count, RowCount);
             for (var index = 0; index < count; index++)
             {
@@ -343,19 +342,15 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// </summary>
     private void ApplyColumnSort(DataGridViewColumn column, SortOrder direction)
     {
-        if (BoundView() is not { } view)
+        if (BoundView() is not { } view || !CommitEditsBeforeReset())
         {
             return;
         }
 
-        // Commit an in-progress cell edit BEFORE the sort's Reset, exactly like the framework's
-        // automatic sort did (its SortInternal validates the current cell first): the Reset tears
-        // the editing control down with no commit anywhere in that path, silently discarding the
-        // typed value. Mirror the framework and bail out if validation fails.
-        if (!EndEdit())
-        {
-            return;
-        }
+        // Clear the selection before the sort's Reset and restore it after: reconciling a huge
+        // selection against a Reset is the posted O(n^2) grid teardown every bulk handler avoids
+        // (a plain sort click on a 400K Ctrl+A'd grid froze for minutes without this).
+        var restore = TakeSelectedHostEntries();
 
         view.ApplySort(ComparerFor(column.DataPropertyName, direction));
 
@@ -367,7 +362,35 @@ internal sealed class HostsEntryDataGridView : DataGridView
         column.HeaderCell.SortGlyphDirection = direction;
         _sortColumn = column;
         _sortDirection = direction;
+        SelectedHostEntries = restore;
         OnSorted(EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Commits any in-progress edit before a Reset. <see cref="DataGridView.EndEdit()"/> commits the
+    /// current cell but — unlike the framework's automatic sort — does NOT run the validation
+    /// pipeline, so MainForm's <c>CellValidated -&gt; EndNew</c> hook that finalizes a pending new-row
+    /// placeholder never fires and the typed new row is lost. Nulling <see cref="DataGridView.CurrentCell"/>
+    /// runs that pipeline (as the framework's <c>SortInternal</c> did). Returns <see langword="false"/>
+    /// if the edit cannot be committed (validation refused) so the caller can bail without a Reset.
+    /// </summary>
+    private bool CommitEditsBeforeReset()
+    {
+        if (!EndEdit())
+        {
+            return false;
+        }
+
+        try
+        {
+            CurrentCell = null;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -380,16 +403,13 @@ internal sealed class HostsEntryDataGridView : DataGridView
     {
         // Nothing to clear: skip the view work entirely. Important beyond perf — calling Equin's
         // RemoveSort on an unsorted view would INSTALL its all-equal comparer and scramble (below).
-        if (_sortColumn is null)
+        if (_sortColumn is null || !CommitEditsBeforeReset())
         {
             return;
         }
 
-        // Same contract as ApplyColumnSort: commit the in-progress edit before the Reset.
-        if (!EndEdit())
-        {
-            return;
-        }
+        // Clear the selection before the un-sort Reset and restore it after (see ApplyColumnSort).
+        var restore = TakeSelectedHostEntries();
 
         if (BoundView() is { } view)
         {
@@ -399,6 +419,7 @@ internal sealed class HostsEntryDataGridView : DataGridView
         _sortColumn.HeaderCell.SortGlyphDirection = SortOrder.None;
         _sortColumn = null;
         _sortDirection = SortOrder.None;
+        SelectedHostEntries = restore;
         OnSorted(EventArgs.Empty);
     }
 
@@ -407,22 +428,28 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// SortComparer over an EMPTY description collection whose Compare always returns 0 — and
     /// FilterAndSort still runs List.Sort with it, whose unstable introsort PERMUTES an all-equal
     /// sequence: the "unsorted" grid showed a scrambled order that re-scrambled on every Reset and
-    /// no longer matched what Save writes. Fix: mirror RemoveSort's state transitions but null the
-    /// private comparer (sorting is skipped entirely when it is null) and rebuild once — the view
-    /// returns to source (file) order and stays there. Falls back to plain RemoveSort if the
-    /// reflected members are missing (wrong-but-alive beats broken).
+    /// no longer matched what Save writes. Fix: null the private comparer/sorts (sorting is skipped
+    /// entirely when the comparer is null) and call the public <see cref="BindingListView{T}.Refresh"/>,
+    /// which re-filters/sorts into source order AND raises the ListChanged(Reset) that Equin's
+    /// private FilterAndSort omits. Falls back to plain RemoveSort if the reflected fields are
+    /// missing (scrambled-but-notified beats a silent wrong-order view).
     /// </summary>
     private static void RestoreSourceOrder(BindingListView<HostsEntry> view)
     {
-        if (ViewSortsField is null || ViewComparerField is null || ViewFilterAndSortMethod is null)
+        if (_viewSortsField is null || _viewComparerField is null)
         {
             view.RemoveSort();
             return;
         }
 
-        ViewSortsField.SetValue(view, new ListSortDescriptionCollection());
-        ViewComparerField.SetValue(view, null);
-        ViewFilterAndSortMethod.Invoke(view, null);
+        _viewSortsField.SetValue(view, new ListSortDescriptionCollection());
+        _viewComparerField.SetValue(view, null);
+
+        // Public Refresh() re-runs FilterAndSort (comparer-less now -> source order) AND raises the
+        // ListChanged(Reset) that the private FilterAndSort omits. Without the Reset the grid keeps
+        // painting the sorted order while the view is back in file order, so the positional
+        // SelectedHostEntries mapping and CurrentHostEntry resolve to the wrong entries.
+        view.Refresh();
     }
 
     /// <summary>
