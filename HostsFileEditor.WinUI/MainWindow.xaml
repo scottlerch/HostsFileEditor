@@ -7,7 +7,21 @@
     xmlns:local="using:HostsFileEditor"
     mc:Ignorable="d"
     Title="Hosts File Editor">
-    <Grid RowDefinitions="Auto,Auto,*" Background="Transparent" MinWidth="300" MinHeight="480">
+    <!-- No MinWidth/MinHeight here: a Grid min taller/wider than the window overflow-clips its edge
+         rows (it hid the bottom status bar when shortened). The minimum window size is enforced on
+         the AppWindow presenter instead (see TrySetAppWindowTitleBar).
+         The status row (last) is a FIXED height, not Auto: an Auto status row measured to ~0 against
+         the huge virtualized list, so the star content row took the whole height (the list ran to
+         the bottom) and the status text overflowed its zero-height cell onto the last rows. A fixed
+         height reserves the band so the list is bounded above it — and it is bound (32 or 0) so the
+         archive view, whose bar collapses via MainViewVisibility, doesn't keep a dead 32px band. -->
+    <Grid Background="Transparent">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="{x:Bind StatusRowHeight, Mode=OneWay}"/>
+        </Grid.RowDefinitions>
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="C" Modifiers="Control" Invoked="OnCopyAcceleratorInvoked"/>
             <KeyboardAccelerator Key="X" Modifiers="Control" Invoked="OnCutAcceleratorInvoked"/>
@@ -47,6 +61,10 @@
                        Margin="0,0,4,0"
                        VerticalAlignment="Center"/>
                 <TextBlock Text="Hosts File Editor" FontSize="11" FontWeight="Normal" VerticalAlignment="Center"/>
+                <!-- Dev/test HFE_HOSTS_PATH override: shown so the redirect is never silent. -->
+                <TextBlock Text="{x:Bind OverrideIndicatorText}" Visibility="{x:Bind OverrideIndicatorVisibility}"
+                           FontSize="11" FontStyle="Italic" VerticalAlignment="Center" Margin="8,0,0,0"
+                           Foreground="{ThemeResource SystemFillColorCautionBrush}"/>
             </StackPanel>
         </Grid>
         <Grid x:Name="TopCommandRow" Grid.Row="1" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}" ColumnSpacing="4" Padding="8,0">
@@ -247,9 +265,16 @@
         </Grid>
         <Grid Grid.Row="2" Background="Transparent">
             <Grid x:Name="MainHost" Margin="8,0,8,8" RowDefinitions="Auto,*" Background="Transparent" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
+                <!-- Logical Select-All (large lists) shows no row highlight, so surface a banner. -->
+                <Border Grid.Row="0" Visibility="{x:Bind LogicalSelectAllVisibility, Mode=OneWay}"
+                        Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="4" Padding="10,6">
+                    <TextBlock Text="{x:Bind SelectAllBannerText, Mode=OneWay}" TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
+                </Border>
                 <ListView x:Name="EntriesList"
                           Grid.Row="1"
                           Margin="0,8,0,0"
+                          IsEnabled="{x:Bind IsEntriesInteractive, Mode=OneWay}"
                           PreviewKeyDown="OnEntriesPreviewKeyDown"
                           SelectionMode="Extended"
                           HorizontalContentAlignment="Stretch"
@@ -287,16 +312,26 @@
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="local:HostsEntry">
                             <Border Padding="8,4,8,4" CornerRadius="4" BorderThickness="0,1,0,1" BorderBrush="#14000000" HorizontalAlignment="Stretch" Background="{x:Bind local:HostEntryBrushHelper.Get(Self), Mode=OneWay}">
+                                <!-- Fixed IP + star Host names / Comments. Every row's Grid gets the same
+                                     available width (items stretch to the viewport), so identical column
+                                     definitions line up across rows automatically — no per-content
+                                     measuring. The previous SharedColumnWidth attached behavior recomputed
+                                     widths from the realized (virtualized) rows on every load/scroll/edit,
+                                     which made the columns visibly jitter while loading a large file.
+                                     200px fits every IPv4 and most compressed IPv6 literals; full-form
+                                     IPv6 (up to 45 chars) still clips, so the IP cell carries a tooltip
+                                     with the complete value (a TextBox hard-cuts with no ellipsis and
+                                     the list has no horizontal scroll). -->
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" MinWidth="0"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="200"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{x:Bind Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" local:SharedColumnWidth.ColumnKey="IpAddress" Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
-                                    <TextBox Grid.Column="2" local:SharedColumnWidth.ColumnKey="HostNames" Text="{x:Bind HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
+                                    <TextBox Grid.Column="1" Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{x:Bind IpAddress, Mode=OneWay}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                    <TextBox Grid.Column="2" Text="{x:Bind HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
                                     <TextBox Grid.Column="3" Text="{x:Bind Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>
                             </Border>
@@ -309,6 +344,12 @@
                 <TextBlock Grid.Row="1" Text="No entries match the current filters." FontStyle="Italic" Foreground="Gray"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            IsHitTestVisible="False" Visibility="{x:Bind EntriesFilteredVisibility, Mode=OneWay}"/>
+                <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="12"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{x:Bind LoadingVisibility, Mode=OneWay}">
+                    <ProgressRing IsActive="True" Width="40" Height="40"/>
+                    <TextBlock Text="Loading hosts file…" FontStyle="Italic" Foreground="Gray" HorizontalAlignment="Center"/>
+                </StackPanel>
             </Grid>
             <Grid x:Name="ArchiveHost" Visibility="{x:Bind ArchiveViewVisibility, Mode=OneWay}" Margin="8" RowDefinitions="Auto,*">
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
@@ -331,6 +372,35 @@
                                IsHitTestVisible="False" Visibility="{x:Bind ArchivesEmptyVisibility, Mode=OneWay}"/>
                 </Grid>
             </Grid>
+        </Grid>
+        <!-- Status bar: total lines + host (enabled) entries, mirroring the classic edition's
+             StatusStrip. Background is Transparent and borderless, so it blends seamlessly into the
+             window's Mica backdrop; it sits in its own fixed-height grid row, so no list content is
+             ever laid out behind it.
+
+             The backplate underneath exists because of a WinUI composition bug with enormous
+             virtualized lists: past roughly 2^20 device-independent pixels of panel extent
+             (~32K rows here), the renderer stops clipping the list's bottom-edge rows — the last
+             partially-visible row paints in FULL, plus the next cache row — straight through the
+             ListView's viewport clip, an explicit ancestor UIElement.Clip,
+             CanContentRenderOutsideBounds=False, and CacheLength=0 (all verified ineffective;
+             element bounds via UIA stay correct, so it is a raster-level escape, not layout). The
+             stray pixels land under this transparent band and show through it. They only ever paint
+             DOWNWARD past the list (title/command bars stay clean), and opaque content drawn later
+             in the tree occludes them — so when the list is large enough for the bug to trigger,
+             an opaque backplate in SolidBackgroundFillColorBase (the exact base color Mica tints,
+             i.e. "Mica minus the desktop tint") slides in behind the text. Normal-sized files
+             (≤10K rows, empirically clean with margin: breakage sets in between 10K and 50K) keep
+             the true-Mica look. -->
+        <Grid Grid.Row="3" Visibility="{x:Bind MainViewVisibility, Mode=OneWay}">
+            <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                    Visibility="{x:Bind StatusBackplateVisibility, Mode=OneWay}"/>
+            <Border Background="Transparent" Padding="14,5">
+                <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center"/>
+            </Border>
         </Grid>
     </Grid>
 </Window>

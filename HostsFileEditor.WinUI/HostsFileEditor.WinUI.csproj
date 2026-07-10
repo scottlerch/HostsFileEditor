@@ -7,7 +7,7 @@
     <!-- Single version source for this app (the modern UI ships as its own version stream,
          separate from classic). Drives AssemblyVersion/FileVersion/ProductVersion and, stamped
          in Directory.Build.targets, the MSIX manifest Identity/@Version. -->
-    <Version>1.0.2.0</Version>
+    <Version>1.1.0.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
     <Platforms>x64;arm64</Platforms>
@@ -29,7 +29,13 @@
     <!-- CA5392: the Windows App SDK self-contained mode compiles in a Microsoft-generated
          UndockedRegFreeWinRT-AutoInitializer.cs whose bootstrap P/Invoke lacks
          DefaultDllImportSearchPaths. It's third-party generated code we can't edit; our own
-         P/Invokes (in Core) remain CA5392-compliant. -->
+         P/Invokes (in Core) remain CA5392-compliant.
+         IL2081: System.ComponentModel.BindingList<T> (Core's HostsEntryList / HostsArchiveList
+         base) carries reflective PropertyDescriptor paths the trim analyzer flags. The former
+         blanket IL2026/IL3050 entries here were replaced by per-member
+         UnconditionalSuppressMessage attributes in Core (HostsEntryList / HostsFile), restoring
+         the trim/AOT analyzers' protection for all other code in this AOT-published app; keep this
+         list minimal. -->
     <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081;CA5392</NoWarn>
     <ApplicationIcon>Assets\HostsFileEditor.ico</ApplicationIcon>
     <PackagingFlavor>modern</PackagingFlavor>
@@ -101,4 +107,28 @@
     </Content>
     <Content Include="HostsFileEditor.ico" />
   </ItemGroup>
+
+  <!-- Strip ~43 MB of Windows App SDK components this app never uses. The self-contained WinUI
+       runtime bundles the Windows ML / Copilot stack (onnxruntime + DirectML) and the Widgets
+       APIs; a hosts-file editor references none of it. There is no supported property to exclude
+       them (WindowsAppSDK issue #5969), so delete them from the publish output after Publish and
+       before the package is built. These are lazy-loaded only when the corresponding AI/Widgets
+       APIs are called, which never happens here — verified the app still launches without them.
+       WinUIEdit.dll is intentionally NOT removed: it backs text controls the app does use. -->
+  <Target Name="_StripUnusedWinAppSdkLibs" AfterTargets="Publish" BeforeTargets="SignAndPackage">
+    <ItemGroup>
+      <_UnusedWinAppSdkLib Include="$(PublishDir)onnxruntime.dll" />
+      <_UnusedWinAppSdkLib Include="$(PublishDir)DirectML.dll" />
+      <_UnusedWinAppSdkLib Include="$(PublishDir)PerceptiveStreaming.dll" />
+      <_UnusedWinAppSdkLib Include="$(PublishDir)Microsoft.Windows.Widgets.dll" />
+      <_UnusedWinAppSdkLib Include="$(PublishDir)Microsoft.Windows.Widgets.winmd" />
+    </ItemGroup>
+    <!-- Warn (don't fail) if an expected lib is missing: a future Windows App SDK bump that
+         renames/relocates one would otherwise silently stop stripping and the ~43 MB creeps back
+         with no signal. -->
+    <Warning Condition="!Exists('%(_UnusedWinAppSdkLib.Identity)')"
+             Text="Expected unused WinAppSDK lib not found (SDK layout may have changed): %(_UnusedWinAppSdkLib.Identity)" />
+    <Delete Files="@(_UnusedWinAppSdkLib)" />
+    <Message Importance="high" Text="Stripped unused Windows App SDK libraries (onnxruntime, DirectML, PerceptiveStreaming, Widgets) from publish output." />
+  </Target>
 </Project>

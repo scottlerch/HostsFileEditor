@@ -4,6 +4,7 @@ using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using HostsFileEditor.Win32;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace HostsFileEditor;
 
@@ -22,13 +23,59 @@ public class HostsFile : INotifyPropertyChanged
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "HostsFileEditor");
 
-    public static readonly string DefaultHostFilePath =
-        Path.Combine(DefaultHostFileDirectory, @"hosts");
+    // Dev/test override: when the HFE_HOSTS_PATH environment variable points at an existing file,
+    // the app loads (and saves/enables/disables) THAT file instead of the real system hosts file.
+    // This lets load performance be measured against a large test hosts file without touching — or
+    // wedging the DNS Client on — the real machine hosts file. Gated entirely on the env var and
+    // the file existing, so a normal run (no such variable) is completely unaffected.
+    private static readonly string? _hostsPathOverride = ResolveHostsPathOverride();
+
+    private static string? ResolveHostsPathOverride()
+    {
+        // 1. Environment variable — easy for the portable exe launched from a shell.
+        var env = Environment.GetEnvironmentVariable("HFE_HOSTS_PATH");
+        if (!string.IsNullOrEmpty(env) && File.Exists(env))
+        {
+            return Path.GetFullPath(env);
+        }
+
+        // 2. A marker file whose first line is the hosts path — for the packaged/MSIX app, which
+        //    doesn't reliably inherit a freshly set environment variable. Absent = normal behavior.
+        try
+        {
+            var marker = Path.Combine(AppDataDirectory, "dev-hosts-path.txt");
+            if (File.Exists(marker))
+            {
+                var path = File.ReadLines(marker).FirstOrDefault()?.Trim();
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                {
+                    return Path.GetFullPath(path);
+                }
+            }
+        }
+        catch
+        {
+            // Test hook only — never let it interfere with normal startup.
+        }
+
+        return null;
+    }
+
+    public static string DefaultHostFilePath =>
+        _hostsPathOverride ?? Path.Combine(DefaultHostFileDirectory, @"hosts");
+
+    /// <summary>
+    /// Gets the dev/test override path (from <c>HFE_HOSTS_PATH</c> or the <c>dev-hosts-path.txt</c>
+    /// marker) when one is active, otherwise <see langword="null"/>. Surfaced so the UI can make it
+    /// obvious the app is editing an alternate file rather than the real system hosts file — the
+    /// override ships in all builds, so this keeps its effect visible rather than silent.
+    /// </summary>
+    public static string? OverridePath => _hostsPathOverride;
 
     public static readonly string DefaultBackupHostFilePath =
         Path.Combine(AppDataDirectory, "hosts.bak");
 
-    public static readonly string DefaultDisabledHostFilePath =
+    public static string DefaultDisabledHostFilePath =>
         DefaultHostFilePath + ".disabled";
 
     // Internal test hook: override backup file path so unit tests do not need elevated permissions
@@ -86,11 +133,28 @@ public class HostsFile : INotifyPropertyChanged
     /// Gets a value indicating whether there are in-memory edits that have not been saved to the
     /// hosts file, so the UI can warn before discarding them (e.g. on exit).
     /// </summary>
+    /// <remarks>
+    /// The clean token is a specific undo-history position (reference-compared). If enough edits
+    /// push it out of the capped history (<see cref="UndoManager"/> trims oldest), it can never be
+    /// reference-equal again — which is correct: those undo steps are gone, so the file genuinely
+    /// cannot be returned to the saved state via undo and IsModified should stay true. That also
+    /// holds when the clean token is the load-time EMPTY-history position: the UndoManager rebases
+    /// its sentinel token on every eviction, so undoing all the way down after 1000+ edits does not
+    /// falsely compare clean (the evicted edits are still applied and unsaved).
+    /// </remarks>
     public bool IsModified => !ReferenceEquals(UndoManager.Instance.CurrentStateToken, _cleanStateToken);
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public static HostsFile Instance => _instance.Value;
+
+    /// <summary>
+    /// Forces the lazy initial load and parse of the hosts file onto a background thread. For a
+    /// very large hosts file (hundreds of thousands of entries) this parse takes long enough to
+    /// freeze the UI if done inline, so the apps await this (showing a loading indicator) before
+    /// first touching <see cref="Instance"/> on the UI thread. Subsequent access is instant.
+    /// </summary>
+    public static Task PreloadAsync() => Task.Run(() => _ = _instance.Value.Entries.Count);
 
     public static bool IsEnabled => File.Exists(DefaultHostFilePath);
 
@@ -121,6 +185,11 @@ public class HostsFile : INotifyPropertyChanged
         _filePath = DefaultHostFilePath;
     }
 
+    // IL2026/IL3050: the BatchUpdate Reset walks BindingList's reflective descriptor machinery in
+    // the trim/AOT analyzers' eyes only — the apps never data-bind through PropertyDescriptors, so
+    // Enum.GetValues/TypeDescriptor paths are unreachable (same justification as HostsEntryList).
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList descriptor machinery unreachable; see comment.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList descriptor machinery unreachable; see comment.")]
     public void Import(string importFilePath)
     {
         if (_filePath != importFilePath)
@@ -149,6 +218,8 @@ public class HostsFile : INotifyPropertyChanged
         HostsArchiveList.Instance.Add(archive);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList descriptor machinery unreachable; see Import.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList descriptor machinery unreachable; see Import.")]
     public void RestoreDefault()
     {
         UndoManager.Instance.ClearHistory();
@@ -190,6 +261,8 @@ public class HostsFile : INotifyPropertyChanged
             Entries.Select(entry => entry.UnparsedText));
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "BindingList descriptor machinery unreachable; see Import.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "BindingList descriptor machinery unreachable; see Import.")]
     public void Refresh(bool removeDefault = true)
     {
         // Read before mutating so a failed read leaves the current entries intact rather
