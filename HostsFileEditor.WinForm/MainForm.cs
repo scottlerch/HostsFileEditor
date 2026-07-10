@@ -903,6 +903,14 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnMoveDownClick(object sender, EventArgs e)
     {
+        // Capture the current-cell anchor before the move: the move's Reset keeps CurrentCell at the
+        // same row INDEX, which then holds a DIFFERENT entry, so CurrentRow/CurrentHostEntry silently
+        // drift — a following Insert Above/Below (which reads only CurrentRow) would act on the wrong
+        // entry (#78). Re-anchor by identity after the move, BEFORE the selection restore so setting
+        // CurrentCell can't collapse the restored multi-row selection (same ordering as the sort path).
+        var anchorEntry = dataGridViewHostsEntries.CurrentHostEntry;
+        var anchorColumn = dataGridViewHostsEntries.CurrentCell?.ColumnIndex ?? -1;
+
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
@@ -919,6 +927,7 @@ internal sealed partial class MainForm : Form
                 dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveAfter(selectedEntries, belowEntry);
 
+                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
@@ -933,6 +942,7 @@ internal sealed partial class MainForm : Form
 
                 HostsFile.Instance.Entries.MoveAfter([currentEntry], belowEntry);
 
+                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
@@ -949,6 +959,12 @@ internal sealed partial class MainForm : Form
     /// </param>
     private void OnMoveUpClick(object sender, EventArgs e)
     {
+        // See OnMoveDownClick: capture the current-cell anchor before the move and re-anchor by
+        // identity afterwards (before the selection restore) so a following Insert/Move doesn't act on
+        // the drifted CurrentRow (#78).
+        var anchorEntry = dataGridViewHostsEntries.CurrentHostEntry;
+        var anchorColumn = dataGridViewHostsEntries.CurrentCell?.ColumnIndex ?? -1;
+
         if (dataGridViewHostsEntries.SelectedRowCount > 0)
         {
             var selectedEntries = dataGridViewHostsEntries.SelectedHostEntries.ToList();
@@ -963,6 +979,7 @@ internal sealed partial class MainForm : Form
                 dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveBefore(selectedEntries, aboveEntry);
 
+                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
@@ -977,6 +994,7 @@ internal sealed partial class MainForm : Form
 
                 HostsFile.Instance.Entries.MoveBefore([currentEntry], aboveEntry);
 
+                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }

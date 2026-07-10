@@ -409,14 +409,16 @@ internal sealed class HostsEntryDataGridView : DataGridView
 
     /// <summary>
     /// Re-establishes the current-cell anchor on the row now holding <paramref name="anchorEntry"/>
-    /// after a sort's Reset (<see cref="FinalizePendingNewRow"/> nulled <see cref="DataGridView.CurrentCell"/>
-    /// to fire the new-row commit). Without this the Insert Above/Below and Move Up/Down fallbacks that
-    /// key off <see cref="CurrentHostEntry"/> silently no-op until the user re-clicks a row. Called
-    /// BEFORE the selection is restored (so setting the anchor can't collapse a multi-row selection) and
-    /// only for selections within the restore cap — a huge selection drops both the selection and the
-    /// anchor by design, so the caller skips this scan there.
+    /// after a Reset reordered the view. The framework keeps <see cref="DataGridView.CurrentCell"/> at
+    /// a fixed row INDEX across a Reset, so after a sort or a Move that index holds a different entry and
+    /// <see cref="CurrentHostEntry"/> drifts — the Insert Above/Below and Move Up/Down handlers that key
+    /// off it would then act on (or no-op against) the wrong entry. Used by the sort (which also nulls
+    /// CurrentCell via <see cref="FinalizePendingNewRow"/> to fire the new-row commit) and by Move.
+    /// Called BEFORE the selection is restored, so setting the anchor can't collapse a multi-row
+    /// selection, and only for selections within the restore cap — a huge selection drops both the
+    /// selection and the anchor by design, so the caller skips this scan there.
     /// </summary>
-    private void RestoreCurrentCell(HostsEntry? anchorEntry, int anchorColumnIndex)
+    internal void RestoreCurrentCell(HostsEntry? anchorEntry, int anchorColumnIndex)
     {
         if (anchorEntry is null || anchorColumnIndex < 0 || BoundView() is not { } view)
         {
