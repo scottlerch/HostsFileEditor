@@ -256,10 +256,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             _isClosed = true;
             Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
-            if (_isLoaded)
-            {
-                HostsFile.Instance.Entries.ListChanged -= OnCoreEntriesListChanged;
-            }
+
+            // Unsubscribe unconditionally: the subscription is added once (after the initial load) and
+            // persists across reloads, but a reload sets _isLoaded=false — gating on it would leak the
+            // subscription (and this window, via the HostsFile.Instance singleton) if the user closes
+            // mid-reload. `-=` on a not-yet-subscribed handler is a harmless no-op.
+            HostsFile.Instance.Entries.ListChanged -= OnCoreEntriesListChanged;
         };
 
         // Parse the hosts file on a background thread (it can be very large) and then bulk-populate
@@ -435,6 +437,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _coreRefreshPending = true;
         if (!DispatcherQueue.TryEnqueue(() =>
         {
+            _coreRefreshPending = false;
+
             // A ListChanged (e.g. a streaming ping result) can enqueue this after the window has
             // closed; the awaited load/async continuations guard on _isClosed, and so must this
             // fire-and-forget callback, or RefreshEntries touches torn-down XAML (RO_E_CLOSED).
@@ -443,7 +447,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                 return;
             }
 
-            _coreRefreshPending = false;
             var structural = _pendingStructuralRefresh;
             _pendingStructuralRefresh = false;
             var updateCounts = _pendingCountsRefresh;
@@ -1882,6 +1885,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         if (!DispatcherQueue.TryEnqueue(() =>
         {
             _selectionUpdatePending = false;
+
+            // The callback can drain after the window closed (or a teardown SelectionChanged queued it);
+            // UpdateSelectionDependentButtons/UpdateContextMenuItems set IsEnabled/Visibility on XAML
+            // peers, and `?.` guards null but not torn-down elements (RO_E_CLOSED). Guard _isClosed like
+            // the OnCoreEntriesListChanged callback does.
+            if (_isClosed)
+            {
+                return;
+            }
+
             _selectionService.UpdateSelectionDependentButtons();
             _selectionService.UpdateContextMenuItems();
         }))
