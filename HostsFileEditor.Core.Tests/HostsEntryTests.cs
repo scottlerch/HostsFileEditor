@@ -158,6 +158,28 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    [DataRow("# 8.8.8.8 use for dns.")]    // trailing dot: a comment pre-#66, a disabled entry now
+    [DataRow("# 8.8.8.8 use for dns")]     // no trailing dot: a disabled entry since before #66
+    [DataRow("# 0.0.0.0 blocks all ads.")]
+    public void Parse_DisabledEntry_LeadingValidIp_IsEntryNotComment(string raw)
+    {
+        // The other side of the boundary from Parse_ProseComment_EndingInDot_StaysComment: a
+        // '#'-prefixed line whose content is a syntactically valid hosts entry — a REAL leading IP
+        // plus hostname tokens — parses as a DISABLED entry, not a comment. Only the invalid-IP prose
+        // in that test stays a comment (its first token is demoted); a valid leading IP does not.
+        // The no-dot form has behaved this way since before #66; #66 widened the hostname to accept a
+        // trailing FQDN root dot, so the period-terminated form now matches too — an FQDN entry and a
+        // period-terminated prose line beginning with an IP are indistinguishable to the parser.
+        // Pinned so the boundary is documented rather than a surprise; it round-trips verbatim, so no
+        // silent corruption. See issue #80 for the strict-IP-validation follow-up idea.
+        var entry = new HostsEntry(raw);
+        entry.HasCommentOnly.ShouldBeFalse();
+        entry.Enabled.ShouldBeFalse();
+        entry.Valid.ShouldBeTrue();
+        entry.UnparsedText.ShouldBe(raw);
+    }
+
+    [TestMethod]
     public void Parse_IPv6()
     {
         var entry = new HostsEntry("::1 localhost");
