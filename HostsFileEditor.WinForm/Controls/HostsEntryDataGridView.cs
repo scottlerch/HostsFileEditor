@@ -342,26 +342,25 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// </summary>
     private void ApplyColumnSort(DataGridViewColumn column, SortOrder direction)
     {
-        if (BoundView() is not { } view)
+        // Commit the in-progress cell edit FIRST. EndEdit() can refuse an invalid value; bail before
+        // the snapshot below clears the selection, so a refused edit leaves the selection (and the
+        // current cell) fully intact — TakeSelectedHostEntries can't restore a >MaxSelectionRestoreCount
+        // selection through the cap. EndEdit does not clear the selection; the CurrentCell null-out that
+        // finalizes a pending new row (via MainForm's CellValidated->EndNew) runs after the snapshot.
+        if (BoundView() is not { } view || !EndEdit())
         {
             return;
         }
 
-        // Snapshot the selection AND the current-cell anchor BEFORE committing edits: the commit nulls
-        // CurrentCell, which in the grid's RowHeaderSelect mode collapses the selection (so a snapshot
-        // taken after it captures nothing) and drops the Insert/Move anchor. Clearing the selection
-        // before the Reset also avoids the posted O(n^2) selection-vs-Reset teardown every bulk handler
-        // avoids (a plain sort click on a 400K Ctrl+A'd grid froze for minutes without it).
+        // Snapshot the selection AND the current-cell anchor BEFORE finalizing the new row: nulling
+        // CurrentCell there collapses the selection in the grid's RowHeaderSelect mode (so a snapshot
+        // taken after captures nothing) and drops the Insert/Move anchor. Clearing before the Reset also
+        // avoids the posted O(n^2) selection-vs-Reset teardown (a 400K Ctrl+A'd sort froze without it).
         var anchorEntry = CurrentHostEntry;
         var anchorColumn = CurrentCell?.ColumnIndex ?? -1;
         var restore = TakeSelectedHostEntries();
 
-        if (!CommitEditsBeforeReset())
-        {
-            // Validation refused the pending edit, so no Reset happens: put the selection back.
-            SelectedHostEntries = restore;
-            return;
-        }
+        FinalizePendingNewRow();
 
         view.ApplySort(ComparerFor(column.DataPropertyName, direction));
 
@@ -373,44 +372,49 @@ internal sealed class HostsEntryDataGridView : DataGridView
         column.HeaderCell.SortGlyphDirection = direction;
         _sortColumn = column;
         _sortDirection = direction;
-        RestoreCurrentCell(anchorEntry, anchorColumn);
+
+        // For a huge selection the restore below drops it and nulls CurrentCell (its
+        // >MaxSelectionRestoreCount branch), so the O(view.Count) anchor re-find + scroll would be
+        // wasted — skip it there.
+        if (restore.Count <= MaxSelectionRestoreCount)
+        {
+            RestoreCurrentCell(anchorEntry, anchorColumn);
+        }
+
         SelectedHostEntries = restore;
         OnSorted(EventArgs.Empty);
     }
 
     /// <summary>
-    /// Commits any in-progress edit before a Reset. <see cref="DataGridView.EndEdit()"/> commits the
-    /// current cell but — unlike the framework's automatic sort — does NOT run the validation
-    /// pipeline, so MainForm's <c>CellValidated -&gt; EndNew</c> hook that finalizes a pending new-row
-    /// placeholder never fires and the typed new row is lost. Nulling <see cref="DataGridView.CurrentCell"/>
-    /// runs that pipeline (as the framework's <c>SortInternal</c> did). Returns <see langword="false"/>
-    /// if the edit cannot be committed (validation refused) so the caller can bail without a Reset.
+    /// Finalizes a pending NEW-ROW placeholder before a Reset by nulling <see cref="DataGridView.CurrentCell"/>.
+    /// The sort methods call <see cref="DataGridView.EndEdit()"/> first (it commits the current cell but
+    /// NOT via the validation pipeline, so MainForm's <c>CellValidated -&gt; EndNew</c> hook that finalizes
+    /// the placeholder never fires and the typed new row would be lost); nulling CurrentCell runs that
+    /// pipeline as the framework's <c>SortInternal</c> did. Best-effort: if the framework refuses to
+    /// leave the current cell, EndEdit already committed the edit, so the sort proceeds without
+    /// finalizing the placeholder rather than aborting.
     /// </summary>
-    private bool CommitEditsBeforeReset()
+    private void FinalizePendingNewRow()
     {
-        if (!EndEdit())
-        {
-            return false;
-        }
-
         try
         {
             CurrentCell = null;
         }
         catch (InvalidOperationException)
         {
-            return false;
+            // The framework can refuse to leave the current cell mid-validation; the edit is already
+            // committed by EndEdit, so proceed without finalizing the placeholder rather than aborting.
         }
-
-        return true;
     }
 
     /// <summary>
     /// Re-establishes the current-cell anchor on the row now holding <paramref name="anchorEntry"/>
-    /// after a sort's Reset (<see cref="CommitEditsBeforeReset"/> nulled <see cref="DataGridView.CurrentCell"/>
+    /// after a sort's Reset (<see cref="FinalizePendingNewRow"/> nulled <see cref="DataGridView.CurrentCell"/>
     /// to fire the new-row commit). Without this the Insert Above/Below and Move Up/Down fallbacks that
     /// key off <see cref="CurrentHostEntry"/> silently no-op until the user re-clicks a row. Called
-    /// BEFORE the selection is restored so setting the anchor can't collapse a multi-row selection.
+    /// BEFORE the selection is restored (so setting the anchor can't collapse a multi-row selection) and
+    /// only for selections within the restore cap — a huge selection drops both the selection and the
+    /// anchor by design, so the caller skips this scan there.
     /// </summary>
     private void RestoreCurrentCell(HostsEntry? anchorEntry, int anchorColumnIndex)
     {
@@ -455,23 +459,20 @@ internal sealed class HostsEntryDataGridView : DataGridView
     {
         // Nothing to clear: skip the view work entirely. Important beyond perf — calling Equin's
         // RemoveSort on an unsorted view would INSTALL its all-equal comparer and scramble (below).
-        if (_sortColumn is null)
+        // EndEdit first (like ApplyColumnSort): it can refuse an invalid edit and must bail before the
+        // snapshot clears the selection, so a refused un-sort leaves a >MaxSelectionRestoreCount
+        // selection intact.
+        if (_sortColumn is null || !EndEdit())
         {
             return;
         }
 
-        // Snapshot the selection + current-cell anchor BEFORE the commit nulls CurrentCell, then clear
-        // and restore both around the un-sort Reset (see ApplyColumnSort for the full rationale).
+        // Snapshot the selection + current-cell anchor BEFORE finalizing the new row (see ApplyColumnSort).
         var anchorEntry = CurrentHostEntry;
         var anchorColumn = CurrentCell?.ColumnIndex ?? -1;
         var restore = TakeSelectedHostEntries();
 
-        if (!CommitEditsBeforeReset())
-        {
-            // Validation refused the pending edit, so no Reset happens: put the selection back.
-            SelectedHostEntries = restore;
-            return;
-        }
+        FinalizePendingNewRow();
 
         if (BoundView() is { } view)
         {
@@ -481,7 +482,12 @@ internal sealed class HostsEntryDataGridView : DataGridView
         _sortColumn.HeaderCell.SortGlyphDirection = SortOrder.None;
         _sortColumn = null;
         _sortDirection = SortOrder.None;
-        RestoreCurrentCell(anchorEntry, anchorColumn);
+
+        if (restore.Count <= MaxSelectionRestoreCount)
+        {
+            RestoreCurrentCell(anchorEntry, anchorColumn);
+        }
+
         SelectedHostEntries = restore;
         OnSorted(EventArgs.Empty);
     }
