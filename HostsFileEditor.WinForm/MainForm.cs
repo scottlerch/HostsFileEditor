@@ -52,6 +52,22 @@ internal sealed partial class MainForm : Form
     private bool _loadFailed;
 
     /// <summary>
+    /// Identifier for the global show/hide hot key (issue #35). Any per-process-unique value; chosen
+    /// away from 0 to avoid clashing with a default-0 registration elsewhere.
+    /// </summary>
+    private const int GlobalShowHideHotkeyId = 0x4846; // 'HF'
+
+    /// <summary>
+    /// The global hot key that toggles the window between the tray and the foreground: Ctrl+Alt+H.
+    /// Registered system-wide so it works while the window is hidden/unfocused (a normal accelerator
+    /// cannot reach a hidden window). Failure to register (e.g. another app owns the combo) is ignored.
+    /// </summary>
+    private const uint GlobalShowHideModifiers = NativeHotkey.ModControl | NativeHotkey.ModAlt;
+    private const uint GlobalShowHideKey = (uint)Keys.H;
+
+    private bool _globalHotkeyRegistered;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainForm"/> class.
     /// </summary>
     public MainForm()
@@ -81,6 +97,31 @@ internal sealed partial class MainForm : Form
     }
 
     /// <inheritdoc />
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+
+        // Register the global show/hide hot key against the (now valid) window handle. Done here — not
+        // in Load — so it survives a handle recreation (WinForms recreates the handle on some style
+        // changes); OnHandleDestroyed unregisters. A failed registration (combo already owned) is left
+        // as an unavailable feature rather than surfaced as an error.
+        _globalHotkeyRegistered = NativeHotkey.RegisterHotKey(
+            Handle, GlobalShowHideHotkeyId, GlobalShowHideModifiers, GlobalShowHideKey);
+    }
+
+    /// <inheritdoc />
+    protected override void OnHandleDestroyed(EventArgs e)
+    {
+        if (_globalHotkeyRegistered)
+        {
+            NativeHotkey.UnregisterHotKey(Handle, GlobalShowHideHotkeyId);
+            _globalHotkeyRegistered = false;
+        }
+
+        base.OnHandleDestroyed(e);
+    }
+
+    /// <inheritdoc />
     protected override void WndProc(ref Message message)
     {
         if (message.Msg == ProgramSingleInstance.WmShowFirstInstance)
@@ -92,8 +133,33 @@ internal sealed partial class MainForm : Form
 
             this.ShowOrActivate();
         }
+        else if (message.Msg == NativeHotkey.WmHotkey && (int)message.WParam == GlobalShowHideHotkeyId)
+        {
+            ToggleShowHide();
+        }
 
         base.WndProc(ref message);
+    }
+
+    /// <summary>
+    /// Toggles the window between the tray and the foreground for the global hot key (issue #35).
+    /// Shown-and-not-minimized hides to the tray; hidden or minimized restores and activates.
+    /// </summary>
+    private void ToggleShowHide()
+    {
+        if (Visible && WindowState != FormWindowState.Minimized)
+        {
+            Hide();
+        }
+        else
+        {
+            if (WindowState == FormWindowState.Minimized)
+            {
+                WindowState = FormWindowState.Normal;
+            }
+
+            this.ShowOrActivate();
+        }
     }
 
     /// <inheritdoc />
