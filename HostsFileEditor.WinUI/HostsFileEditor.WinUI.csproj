@@ -60,6 +60,18 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.2.0" />
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.4.1" />
     <PackageReference Include="System.Resources.Extensions" Version="10.0.9" />
+    <!-- Taskbar JumpList support (issue #10). NOTE: this is an old COM-interop library; see the
+         TrimmerRootAssembly below and the PR notes for the AOT/trim + packaged-identity caveats. -->
+    <PackageReference Include="WindowsAPICodePackCore" Version="8.0.15.2" />
+    <PackageReference Include="WindowsAPICodePackShell" Version="8.0.15.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Root the COM-interop jump-list assemblies so the trimmer doesn't strip members reached only
+         through COM/reflection (issue #10). This does NOT guarantee AOT compatibility — see the PR
+         notes: the modern packaged/AOT publish for the jump list is unverified and may need AOT
+         disabled or the UWP Windows.UI.StartScreen.JumpList API instead. -->
+    <TrimmerRootAssembly Include="Microsoft.WindowsAPICodePack.Core" />
+    <TrimmerRootAssembly Include="Microsoft.WindowsAPICodePack.Shell" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HostsFileEditor.Core\HostsFileEditor.Core.csproj" />

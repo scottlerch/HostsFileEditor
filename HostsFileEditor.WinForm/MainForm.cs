@@ -647,6 +647,21 @@ internal sealed partial class MainForm : Form
 
         UpdateNotifyIcon();
 
+        // Taskbar Jump List (issue #10): publish the current presets, and keep it in sync as archives
+        // are created/deleted.
+        TaskbarJumpList.Refresh();
+        HostsArchiveList.Instance.ListChanged += (s1, e1) => TaskbarJumpList.Refresh();
+
+        // If launched from a Jump List entry (--open-archive "<path>"), import that preset into the
+        // editor now that the hosts file is loaded. (Only the fresh-launch case is handled here; a
+        // launch while the app is already running is intercepted by single-instance and would need the
+        // path forwarded through that channel — see the PR notes.)
+        var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(Environment.GetCommandLineArgs());
+        if (!string.IsNullOrEmpty(openArchivePath) && File.Exists(openArchivePath))
+        {
+            HostsFile.Instance.Import(openArchivePath);
+        }
+
         // HACK: Make sure a newly added row gets committed after
         // the first cell is validated so HostsEntry validation and data
         // binding behaves correctly

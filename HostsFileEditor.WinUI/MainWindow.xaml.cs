@@ -306,6 +306,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         RefreshEntriesFiltered();
         OnPropertyChanged(nameof(LoadingVisibility));
         OnPropertyChanged(nameof(IsEntriesInteractive));
+
+        // Taskbar Jump List (issue #10): publish the current presets and keep it in sync as archives
+        // change.
+        TaskbarJumpList.Refresh();
+        HostsArchiveList.Instance.ListChanged += (s, e) => TaskbarJumpList.Refresh();
+
+        // If launched from a Jump List entry (--open-archive "<path>"), import that preset into the
+        // editor. Fresh-launch only; a launch while already running is handled by single-instance
+        // redirection, which would need the path forwarded through that channel — see the PR notes.
+        var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(Environment.GetCommandLineArgs());
+        if (!string.IsNullOrEmpty(openArchivePath) && File.Exists(openArchivePath))
+        {
+            await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Import(openArchivePath));
+        }
     }
 
     // One-shot bulk load of the (filtered) entries: build the list off the persistent collection
