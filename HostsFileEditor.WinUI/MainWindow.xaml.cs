@@ -102,6 +102,19 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public string SelectAllBannerText => $"All {Entries.Count:N0} entries selected — press Esc or click a row to clear.";
 
+    // Display-sort state (issue #81). Null column == file order. The sort is a VIEW ordering applied
+    // to the filtered set in BulkPopulateEntries; it never mutates HostsFile.Instance.Entries, so Save
+    // still writes the user's file order, and it is not an undoable edit. It re-applies automatically
+    // across filter changes, reloads, and bulk edits because every rebind routes through
+    // BulkPopulateEntries.
+    private HostsEntry.SortColumn? _sortColumn;
+    private bool _sortDescending;
+
+    // True while a display sort is active. Position-relative commands (Move Up/Down, Insert
+    // Above/Below) are disabled while sorted — "above/below" in a sorted view does not correspond to
+    // the file order those commands reorder.
+    private bool IsSortActive => _sortColumn is not null;
+
     public Visibility LoadingVisibility => _isLoaded || _loadFailed ? Visibility.Collapsed : Visibility.Visible;
 
     // Bottom status bar text: total lines and host (enabled) entries, mirroring the classic edition's
@@ -195,7 +208,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         _selectionService = new SelectionStateService(
             hasSelection: () => _logicalSelectAll || _selectedEntries.Count > 0,
-            hasAnchoredSelection: () => _selectedEntries.Count > 0,
+            // Move Up/Down and Insert Above/Below reorder the FILE relative to an anchor row, which is
+            // meaningless while a display sort is applied (issue #81) — so gate them on !IsSortActive
+            // too, disabling those commands (button + context menu) while sorted.
+            hasAnchoredSelection: () => _selectedEntries.Count > 0 && !IsSortActive,
             setRemoveEnabled: v => { RemoveButton?.IsEnabled = v; },
             setDuplicateEnabled: v => { DuplicateButton?.IsEnabled = v; },
             setMoveUpEnabled: v => { MoveUpButton?.IsEnabled = v; },
@@ -327,6 +343,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             filtered = [.. HostsFile.Instance.Entries.Where(e => EntryPassesFilter(e, filterText))];
         }
 
+        // Apply the display sort (issue #81) to the filtered COPY — never to HostsFile.Instance.Entries
+        // — so Save writes file order. A stable order (OrderBy) keeps ties in file order, which avoids
+        // the "everything scrambles" surprise when sorting a boolean column (Enabled/Status).
+        if (_sortColumn is { } sortColumn)
+        {
+            filtered = [.. filtered.OrderBy(e => e, HostsEntry.GetComparer(sortColumn, _sortDescending))];
+        }
+
         Entries = new ObservableCollection<HostsEntry>(filtered);
         OnPropertyChanged(nameof(Entries));
 
@@ -386,6 +410,74 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
         _selectionService.UpdateSelectionDependentButtons();
+    }
+
+    // Applies (or clears) the display sort (issue #81) and rebinds, PRESERVING the selection by
+    // identity across the reorder — the sort "mutation" is just setting the sort fields; the existing
+    // selection-preserving rebind does the O(n) re-sort (in BulkPopulateEntries) and O(k) reselect.
+    private void ApplySort(HostsEntry.SortColumn column, bool descending)
+    {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
+        MutateCoreAndRefreshPreservingSelection(() =>
+        {
+            _sortColumn = column;
+            _sortDescending = descending;
+        });
+
+        // Move/Insert enablement depends on IsSortActive; refresh it now that the sort changed.
+        _selectionService.UpdateSelectionDependentButtons();
+        _selectionService.UpdateContextMenuItems();
+    }
+
+    private void ClearSort()
+    {
+        if (!_isLoaded || _sortColumn is null)
+        {
+            return;
+        }
+
+        MutateCoreAndRefreshPreservingSelection(() => _sortColumn = null);
+        _selectionService.UpdateSelectionDependentButtons();
+        _selectionService.UpdateContextMenuItems();
+    }
+
+    // "Sort by" menu (issue #81): a RadioMenuFlyoutItem whose Tag is a HostsEntry.SortColumn name, or
+    // "None" for file order. The direction toggle is handled separately (OnSortDirectionClick).
+    private void OnSortColumnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not RadioMenuFlyoutItem { Tag: string tag })
+        {
+            return;
+        }
+
+        if (Enum.TryParse<HostsEntry.SortColumn>(tag, out var column))
+        {
+            ApplySort(column, _sortDescending);
+        }
+        else
+        {
+            ClearSort();
+        }
+    }
+
+    private void OnSortDirectionClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleMenuFlyoutItem toggle)
+        {
+            return;
+        }
+
+        _sortDescending = toggle.IsChecked;
+
+        // Re-apply only when a column is active; direction alone means nothing in file order.
+        if (_sortColumn is { } column)
+        {
+            ApplySort(column, _sortDescending);
+        }
     }
 
     // Resolves the trimmed filter text once (a visual-tree FindName lookup). Hoist this before a
@@ -863,7 +955,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnInsertBelowClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        // IsSortActive: "below" in a sorted view has no defined file position (issue #81). Button is
+        // disabled while sorted; this also blocks the Ctrl+Down path.
+        if (!_isLoaded || IsSortActive)
         {
             return;
         }
@@ -876,7 +970,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnInsertAboveClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        // See OnInsertBelowClick: no position-relative insert while a display sort is active (#81).
+        if (!_isLoaded || IsSortActive)
         {
             return;
         }
@@ -939,7 +1034,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnMoveUpClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        // IsSortActive: Move reorders the file relative to a displayed neighbor, which is meaningless
+        // while sorted (issue #81). The button is already disabled; this also blocks the Alt+Up path.
+        if (!_isLoaded || IsSortActive)
         {
             return;
         }
@@ -957,7 +1054,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnMoveDownClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        // See OnMoveUpClick: no file moves while a display sort is active (issue #81).
+        if (!_isLoaded || IsSortActive)
         {
             return;
         }

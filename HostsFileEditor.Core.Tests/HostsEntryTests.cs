@@ -88,6 +88,35 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void GetComparer_SortsByColumnAndDirection()
+    {
+        var a = new HostsEntry("1.1.1.1 alpha.com");
+        var b = new HostsEntry("2.2.2.2 bravo.com");
+        var c = new HostsEntry("3.3.3.3 charlie.com");
+        var list = new List<HostsEntry> { c, a, b };
+
+        list.Sort(HostsEntry.GetComparer(HostsEntry.SortColumn.HostNames, descending: false));
+        list.Select(e => e.HostNames).ShouldBe(["alpha.com", "bravo.com", "charlie.com"]);
+
+        list.Sort(HostsEntry.GetComparer(HostsEntry.SortColumn.IpAddress, descending: true));
+        list.Select(e => e.IpAddress).ShouldBe(["3.3.3.3", "2.2.2.2", "1.1.1.1"]);
+    }
+
+    [TestMethod]
+    public void GetComparer_DoesNotMutateOriginalOrder_WhenUsedForStableCopy()
+    {
+        var a = new HostsEntry("127.0.0.1 a") { };
+        var b = new HostsEntry("127.0.0.1 b") { };
+        var source = new List<HostsEntry> { b, a };
+
+        // A display sort must be non-destructive: sorting a COPY leaves the source order untouched.
+        var sorted = source.OrderBy(e => e, HostsEntry.GetComparer(HostsEntry.SortColumn.HostNames, false)).ToList();
+
+        sorted.Select(e => e.HostNames).ShouldBe(["a", "b"]);
+        source.Select(e => e.HostNames).ShouldBe(["b", "a"]);
+    }
+
+    [TestMethod]
     public void CloneConstructor_CopiesValues()
     {
         var entry = new HostsEntry("127.0.0.1 localhost # hi");

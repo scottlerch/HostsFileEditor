@@ -189,6 +189,28 @@
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
+                <!-- Sort by (issue #81): sorts the DISPLAYED view non-destructively; "File order"
+                     clears back to the file's order. Sorting disables the position-relative Move /
+                     Insert commands. -->
+                <AppBarButton Label="Sort" x:Name="SortButton">
+                    <AppBarButton.Icon>
+                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8CB;"/>
+                    </AppBarButton.Icon>
+                    <AppBarButton.Flyout>
+                        <MenuFlyout>
+                            <RadioMenuFlyoutItem Text="File order" GroupName="SortColumn" Tag="None" IsChecked="True" Click="OnSortColumnClick"/>
+                            <MenuFlyoutSeparator/>
+                            <RadioMenuFlyoutItem Text="IP Address" GroupName="SortColumn" Tag="IpAddress" Click="OnSortColumnClick"/>
+                            <RadioMenuFlyoutItem Text="Host Names" GroupName="SortColumn" Tag="HostNames" Click="OnSortColumnClick"/>
+                            <RadioMenuFlyoutItem Text="Comment" GroupName="SortColumn" Tag="Comment" Click="OnSortColumnClick"/>
+                            <RadioMenuFlyoutItem Text="Enabled" GroupName="SortColumn" Tag="Enabled" Click="OnSortColumnClick"/>
+                            <RadioMenuFlyoutItem Text="Status" GroupName="SortColumn" Tag="Valid" Click="OnSortColumnClick"/>
+                            <MenuFlyoutSeparator/>
+                            <ToggleMenuFlyoutItem Text="Descending" x:Name="SortDescendingToggle" Click="OnSortDirectionClick"/>
+                        </MenuFlyout>
+                    </AppBarButton.Flyout>
+                </AppBarButton>
+                <AppBarSeparator/>
                 <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick">
                     <AppBarToggleButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>

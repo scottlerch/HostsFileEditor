@@ -465,6 +465,47 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
     public override string ToString() => $"{IpAddress} {HostNames} {Comment}";
 
+    /// <summary>
+    /// The sortable columns of a hosts entry, for the shared display-sort comparer (issue #81).
+    /// </summary>
+    public enum SortColumn
+    {
+        IpAddress,
+        HostNames,
+        Comment,
+        Enabled,
+        Valid,
+    }
+
+    /// <summary>
+    /// Builds a comparer over <see cref="HostsEntry"/> for a given column and direction (issue #81) —
+    /// the single Core definition so both editions sort identically (cf. the classic edition's typed
+    /// <c>ComparerFor</c>). String columns use culture-sensitive comparison, matching the framework's
+    /// original property sort. The comparer is allocation-free per comparison (no boxing) and does not
+    /// mutate anything — a display sort must not touch the underlying entry order.
+    /// </summary>
+    public static IComparer<HostsEntry> GetComparer(SortColumn column, bool descending)
+    {
+        // Culture-sensitive string comparison is intentional (CA1309 suppressed): it matches the
+        // classic edition's typed ComparerFor and the framework's original property sort, which routed
+        // through string.CompareTo — so the two editions order identically.
+#pragma warning disable CA1309
+        Comparer<HostsEntry> comparer = column switch
+        {
+            SortColumn.IpAddress => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.IpAddress, y.IpAddress, StringComparison.CurrentCulture)),
+            SortColumn.HostNames => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.HostNames, y.HostNames, StringComparison.CurrentCulture)),
+            SortColumn.Comment => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.Comment, y.Comment, StringComparison.CurrentCulture)),
+            SortColumn.Enabled => Comparer<HostsEntry>.Create(static (x, y) => x.Enabled.CompareTo(y.Enabled)),
+            SortColumn.Valid => Comparer<HostsEntry>.Create(static (x, y) => x.Valid.CompareTo(y.Valid)),
+            _ => throw new ArgumentOutOfRangeException(nameof(column)),
+        };
+#pragma warning restore CA1309
+
+        return descending
+            ? Comparer<HostsEntry>.Create((x, y) => comparer.Compare(y, x))
+            : comparer;
+    }
+
     public void Ping()
     {
         // Only ping addresses that parse. The Ping is created on demand and disposed
