@@ -180,6 +180,41 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    [DataRow("999.999.999.999 host.example.com")]  // octets out of range
+    [DataRow("notanip host.example.com")]           // not an address at all
+    [DataRow("192.168.1.1:8080 host.example.com")]  // address with a port
+    [DataRow("# 999.999.999.999 host.example.com")] // same, disabled form
+    [DataRow("# notanip host.example.com")]
+    public void Parse_StructuralEntryWithInvalidIp_IsCommentNotEntry(string raw)
+    {
+        // Issue #80: entry-ness is gated on a syntactically valid IP first token. A line that is
+        // structurally shaped like an entry ("<token> <valid-hostnames>") but whose first token is
+        // not a real IP is a comment, not a (would-be) disabled entry — and it round-trips verbatim.
+        var entry = new HostsEntry(raw);
+        entry.HasCommentOnly.ShouldBeTrue();
+        entry.Valid.ShouldBeFalse();
+        entry.Enabled.ShouldBeFalse();
+        entry.IpAddress.ShouldBeEmpty();
+        entry.HostNames.ShouldBeEmpty();
+        entry.UnparsedText.ShouldBe(raw);
+    }
+
+    [TestMethod]
+    [DataRow("127.0.0.1 host.example.com", "127.0.0.1")]
+    [DataRow("::1 localhost", "::1")]
+    [DataRow("fe80::1 host.example.com", "fe80::1")]
+    [DataRow("2001:db8::1 host.example.com", "2001:db8::1")]
+    [DataRow("fe80::1%eth0 host.example.com", "fe80::1%eth0")] // zone / scope id
+    public void Parse_ValidIpForms_StayEntries(string raw, string expectedIp)
+    {
+        // The strict-IP gate must accept every IP form the framework does — all IPv6 shapes, zone
+        // ids — so these are still parsed as entries, not demoted to comments.
+        var entry = new HostsEntry(raw);
+        entry.Valid.ShouldBeTrue();
+        entry.IpAddress.ShouldBe(expectedIp);
+    }
+
+    [TestMethod]
     public void Parse_IPv6()
     {
         var entry = new HostsEntry("::1 localhost");
