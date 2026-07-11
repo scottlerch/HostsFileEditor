@@ -354,6 +354,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
+        // Opening a preset replaces the current entries, so warn before discarding unsaved edits.
+        if (HostsFile.Instance.IsModified)
+        {
+            var confirmed = await ShowConfirmationAsync(
+                "Open preset?",
+                "You have unsaved changes to the hosts file that will be lost. Open the preset anyway?",
+                primaryText: "Open preset",
+                closeText: "Cancel");
+
+            if (!confirmed || _isClosed)
+            {
+                return;
+            }
+        }
+
         await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Import(archivePath));
     }
 

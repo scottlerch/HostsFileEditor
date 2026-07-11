@@ -91,9 +91,40 @@ internal sealed partial class MainForm : Form
             }
 
             this.ShowOrActivate();
+
+            // A second instance launched from a Jump List preset forwarded the archive path here
+            // (issue #10). Open it AFTER this message returns — BeginInvoke defers it out of the
+            // synchronous cross-process SendMessage, so the unsaved-changes MessageBox doesn't pump
+            // messages re-entrantly inside WndProc.
+            var pendingArchive = TaskbarJumpList.TakePendingOpenArchive();
+            if (pendingArchive is not null)
+            {
+                BeginInvoke(() => RequestOpenArchive(pendingArchive));
+            }
         }
 
         base.WndProc(ref message);
+    }
+
+    /// <summary>
+    /// Opens a Jump List preset (issue #10): warns if there are unsaved changes (offering to save),
+    /// then imports the archive into the editor. Shared by the fresh-launch path (OnFomLoad) and the
+    /// already-running path (WndProc forwarding).
+    /// </summary>
+    private void RequestOpenArchive(string archivePath)
+    {
+        if (string.IsNullOrEmpty(archivePath) || !File.Exists(archivePath))
+        {
+            return;
+        }
+
+        if (!ConfirmDiscardUnsavedChanges(
+                "You have unsaved changes to the hosts file. Save them before opening the preset?"))
+        {
+            return;
+        }
+
+        HostsFile.Instance.Import(archivePath);
     }
 
     /// <inheritdoc />
@@ -652,14 +683,13 @@ internal sealed partial class MainForm : Form
         TaskbarJumpList.Refresh();
         HostsArchiveList.Instance.ListChanged += (s1, e1) => TaskbarJumpList.Refresh();
 
-        // If launched from a Jump List entry (--open-archive "<path>"), import that preset into the
-        // editor now that the hosts file is loaded. (Only the fresh-launch case is handled here; a
-        // launch while the app is already running is intercepted by single-instance and would need the
-        // path forwarded through that channel — see the PR notes.)
+        // If launched fresh from a Jump List entry (--open-archive "<path>"), open that preset now
+        // that the hosts file is loaded. The already-running case is handled in WndProc (a second
+        // instance forwards the path via TaskbarJumpList). RequestOpenArchive warns on unsaved changes.
         var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(Environment.GetCommandLineArgs());
-        if (!string.IsNullOrEmpty(openArchivePath) && File.Exists(openArchivePath))
+        if (openArchivePath is not null)
         {
-            HostsFile.Instance.Import(openArchivePath);
+            RequestOpenArchive(openArchivePath);
         }
 
         // HACK: Make sure a newly added row gets committed after
@@ -818,7 +848,8 @@ internal sealed partial class MainForm : Form
     /// If there are unsaved hosts-file changes, prompts to save/discard/cancel. Returns true if
     /// the caller should proceed with exiting (saved or discarded), false to abort the exit.
     /// </summary>
-    private bool ConfirmDiscardUnsavedChanges()
+    private bool ConfirmDiscardUnsavedChanges(
+        string prompt = "You have unsaved changes to the hosts file. Save them before exiting?")
     {
         // A failed load never built any state to lose, and touching HostsFile.Instance would rethrow
         // the cached load exception (tray/File Exit reach here even after a failed load).
@@ -829,7 +860,7 @@ internal sealed partial class MainForm : Form
 
         var result = MessageBox.Show(
             this,
-            "You have unsaved changes to the hosts file. Save them before exiting?",
+            prompt,
             "Unsaved Changes",
             MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);

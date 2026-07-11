@@ -46,6 +46,11 @@ internal static class TaskbarJumpList
             {
                 var item = JumpListItem.CreateWithArguments($"{OpenArchivePrefix}{archive.FilePath}", archive.FileName);
                 item.GroupName = PresetsCategory;
+
+                // Show the app icon instead of the default blank-document glyph. A packaged
+                // ms-appx:/// asset; the resource loader picks the right scale/target-size variant.
+                item.Logo = new Uri("ms-appx:///Assets/Square44x44Logo.png");
+
                 jumpList.Items.Add(item);
             }
 

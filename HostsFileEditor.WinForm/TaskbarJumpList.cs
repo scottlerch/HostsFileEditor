@@ -77,4 +77,46 @@ internal static class TaskbarJumpList
 
         return null;
     }
+
+    // Single-slot hand-off file used to forward a Jump List "open preset" from a second (exiting)
+    // instance to the already-running one: the second instance can't pass the path through the
+    // payload-less single-instance broadcast (ProgramSingleInstance.ShowFirstInstance), so it drops
+    // the path here and the running instance reads it when it receives that broadcast. Best-effort.
+    private static string PendingOpenArchiveFile =>
+        Path.Combine(HostsFile.AppDataDirectory, "jumplist-pending.txt");
+
+    /// <summary>Records an archive path for the already-running instance to open (see above).</summary>
+    public static void WritePendingOpenArchive(string archivePath)
+    {
+        try
+        {
+            Directory.CreateDirectory(HostsFile.AppDataDirectory);
+            File.WriteAllText(PendingOpenArchiveFile, archivePath);
+        }
+        catch (Exception)
+        {
+            // Best-effort hand-off; a failure just means the running instance won't open the preset.
+        }
+    }
+
+    /// <summary>Reads and clears any pending open-archive path, or <see langword="null"/> if none.</summary>
+    public static string? TakePendingOpenArchive()
+    {
+        try
+        {
+            var file = PendingOpenArchiveFile;
+            if (File.Exists(file))
+            {
+                var path = File.ReadAllText(file).Trim();
+                File.Delete(file);
+                return string.IsNullOrEmpty(path) ? null : path;
+            }
+        }
+        catch (Exception)
+        {
+            // Best-effort.
+        }
+
+        return null;
+    }
 }
