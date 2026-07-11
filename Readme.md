@@ -128,11 +128,12 @@ the package, not the exe files inside it, so without `-Sign` the on-demand eleva
 zip. See [docs/signing.md](docs/signing.md) for setup.
 
 To **submit** those Store packages without the Partner Center portal, `publish-store.ps1` scripts the
-submissions via the [Microsoft Store Developer CLI](https://learn.microsoft.com/windows/apps/publish/msstore-dev-cli/overview)
-(`msstore`). Run `.\publish-store.ps1 -InstallTooling` once to install the CLI, authenticate with
-`msstore reconfigure`, then `.\publish-store.ps1` after a signed build to update both editions'
-submissions with the new packages and "What's new" notes. See the *Store release automation* section
-in [CLAUDE.md](CLAUDE.md) for the one-time Partner Center setup.
+submissions via [StoreBroker](https://github.com/microsoft/StoreBroker), Microsoft's PowerShell module
+over the Store submission API. Run `.\publish-store.ps1 -InstallTooling` once to install the module,
+then `.\publish-store.ps1 -NoCommit` after a signed build: for each edition it clones the current Store
+submission, swaps in the new x64+arm64 packages and "What's new" notes, and leaves a Draft to review in
+Partner Center (drop `-NoCommit` to commit). See the *Store release automation* section in
+[CLAUDE.md](CLAUDE.md) for the one-time Azure AD / Partner Center setup.
 
 ### Build Outputs
 
