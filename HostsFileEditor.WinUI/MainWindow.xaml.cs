@@ -23,22 +23,44 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // instead of adding hundreds of thousands of items one at a time.
     internal ObservableCollection<HostsEntry> Entries { get; private set; } = [];
 
-    // False until the (potentially slow) initial hosts-file parse has completed on a background
-    // thread. Gates every property that touches HostsFile.Instance.Entries so the eager x:Bind
-    // evaluation during InitializeComponent doesn't trigger that parse on the UI thread.
-    private bool _isLoaded;
+    // The window's load lifecycle as ONE explicit state, replacing three co-varying booleans (was
+    // _isLoaded / _loadFailed / _asyncOperationInProgress) whose invalid combinations — e.g. the
+    // impossible "loaded AND reloading" — were representable and were the recurring source of the
+    // missed-guard bugs this window kept growing (issue #76). Only the valid transitions exist:
+    // InitialLoading -> Loaded (initial parse done) or -> LoadFailed (it threw); Loaded <-> Reloading
+    // (an async file op). _isClosed is deliberately NOT folded in — it is an orthogonal, cross-thread
+    // (volatile) terminal flag that can be set from ANY load state (a close mid-load / mid-reload),
+    // and the _suspend* flags are reentrancy suppression, a different axis again.
+    private enum LoadState
+    {
+        // The initial background parse is still running; touching HostsFile.Instance would force that
+        // (potentially multi-second) parse onto the UI thread. Nothing is user-modified yet, so a
+        // close proceeds immediately.
+        InitialLoading,
 
-    // Set when the initial hosts-file load failed. The Lazy<HostsFile> has CACHED that exception —
-    // every later HostsFile.Instance touch rethrows it — so the visibility getters and handlers must
-    // short-circuit on this flag instead of dereferencing Instance (which would crash the app from
-    // inside a binding refresh or an event handler).
-    private bool _loadFailed;
+        // The parse completed; the list is interactive and HostsFile.Instance is cheap to touch.
+        Loaded,
 
-    // True while an async file operation (import/reload/archive-load) is rebuilding the Core list on
-    // a background thread. Used to (a) veto a window close for the duration — the continuation would
-    // otherwise skip the unsaved-changes prompt AND run against a closed window — and (b) keep the
-    // list non-interactive (via IsEntriesInteractive).
-    private bool _asyncOperationInProgress;
+        // An async file op (import / reload / archive-load) is rebuilding the Core list off-thread.
+        // The list is non-interactive, Instance must not be touched, and a close is vetoed until it
+        // finishes (its continuation must run; it would otherwise skip the unsaved-changes prompt).
+        Reloading,
+
+        // The initial load threw. The Lazy<HostsFile> has CACHED that exception, so every later
+        // HostsFile.Instance touch rethrows it — Instance must never be dereferenced. Terminal.
+        LoadFailed,
+    }
+
+    // Starts in InitialLoading so the eager x:Bind evaluation during InitializeComponent doesn't force
+    // the parse onto the UI thread.
+    private LoadState _loadState = LoadState.InitialLoading;
+
+    // Derived flags preserving the exact meaning of the booleans they replace, so every existing guard
+    // reads identically: IsLoaded == the old _isLoaded; AsyncOperationInProgress == the old
+    // _asyncOperationInProgress (true only during a reload); LoadFailed == the old _loadFailed.
+    private bool IsLoaded => _loadState == LoadState.Loaded;
+    private bool AsyncOperationInProgress => _loadState == LoadState.Reloading;
+    private bool LoadFailed => _loadState == LoadState.LoadFailed;
 
     // Set once the window has closed, so the fire-and-forget load / async-op continuations skip their
     // UI touches instead of hitting closed XAML (the classic edition guards the same way with IsDisposed).
@@ -47,10 +69,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // The entries list is interactive only once the initial load has completed and no async file
     // operation is running. Bound to EntriesList.IsEnabled so its TwoWay row bindings (the Enabled
     // checkbox, the IP/host/comment TextBoxes) can't mutate HostsEntry objects the background thread
-    // is concurrently discarding — the one Instance-mutating path the per-handler _isLoaded guards
-    // can't cover. Raised wherever LoadingVisibility is. Both flags are checked (not just _isLoaded)
-    // so a future async path that forgets to also clear _isLoaded can't silently re-enable the list.
-    public bool IsEntriesInteractive => _isLoaded && !_asyncOperationInProgress;
+    // is concurrently discarding. With one explicit state this is simply "Loaded" — the old
+    // IsLoaded && !AsyncOperationInProgress could represent the impossible loaded-and-reloading case.
+    public bool IsEntriesInteractive => _loadState == LoadState.Loaded;
 
     // Set while an explicit handler mutates the Core list and refreshes the view itself, so the
     // ListChanged subscription below doesn't also fire an (O(n^2)) minimal-diff refresh on top.
@@ -102,7 +123,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public string SelectAllBannerText => $"All {Entries.Count:N0} entries selected — press Esc or click a row to clear.";
 
-    public Visibility LoadingVisibility => _isLoaded || _loadFailed ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility LoadingVisibility => IsLoaded || LoadFailed ? Visibility.Collapsed : Visibility.Visible;
 
     // Bottom status bar text: total lines and host (enabled) entries, mirroring the classic edition's
     // status strip (HostsFile.LineCount / EnabledCount). Recomputed on each view refresh; see
@@ -161,12 +182,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public Visibility ArchiveViewVisibility => IsArchiveVisible ? Visibility.Visible : Visibility.Collapsed;
 
-    // Both getters check _loadFailed BEFORE dereferencing HostsFile.Instance — see _loadFailed.
+    // Both getters check LoadFailed BEFORE dereferencing HostsFile.Instance — see LoadFailed.
     public Visibility EntriesEmptyVisibility =>
-        _loadFailed || (_isLoaded && HostsFile.Instance.Entries.Count == 0) ? Visibility.Visible : Visibility.Collapsed;
+        LoadFailed || (IsLoaded && HostsFile.Instance.Entries.Count == 0) ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility EntriesFilteredVisibility =>
-        !_loadFailed && _isLoaded && HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        !LoadFailed && IsLoaded && HostsFile.Instance.Entries.Count > 0 && Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public bool IsFilterCommentsHidden { get; private set; }
 
@@ -258,8 +279,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
 
             // Unsubscribe unconditionally: the subscription is added once (after the initial load) and
-            // persists across reloads, but a reload sets _isLoaded=false — gating on it would leak the
-            // subscription (and this window, via the HostsFile.Instance singleton) if the user closes
+            // persists across reloads, but a reload enters Reloading (IsLoaded false) — gating on it
+            // would leak the subscription (and this window, via HostsFile.Instance) if the user closes
             // mid-reload. `-=` on a not-yet-subscribed handler is a harmless no-op.
             HostsFile.Instance.Entries.ListChanged -= OnCoreEntriesListChanged;
         };
@@ -279,11 +300,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             // LoadEntriesAsync is started fire-and-forget, so an exception from the off-thread load
             // (locked/denied hosts file, failed backup copy, bad HFE_HOSTS_PATH target) would be
-            // unobserved. Set _loadFailed (NOT _isLoaded — the visibility getters would dereference
+            // unobserved. Set LoadFailed (NOT IsLoaded — the visibility getters would dereference
             // HostsFile.Instance, whose Lazy has cached this exception and would rethrow it out of
             // the binding refresh, killing the app before the dialog appears), stop the spinner,
             // show the error, and leave an inert empty list.
-            _loadFailed = true;
+            _loadState = LoadState.LoadFailed;
             OnPropertyChanged(nameof(LoadingVisibility));
             OnPropertyChanged(nameof(EntriesEmptyVisibility));
             OnPropertyChanged(nameof(EntriesFilteredVisibility));
@@ -300,7 +321,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         // Back on the UI thread with the parse already done, so touching Instance is now cheap.
         HostsFile.Instance.Entries.ListChanged += OnCoreEntriesListChanged;
-        _isLoaded = true;
+        _loadState = LoadState.Loaded;
 
         // Same bulk rebind + notifications as a filter change; the load also hides the spinner.
         RefreshEntriesFiltered();
@@ -347,7 +368,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     private void UpdateStatusCounts()
     {
         string text;
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             text = string.Empty;
         }
@@ -377,7 +398,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // Inert until the initial load completes (and forever if it failed, or while an async
         // reload is rebuilding the Core list on a background thread) — BulkPopulateEntries
         // dereferences HostsFile.Instance and enumerates its Entries.
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -565,9 +586,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         // An async file operation (import/reload/archive-load) is mid-flight rebuilding the Core
         // list on a background thread. Veto the close: letting it proceed would both skip the
-        // unsaved-changes prompt (below, gated on _isLoaded which is false during the op) and run
+        // unsaved-changes prompt (below, gated on IsLoaded which is false during the op) and run
         // the operation's continuation against a closed window. The user can close once it finishes.
-        if (_asyncOperationInProgress)
+        if (AsyncOperationInProgress)
         {
             args.Cancel = true;
             return;
@@ -576,7 +597,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // Before the load completes there is nothing user-modified to lose — and touching
         // HostsFile.Instance here would block the UI thread on the in-progress background parse
         // (or rethrow a cached load failure). Let the close proceed.
-        if (!_isLoaded || _forceClose || !HostsFile.Instance.IsModified)
+        if (!IsLoaded || _forceClose || !HostsFile.Instance.IsModified)
         {
             return;
         }
@@ -690,7 +711,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void SelectAllEntries()
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -792,7 +813,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnImportClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -818,7 +839,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnSaveClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -842,7 +863,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnSaveAsClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -863,7 +884,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnInsertBelowClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -876,7 +897,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnInsertAboveClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -893,7 +914,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // exception, so this handler's Instance touch would rethrow it out of a click handler and
         // crash the app (there is no UnhandledException net) — and during an async reload it would
         // mutate the list the background thread is rebuilding.
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -939,7 +960,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnMoveUpClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -957,7 +978,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnMoveDownClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1040,7 +1061,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnDeleteClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1153,12 +1174,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             _suspendCoreListSync = false;
 
-            // One CANONICAL bulk rebind (gates on _isLoaded, swaps ItemsSource, resets selection
+            // One CANONICAL bulk rebind (gates on IsLoaded, swaps ItemsSource, resets selection
             // state, raises the empty/filtered notifications, refreshes counts and buttons) —
             // calling it instead of an inline copy keeps "what a rebind must notify" in one place.
             RefreshEntriesFiltered();
 
-            if (_isLoaded)
+            if (IsLoaded)
             {
                 var scrollTarget = RestoreSelectionAfterRebind(wasLogicalSelectAll, snapshot);
 
@@ -1234,13 +1255,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // Async twin of MutateCoreAndRefresh for mutations that re-read a file from disk (import /
     // reload / archive load): the multi-second parse runs off the UI thread so the window stays
     // responsive. The window re-enters the "loading" state for the duration — the spinner returns,
-    // and every Instance-touching command no-ops via its `if (!_isLoaded) return;` guard, because
+    // and every Instance-touching command no-ops via its `if (!IsLoaded) return;` guard, because
     // the Core list is being cleared and re-filled on a background thread and mutating or
     // enumerating it concurrently (a delete, a paste, an undo) would corrupt the list or throw.
     private async Task MutateCoreAndRefreshAsync(Action mutate)
     {
-        _isLoaded = false;
-        _asyncOperationInProgress = true;
+        _loadState = LoadState.Reloading;
         OnPropertyChanged(nameof(LoadingVisibility));
         OnPropertyChanged(nameof(IsEntriesInteractive));
 
@@ -1259,8 +1279,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         finally
         {
             _suspendCoreListSync = false;
-            _isLoaded = true;
-            _asyncOperationInProgress = false;
+            _loadState = LoadState.Loaded;
 
             // The window may have closed during the parse (a close is vetoed while the op runs — see
             // OnAppWindowClosing — but be defensive): don't rebind against disposed XAML.
@@ -1282,7 +1301,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnCopyClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1296,7 +1315,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnCutClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1314,7 +1333,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnPasteClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1354,7 +1373,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnDuplicateClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1379,7 +1398,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnDisableHostsClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1415,7 +1434,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnRefreshClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1442,7 +1461,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnRestoreClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1498,7 +1517,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnCheckClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1524,12 +1543,12 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     // Undo/redo replay closures that mutate HostsFile.Instance.Entries, so they carry the same
-    // _isLoaded guard as every other Instance-mutating command: during an async reload the
+    // IsLoaded guard as every other Instance-mutating command: during an async reload the
     // pre-clear undo history is briefly still live (Refresh reads the file before clearing it),
     // and replaying it on the UI thread would race the background rebuild of the same list.
     private void OnUndoClick(object sender, RoutedEventArgs e)
     {
-        if (_isLoaded)
+        if (IsLoaded)
         {
             Utilities.UndoManager.Instance.Undo();
         }
@@ -1537,7 +1556,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnRedoClick(object sender, RoutedEventArgs e)
     {
-        if (_isLoaded)
+        if (IsLoaded)
         {
             Utilities.UndoManager.Instance.Redo();
         }
@@ -1551,7 +1570,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnArchiveClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1588,7 +1607,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void OnArchiveLoadClick(object sender, RoutedEventArgs e)
     {
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1613,7 +1632,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // The archive panel stays enabled during an async archive load/import (IsEntriesInteractive
         // disables only the entries list), so without this guard a Delete could race File.Delete
         // against the still-open read handle of the archive being imported (IOException -> crash).
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
@@ -1654,7 +1673,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     {
         // Inert until the initial load completes / while an async reload rebuilds the Core list on
         // a background thread — see RefreshEntriesFiltered.
-        if (!_isLoaded)
+        if (!IsLoaded)
         {
             return;
         }
