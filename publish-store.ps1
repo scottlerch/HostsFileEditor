@@ -5,31 +5,33 @@
 
 .DESCRIPTION
     Run AFTER `build-all.ps1 -Sign` has produced artifacts\store\*.msix. For each edition this:
-      1. pulls the current submission JSON (`msstore submission get`),
-      2. patches it with the freshly built packages + this release's "What's new" notes,
-      3. pushes it back (`submission update`), publishes (`submission publish`), and polls.
+      1. stages that edition's x64+arm64 packages and uploads them into a DRAFT submission
+         (`msstore publish -i <dir> --noCommit`),
+      2. patches the draft's "What's new" notes (every listing locale),
+      3. commits (`submission publish`) and polls — unless -NoCommit.
 
-    FIRST-TIME setup:
+    FIRST-TIME setup (see CLAUDE.md > Store release automation for the full walkthrough):
       .\publish-store.ps1 -InstallTooling      # winget-installs the .NET 9 runtime + msstore CLI
-      msstore reconfigure --tenantId <T> --sellerId <S> --clientId <C> --clientSecret <SECRET>
-      .\publish-store.ps1 -Inspect             # dump the submission JSON, then fill in the two
-                                               #   marked field paths below for your account.
+      msstore                                  # interactive first-run: sign in with your ENTRA ID
+                                               #   account (NOT your MSA); resolves your Seller Id.
+      msstore info                             # confirm the config
 
-    See the "Store release automation" section in CLAUDE.md for the full walkthrough (creating the
-    Partner Center Azure AD app to get the tenant/client/seller/secret values).
+    RECOMMENDED first real run: use -NoCommit and then review the Draft in Partner Center - in
+    particular confirm BOTH architectures (x64 + arm64) uploaded at the new version. `msstore publish`
+    takes a directory; if it only picks up one package, tell the maintainer (fallback: a .msixbundle).
 
 .EXAMPLE
     .\publish-store.ps1 -InstallTooling
 .EXAMPLE
-    .\build-all.ps1 -Sign; .\publish-store.ps1            # build+sign, then submit both editions
+    .\build-all.ps1 -Sign; .\publish-store.ps1 -NoCommit     # build+sign, stage drafts, review in portal
 .EXAMPLE
-    .\publish-store.ps1 -Edition modern -NoCommit         # update the modern draft, don't publish
+    .\publish-store.ps1 -Edition modern                      # publish only the modern edition, commit
 #>
 [CmdletBinding()]
 param(
     [switch]$InstallTooling,                    # winget-install the .NET 9 runtime + msstore CLI, then exit
     [switch]$Inspect,                           # dump the current submission JSON and exit
-    [switch]$NoCommit,                          # update the draft but DON'T publish (review in the portal)
+    [switch]$NoCommit,                          # upload + set notes into a Draft, but DON'T publish
     [ValidateSet('classic', 'modern', 'both')]
     [string]$Edition = 'both',
     [string]$ClassicProductId = '9NF73PSPK332',   # https://apps.microsoft.com/detail/9NF73PSPK332
@@ -66,37 +68,47 @@ function Install-Tooling {
     & winget install --id Microsoft.DotNet.DesktopRuntime.9 @wingetArgs
     Write-Host '==> Installing Microsoft Store Developer CLI' -ForegroundColor Cyan
     & winget install 'Microsoft Store Developer CLI' @wingetArgs
-    Write-Host "Done. Open a NEW shell so 'msstore' is on PATH, then run: msstore reconfigure ..." -ForegroundColor Green
+    Write-Host "Done. Open a NEW shell so 'msstore' is on PATH, then run: msstore   (sign in with your Entra ID account)." -ForegroundColor Green
 }
 
 if ($InstallTooling) { Install-Tooling; return }
 
 if (-not (Test-Tool msstore)) {
-    throw "msstore CLI not found. Run '.\publish-store.ps1 -InstallTooling' once (installs it + the .NET 9 runtime via winget), then 'msstore reconfigure ...'. See CLAUDE.md > Store release automation."
+    throw "msstore CLI not found. Run '.\publish-store.ps1 -InstallTooling' once, then 'msstore' to sign in. See CLAUDE.md > Store release automation."
 }
 
 function Publish-Edition {
     param([string]$Name, [string]$ProductId)
 
-    $packages = @(Get-ChildItem (Join-Path $storeDir "HostsFileEditor-$Name-*.msix") -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName)
+    if ($Inspect) { & msstore submission get $ProductId; return }
+
+    $packages = @(Get-ChildItem (Join-Path $storeDir "HostsFileEditor-$Name-*.msix") -ErrorAction SilentlyContinue)
     if (-not $packages) { throw "No packages found: $storeDir\HostsFileEditor-$Name-*.msix (run .\build-all.ps1 -Sign first)." }
     Write-Host "==> $Name ($ProductId): $($packages.Count) package(s)" -ForegroundColor Cyan
-    $packages | ForEach-Object { Write-Host "     $_" -ForegroundColor DarkGray }
+    $packages | ForEach-Object { Write-Host "     $($_.Name)" -ForegroundColor DarkGray }
 
-    $current = (& msstore submission get $ProductId | Out-String)
-    if ($Inspect) { $current; return }
+    # Stage just THIS edition's packages so `msstore publish -i <dir>` uploads only its arches
+    # (artifacts\store\ also holds the other edition's packages).
+    $stage = Join-Path $storeDir "_upload-$Name"
+    if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+    New-Item -ItemType Directory -Path $stage | Out-Null
+    $packages | Copy-Item -Destination $stage
 
-    $sub = $current | ConvertFrom-Json -Depth 50
+    # 1. Upload the packages into a DRAFT (create/clone a pending submission, don't commit yet).
+    Write-Host '  uploading packages into a draft submission...' -ForegroundColor DarkGray
+    & msstore publish -i $stage -id $ProductId --noCommit
+    if ($LASTEXITCODE) { throw "msstore publish failed for $Name (exit $LASTEXITCODE)." }
 
-    # --- CONFIRM THESE TWO FIELD PATHS against `-Inspect` output the first time, then uncomment ---
-    #     (the exact schema — applicationPackages shape / releaseNotes location — varies per account)
-    # $sub.applicationPackages = @($packages | ForEach-Object { @{ fileName = (Split-Path $_ -Leaf); fileStatus = 'PendingUpload'; localFilePath = $_ } })
-    # $sub.listings.'en-us'.baseListing.releaseNotes = $notes[$Name]
-    throw "Fill in the two field paths above (use -Inspect to see the JSON), then remove this line. See CLAUDE.md > Store release automation."
+    # 2. Set this release's "What's new" on the draft, for every listing locale.
+    $sub = (& msstore submission get $ProductId | Out-String) | ConvertFrom-Json -Depth 60
+    foreach ($locale in @($sub.Listings.PSObject.Properties.Name)) {
+        if ($sub.Listings.$locale.BaseListing) { $sub.Listings.$locale.BaseListing.ReleaseNotes = $notes[$Name] }
+    }
+    & msstore submission update $ProductId ($sub | ConvertTo-Json -Depth 60 -Compress)
+    if ($LASTEXITCODE) { throw "msstore submission update failed for $Name (exit $LASTEXITCODE)." }
 
-    $updated = $sub | ConvertTo-Json -Depth 50
-    & msstore submission update $ProductId $updated
-    if ($NoCommit) { Write-Host '  draft updated (not published).' -ForegroundColor Yellow; return }
+    # 3. Commit + poll (unless leaving a Draft for a manual portal review).
+    if ($NoCommit) { Write-Host '  draft updated (packages + notes); NOT published - review in Partner Center.' -ForegroundColor Yellow; return }
     & msstore submission publish $ProductId
     & msstore submission poll $ProductId
 }

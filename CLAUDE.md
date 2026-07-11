@@ -165,12 +165,14 @@ Partner Center APIs (preview; free products only, which both editions are).
   `msstore reconfigure --tenantId <T> --sellerId <S> --clientId <C> --clientSecret <SECRET>`. Never
   commit these — use secrets.
 - **Each release:** `.\build-all.ps1 -Sign` (produces `artifacts\store\HostsFileEditor-<flavor>-<arch>.msix`)
-  then `.\publish-store.ps1` — for each edition it does `msstore submission get` → patch packages +
-  the per-edition "What's new" notes → `submission update` → `publish` → `poll`. `-NoCommit` leaves a
-  Draft for a final portal check; `-Edition classic|modern` limits scope.
-- **Open item:** the exact submission-JSON field paths (`applicationPackages` shape / `releaseNotes`
-  location) vary per account. Run `.\publish-store.ps1 -Inspect` once to dump the JSON and fill in the
-  two marked lines in the script before the first real run.
+  then `.\publish-store.ps1` — for each edition it stages that edition's x64+arm64 packages, uploads
+  them into a draft (`msstore publish -i <dir> --noCommit`), patches the "What's new" notes on every
+  listing locale (`Listings.<locale>.BaseListing.ReleaseNotes`), then `submission publish` → `poll`.
+  `-NoCommit` leaves a Draft for a final portal check; `-Edition classic|modern` limits scope;
+  `-Inspect` dumps the current submission JSON.
+- **Verify on the first run:** use `-NoCommit` and confirm in Partner Center that **both** architectures
+  uploaded at the new version — `msstore publish -i` takes a directory and the docs describe it as
+  finding "the" package, so if only one arch lands, switch to a single `.msixbundle` (`makeappx bundle`).
 
 ## Gotchas
 
