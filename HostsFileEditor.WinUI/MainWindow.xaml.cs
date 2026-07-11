@@ -312,10 +312,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // and rebind in a single operation, instead of hundreds of thousands of incremental adds.
     private void BulkPopulateEntries(List<HostsEntry>? prefiltered = null)
     {
-        // Filter-change callers pass null and we compute the filtered set here; the RefreshEntries
-        // huge-selection reroute already built the identical set (same EntryPassesFilter predicate),
-        // so it passes it in to avoid filtering the whole (up to ~400K) list a second time (#74).
-        var filtered = prefiltered ?? [.. HostsFile.Instance.Entries.Where(e => EntryPassesFilter(e, CurrentFilterText()))];
+        // Filter-change callers pass null and we compute the filtered set here (hoisting the filter
+        // text to one lookup — NOT per entry); the RefreshEntries huge-selection reroute already built
+        // the identical set (same EntryPassesFilter predicate), so it passes it in to avoid filtering
+        // the whole (up to ~400K) list a second time (#74).
+        List<HostsEntry> filtered;
+        if (prefiltered is not null)
+        {
+            filtered = prefiltered;
+        }
+        else
+        {
+            var filterText = CurrentFilterText();
+            filtered = [.. HostsFile.Instance.Entries.Where(e => EntryPassesFilter(e, filterText))];
+        }
+
         Entries = new ObservableCollection<HostsEntry>(filtered);
         OnPropertyChanged(nameof(Entries));
 

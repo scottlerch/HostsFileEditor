@@ -927,7 +927,14 @@ internal sealed partial class MainForm : Form
                 dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveAfter(selectedEntries, belowEntry);
 
-                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
+                // Skip the anchor re-find for a huge selection: the restore below drops it and nulls
+                // CurrentCell anyway (its >MaxSelectionRestoreCount branch), so the O(n) scan + scroll
+                // would be wasted — same gate the sort path uses.
+                if (selectedEntries.Count <= HostsEntryList.HugeSelectionThreshold)
+                {
+                    dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
+                }
+
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
@@ -979,7 +986,12 @@ internal sealed partial class MainForm : Form
                 dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveBefore(selectedEntries, aboveEntry);
 
-                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
+                // See OnMoveDownClick: skip the wasted anchor re-find for a huge (dropped) selection.
+                if (selectedEntries.Count <= HostsEntryList.HugeSelectionThreshold)
+                {
+                    dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
+                }
+
                 dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
             }
         }
