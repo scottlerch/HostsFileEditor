@@ -52,12 +52,14 @@ Installs and updates automatically, with no separate download:
  * [Hosts File Editor (modern)](https://apps.microsoft.com/detail/9NBQWCDXGF9R) &mdash; the new WinUI edition
  * [Hosts File Editor (classic)](https://apps.microsoft.com/detail/9NF73PSPK332) &mdash; the classic WinForms edition
 
-### Portable &mdash; v1.4.0
+### Portable &mdash; v1.4.1
 
 The **classic edition** rebuilt on .NET 10: fully self-contained (no runtime to install), runs as a standard user, and elevates on demand (a single UAC prompt) only when you save changes to the hosts file. Binaries are signed. Download directly from [GitHub Releases](https://github.com/scottlerch/HostsFileEditor/releases):
 
- * [Download v1.4.0 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.4.0/HostsFileEditor-1.4.0-x64.zip)
- * [Download v1.4.0 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.4.0/HostsFileEditor-1.4.0-arm64.zip)
+ * [Download v1.4.1 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.4.1/HostsFileEditor-1.4.1-x64.zip)
+ * [Download v1.4.1 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.4.1/HostsFileEditor-1.4.1-arm64.zip)
+
+_What's new in v1.4.1:_ a small maintenance patch &mdash; the classic edition no longer targets the wrong entry when you **Insert or Move right after a Move** (the current-row anchor is restored by identity), and the modern edition skips a redundant filter pass on very large selections. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.4.1).
 
 _What's new in v1.4.0:_ a broad **performance** pass for very large hosts files &mdash; **smaller installs** (classic ~124 MB &rarr; ~53 MB), a **~3&times; faster** parser, an **async load** behind a progress indicator, and **responsive editing** (cut / paste / duplicate / move / enable-disable / select-all / sort no longer freeze on ~400K-entry files) in both editions. Also: the classic column-header **sort** no longer crashes on .NET 10; the modern edition gains a **status bar** (line + host-entry counts), flicker-free columns, and keeps your selection across Check/Uncheck &amp; Duplicate; and both editions parse **trailing-dot FQDN** hostnames (e.g. Tailscale MagicDNS `host.tailnet.ts.net.`). See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.4.0).
 
