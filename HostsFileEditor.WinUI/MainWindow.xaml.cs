@@ -308,18 +308,53 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(IsEntriesInteractive));
 
         // Taskbar Jump List (issue #10): publish the current presets and keep it in sync as archives
-        // change.
-        TaskbarJumpList.Refresh();
-        HostsArchiveList.Instance.ListChanged += (s, e) => TaskbarJumpList.Refresh();
+        // change. Fire-and-forget — RefreshAsync no-ops when unpackaged (JumpList needs identity).
+        _ = TaskbarJumpList.RefreshAsync();
+        HostsArchiveList.Instance.ListChanged += (s, e) => _ = TaskbarJumpList.RefreshAsync();
 
-        // If launched from a Jump List entry (--open-archive "<path>"), import that preset into the
-        // editor. Fresh-launch only; a launch while already running is handled by single-instance
-        // redirection, which would need the path forwarded through that channel — see the PR notes.
-        var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(Environment.GetCommandLineArgs());
-        if (!string.IsNullOrEmpty(openArchivePath) && File.Exists(openArchivePath))
+        // If a Jump List activation arrived before the load finished, honor it now.
+        if (_pendingJumpListArchive is { } pending)
         {
-            await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Import(openArchivePath));
+            _pendingJumpListArchive = null;
+            await ImportArchiveFromJumpListAsync(pending);
         }
+    }
+
+    // Set by RequestOpenArchive when a Jump List activation arrives before the initial load completes;
+    // LoadEntriesAsync imports it once loaded.
+    private string? _pendingJumpListArchive;
+
+    /// <summary>
+    /// Opens the preset a taskbar Jump List entry pointed at (issue #10) — called by App on both a
+    /// fresh launch and a redirect to this already-running instance. If the initial load is still in
+    /// flight, the request is deferred until it completes. Must be called on the UI thread.
+    /// </summary>
+    public void RequestOpenArchive(string archivePath)
+    {
+        if (_isClosed || string.IsNullOrEmpty(archivePath))
+        {
+            return;
+        }
+
+        if (_isLoaded)
+        {
+            _ = ImportArchiveFromJumpListAsync(archivePath);
+        }
+        else
+        {
+            // Loading (or reloading) — remember it; LoadEntriesAsync will pick it up.
+            _pendingJumpListArchive = archivePath;
+        }
+    }
+
+    private async Task ImportArchiveFromJumpListAsync(string archivePath)
+    {
+        if (_isClosed || !File.Exists(archivePath))
+        {
+            return;
+        }
+
+        await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Import(archivePath));
     }
 
     // One-shot bulk load of the (filtered) entries: build the list off the persistent collection

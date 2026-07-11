@@ -1,80 +1,81 @@
-using Microsoft.WindowsAPICodePack.Shell;
-using Microsoft.WindowsAPICodePack.Taskbar;
+using Microsoft.Windows.AppLifecycle;
+using Windows.ApplicationModel.Activation;
+using Windows.UI.StartScreen;
 
 namespace HostsFileEditor;
 
 /// <summary>
-/// Populates the Windows taskbar Jump List with the saved archives/presets (issue #10), so the user
-/// can right-click the taskbar icon and open a preset. Each entry relaunches the app with
-/// <see cref="OpenArchiveSwitch"/> "&lt;path&gt;", which the startup path imports into the editor.
-/// Best-effort: any failure is swallowed. See the PR notes for the packaged-identity / AOT caveats of
-/// using the Win32 jump-list API from a packaged WinUI app.
+/// Populates the Windows taskbar Jump List with the saved archives/presets (issue #10) using the
+/// packaged-native WinRT <see cref="JumpList"/> API (AOT-compatible via CsWinRT, unlike the COM-based
+/// WindowsAPICodePack the classic edition uses). Each entry carries an <see cref="OpenArchivePrefix"/>
+/// argument; the app is re-activated with that argument (fresh launch OR redirected to the running
+/// instance — see App.OnLaunched / OnInstanceActivated) and imports the preset into the editor.
+/// <para>
+/// <see cref="JumpList"/> requires package identity, so <see cref="JumpList.IsSupported"/> is false
+/// for an unpackaged (dev) run and every call here no-ops — the jump list only appears for the
+/// installed MSIX. Best-effort throughout: a WinRT failure never surfaces to the user.
+/// </para>
 /// </summary>
 internal static class TaskbarJumpList
 {
-    /// <summary>Command-line switch a jump-list entry passes to open a preset in the editor.</summary>
-    public const string OpenArchiveSwitch = "--open-archive";
+    /// <summary>Prefix on the launch argument a jump-list entry passes to open a preset.</summary>
+    public const string OpenArchivePrefix = "open-archive:";
 
     private const string PresetsCategory = "Presets";
 
-    public static void Refresh()
+    public static async Task RefreshAsync()
     {
-        if (!TaskbarManager.IsPlatformSupported)
-        {
-            return;
-        }
-
-        var exePath = Environment.ProcessPath;
-        if (string.IsNullOrEmpty(exePath))
+        if (!JumpList.IsSupported())
         {
             return;
         }
 
         try
         {
-            var jumpList = JumpList.CreateJumpList();
+            var jumpList = await JumpList.LoadCurrentAsync();
+
+            // We own the whole list (no recent/frequent system group), so rebuild it from scratch.
+            jumpList.SystemGroupKind = JumpListSystemGroupKind.None;
+            jumpList.Items.Clear();
 
             var archives = HostsArchiveList.Instance
                 .OrderBy(a => a.FileName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            if (archives.Count > 0)
+            foreach (var archive in archives)
             {
-                var category = new JumpListCustomCategory(PresetsCategory);
-                foreach (var archive in archives)
-                {
-                    category.AddJumpListItems(new JumpListLink(exePath, archive.FileName)
-                    {
-                        Arguments = $"{OpenArchiveSwitch} \"{archive.FilePath}\"",
-                        IconReference = new IconReference(exePath, 0),
-                    });
-                }
-
-                jumpList.AddCustomCategories(category);
+                var item = JumpListItem.CreateWithArguments($"{OpenArchivePrefix}{archive.FilePath}", archive.FileName);
+                item.GroupName = PresetsCategory;
+                jumpList.Items.Add(item);
             }
 
-            jumpList.Refresh();
+            await jumpList.SaveAsync();
         }
         catch (Exception)
         {
-            // Jump list is a convenience; never let a shell/COM failure take down the app.
+            // Jump list is a convenience; never let a WinRT failure take down the app.
         }
     }
 
     /// <summary>
-    /// Extracts the archive path from a <see cref="OpenArchiveSwitch"/> "&lt;path&gt;" argument pair,
-    /// or <see langword="null"/> if not present.
+    /// Extracts the archive path from a jump-list activation, or <see langword="null"/> if the
+    /// activation is not an open-preset launch. Handles both the fresh-launch and redirected-to-
+    /// running-instance activations (both are <see cref="ExtendedActivationKind.Launch"/>).
     /// </summary>
-    public static string? TryGetOpenArchivePath(string[] args)
+    public static string? TryGetOpenArchivePath(AppActivationArguments? args)
     {
-        for (var i = 0; i < args.Length - 1; i++)
+        if (args?.Kind == ExtendedActivationKind.Launch &&
+            args.Data is ILaunchActivatedEventArgs launch)
         {
-            if (string.Equals(args[i], OpenArchiveSwitch, StringComparison.OrdinalIgnoreCase))
-            {
-                return args[i + 1];
-            }
+            return TryGetOpenArchivePath(launch.Arguments);
         }
 
         return null;
     }
+
+    /// <summary>Extracts the archive path from a raw launch-argument string.</summary>
+    public static string? TryGetOpenArchivePath(string? arguments) =>
+        !string.IsNullOrEmpty(arguments) && arguments.StartsWith(OpenArchivePrefix, StringComparison.Ordinal)
+            ? arguments[OpenArchivePrefix.Length..]
+            : null;
 }

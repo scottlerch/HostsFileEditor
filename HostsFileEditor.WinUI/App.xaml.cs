@@ -46,10 +46,30 @@ public partial class App : Application
         var mw = Services.GetRequiredService<MainWindow>();
 
         _window = mw;
+
+        // If launched from a taskbar Jump List preset (issue #10), hand the archive path to the window
+        // to import once it finishes loading.
+        var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(AppInstance.GetCurrent().GetActivatedEventArgs());
+        if (openArchivePath is not null)
+        {
+            mw.RequestOpenArchive(openArchivePath);
+        }
+
         _window.Activate();
     }
 
     private void OnInstanceActivated(object? sender, AppActivationArguments e) =>
-        // Raised on a background thread; marshal to the UI thread to activate the window.
-        _window?.DispatcherQueue.TryEnqueue(() => _window?.Activate());
+        // Raised on a background thread; marshal to the UI thread to activate the window, and — if
+        // this activation came from a Jump List preset (issue #10) — open that preset in the already-
+        // running instance (the redirect carries the launch arguments).
+        _window?.DispatcherQueue.TryEnqueue(() =>
+        {
+            _window?.Activate();
+
+            var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(e);
+            if (openArchivePath is not null && _window is MainWindow mw)
+            {
+                mw.RequestOpenArchive(openArchivePath);
+            }
+        });
 }
