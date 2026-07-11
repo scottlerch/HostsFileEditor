@@ -20,6 +20,12 @@
     particular confirm BOTH architectures (x64 + arm64) uploaded at the new version. `msstore publish`
     takes a directory; if it only picks up one package, tell the maintainer (fallback: a .msixbundle).
 
+    Each edition publishes INDEPENDENTLY: if one fails (upload/update/publish/poll), the other still
+    completes, a per-edition summary prints, and the script exits non-zero. The Store keeps a single
+    pending submission per app, so a rerun RESUMES that app's existing draft (it does not stack a
+    second) - retry only the failed edition with -Edition <name>, or `msstore submission delete
+    <productId>` to discard a draft and start over.
+
 .EXAMPLE
     .\publish-store.ps1 -InstallTooling
 .EXAMPLE
@@ -80,8 +86,6 @@ if (-not (Test-Tool msstore)) {
 function Publish-Edition {
     param([string]$Name, [string]$ProductId)
 
-    if ($Inspect) { & msstore submission get $ProductId; return }
-
     $packages = @(Get-ChildItem (Join-Path $storeDir "HostsFileEditor-$Name-*.msix") -ErrorAction SilentlyContinue)
     if (-not $packages) { throw "No packages found: $storeDir\HostsFileEditor-$Name-*.msix (run .\build-all.ps1 -Sign first)." }
     Write-Host "==> $Name ($ProductId): $($packages.Count) package(s)" -ForegroundColor Cyan
@@ -113,6 +117,39 @@ function Publish-Edition {
     & msstore submission poll $ProductId
 }
 
-if ($Edition -in 'classic', 'both') { Publish-Edition -Name 'classic' -ProductId $ClassicProductId }
-if ($Edition -in 'modern', 'both') { Publish-Edition -Name 'modern' -ProductId $ModernProductId }
+$targets = @()
+if ($Edition -in 'classic', 'both') { $targets += @{ Name = 'classic'; ProductId = $ClassicProductId } }
+if ($Edition -in 'modern', 'both') { $targets += @{ Name = 'modern'; ProductId = $ModernProductId } }
+
+if ($Inspect) {
+    foreach ($t in $targets) {
+        Write-Host "===== $($t.Name) ($($t.ProductId)) =====" -ForegroundColor Cyan
+        & msstore submission get $t.ProductId
+    }
+    return
+}
+
+# Publish each edition INDEPENDENTLY: a failure in one (upload/update/publish/poll) must not abort the
+# other or hide that it already submitted. Collect a per-edition result and exit non-zero if any failed.
+$results = foreach ($t in $targets) {
+    try {
+        Publish-Edition -Name $t.Name -ProductId $t.ProductId
+        [pscustomobject]@{ Edition = $t.Name; ProductId = $t.ProductId; Result = $(if ($NoCommit) { 'Draft updated (not published)' } else { 'Published' }) }
+    }
+    catch {
+        Write-Host "  FAILED ($($t.Name)): $($_.Exception.Message)" -ForegroundColor Red
+        [pscustomobject]@{ Edition = $t.Name; ProductId = $t.ProductId; Result = "FAILED - $($_.Exception.Message)" }
+    }
+}
+
+Write-Host "`n=== Per-edition summary ===" -ForegroundColor Cyan
+($results | Format-Table Edition, ProductId, Result -AutoSize | Out-String).TrimEnd() | Write-Host
+
+if (@($results | Where-Object { $_.Result -like 'FAILED*' }).Count) {
+    # The Store keeps ONE pending submission per app, so a rerun RESUMES that app's existing draft
+    # (it doesn't stack a second). Retry just the failed edition with -Edition <name>; the already-
+    # submitted edition needs nothing. To discard a bad draft and start fresh: msstore submission delete <productId>.
+    Write-Host "One or more editions did not complete. Re-run with -Edition <name> to retry just that one." -ForegroundColor Yellow
+    exit 1
+}
 Write-Host 'Done.' -ForegroundColor Green

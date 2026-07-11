@@ -173,6 +173,10 @@ Partner Center APIs (preview; free products only, which both editions are).
 - **Verify on the first run:** use `-NoCommit` and confirm in Partner Center that **both** architectures
   uploaded at the new version — `msstore publish -i` takes a directory and the docs describe it as
   finding "the" package, so if only one arch lands, switch to a single `.msixbundle` (`makeappx bundle`).
+- **Reruns / partial failure:** each edition publishes independently — if one fails, the other still
+  completes, a per-edition summary prints, and the script exits non-zero. The Store keeps one pending
+  submission per app, so a rerun **resumes** that app's existing draft; `-Edition <name>` retries just
+  one, `msstore submission delete <productId>` discards a draft.
 
 ## Gotchas
 
