@@ -15,6 +15,57 @@ public class HostsEntryListTests
     }
 
     [TestMethod]
+    public void MergeLines_AddsOnlyNewEntries_AndSkipsDuplicates()
+    {
+        var list = new HostsEntryList(["127.0.0.1 localhost", "1.2.3.4 existing.com"], filterDefault: false);
+
+        var added = list.MergeLines(
+        [
+            "1.2.3.4 existing.com",     // duplicate (same IP + host) -> skipped
+            "5.6.7.8 new.com",          // new -> added
+            "9.9.9.9 also-new.com",     // new -> added
+        ]);
+
+        added.ShouldBe(2);
+        list.Count.ShouldBe(4);
+        list.Any(e => e.IpAddress == "5.6.7.8" && e.HostNames == "new.com").ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void MergeLines_DuplicateIsCaseInsensitive_AndIgnoresEnabledState()
+    {
+        var list = new HostsEntryList(["1.2.3.4 Host.Example.COM"], filterDefault: false);
+
+        // Same mapping, different case and commented out (disabled) — still a duplicate.
+        var added = list.MergeLines(["# 1.2.3.4 host.example.com"]);
+
+        added.ShouldBe(0);
+        list.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public void MergeLines_SkipsCommentsAndBlanksFromIncomingFile()
+    {
+        var list = new HostsEntryList(["127.0.0.1 localhost"], filterDefault: false);
+
+        var added = list.MergeLines(["# a comment", "", "   ", "8.8.8.8 dns.example.com"]);
+
+        added.ShouldBe(1);
+        list.Count.ShouldBe(2);
+    }
+
+    [TestMethod]
+    public void MergeLines_DedupesWithinTheIncomingSet()
+    {
+        var list = new HostsEntryList();
+
+        var added = list.MergeLines(["1.2.3.4 dup.com", "1.2.3.4 dup.com", "1.2.3.4 dup.com"]);
+
+        added.ShouldBe(1);
+        list.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
     public void Add_AddsBlankEntry()
     {
         var list = new HostsEntryList();

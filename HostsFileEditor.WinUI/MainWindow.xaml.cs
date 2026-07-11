@@ -816,6 +816,38 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private async void OnMergeClick(object sender, RoutedEventArgs e)
+    {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
+        try
+        {
+            var path = Win32FileDialogs.OpenFileDialog(GetHwnd(), "All Files (*.*)|*.*");
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return;
+            }
+
+            // Off the UI thread behind the spinner (the file can be large), and a bulk rebind — a
+            // merge appends many entries, so the per-item diff would be O(n^2). Same path as Import.
+            var added = 0;
+            await MutateCoreAndRefreshAsync(() => added = HostsFile.Instance.Merge(path));
+
+            await ShowInfoDialogAsync(
+                "Merge complete",
+                added == 0
+                    ? "No new entries were added — every entry in that file is already present."
+                    : $"Merged {added} new {(added == 1 ? "entry" : "entries")}. Save to write them to the hosts file.");
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorDialogAsync("Error Merging Hosts File", $"An error occurred while merging the hosts file:\n\n{ex.Message}");
+        }
+    }
+
     private async void OnSaveClick(object sender, RoutedEventArgs e)
     {
         if (!_isLoaded)

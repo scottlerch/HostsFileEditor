@@ -67,6 +67,65 @@ public class HostsEntryList : BindingList<HostsEntry>
         });
     }
 
+    /// <summary>
+    /// Merges the entries parsed from <paramref name="lines"/> (another hosts file) into this list,
+    /// eliminating duplicates (issue #26). Every <b>valid</b> incoming entry whose identity — its IP
+    /// address plus parser-normalized host names, compared case-insensitively — is not already present
+    /// is appended in order; entries that duplicate an existing one, comment-only lines, and blank
+    /// lines are skipped. Enabled-vs-disabled is intentionally ignored when comparing (the same
+    /// mapping present twice, once commented out, is still a duplicate), so the existing copy wins.
+    /// Returns the number of entries actually added. Undo/redo is suspended for the bulk add; the
+    /// caller clears history (post-merge indices invalidate prior undo actions) and typically wraps
+    /// this in a <c>BatchUpdate</c> so the bound view resets once.
+    /// </summary>
+    public int MergeLines(IEnumerable<string> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+
+        var identities = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in this)
+        {
+            if (entry.Valid)
+            {
+                identities.Add(IdentityOf(entry));
+            }
+        }
+
+        var toAdd = new List<HostsEntry>();
+        foreach (var line in lines)
+        {
+            var entry = new HostsEntry(line);
+
+            // Merge only real host entries; skip comment-only lines and blanks from the incoming file.
+            if (!entry.Valid)
+            {
+                continue;
+            }
+
+            // HashSet.Add is false when the identity is already present (existing OR earlier in this
+            // same merge), so the first occurrence wins and later duplicates are dropped.
+            if (identities.Add(IdentityOf(entry)))
+            {
+                toAdd.Add(entry);
+            }
+        }
+
+        if (toAdd.Count > 0)
+        {
+            UndoManager.Instance.SuspendUndoRedo(() =>
+            {
+                foreach (var entry in toAdd)
+                {
+                    Add(entry);
+                }
+            });
+        }
+
+        return toAdd.Count;
+
+        static string IdentityOf(HostsEntry entry) => $"{entry.IpAddress}\t{entry.HostNames}";
+    }
+
     public void MoveBefore(IEnumerable<HostsEntry> entries, HostsEntry beforeEntry)
     {
         ArgumentNullException.ThrowIfNull(entries);
