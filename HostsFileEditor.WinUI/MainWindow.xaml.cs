@@ -310,10 +310,23 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     // One-shot bulk load of the (filtered) entries: build the list off the persistent collection
     // and rebind in a single operation, instead of hundreds of thousands of incremental adds.
-    private void BulkPopulateEntries()
+    private void BulkPopulateEntries(List<HostsEntry>? prefiltered = null)
     {
-        var filterText = CurrentFilterText();
-        var filtered = HostsFile.Instance.Entries.Where(e => EntryPassesFilter(e, filterText)).ToList();
+        // Filter-change callers pass null and we compute the filtered set here (hoisting the filter
+        // text to one lookup — NOT per entry); the RefreshEntries huge-selection reroute already built
+        // the identical set (same EntryPassesFilter predicate), so it passes it in to avoid filtering
+        // the whole (up to ~400K) list a second time (#74).
+        List<HostsEntry> filtered;
+        if (prefiltered is not null)
+        {
+            filtered = prefiltered;
+        }
+        else
+        {
+            var filterText = CurrentFilterText();
+            filtered = [.. HostsFile.Instance.Entries.Where(e => EntryPassesFilter(e, filterText))];
+        }
+
         Entries = new ObservableCollection<HostsEntry>(filtered);
         OnPropertyChanged(nameof(Entries));
 
@@ -359,7 +372,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // rather than the per-item minimal diff in RefreshEntries — that diff is O(n^2) with hundreds
     // of thousands of ObservableCollection mutations for a large hosts file, which locks up the UI.
     // Selection is reset, which is the expected behavior when the filter changes.
-    private void RefreshEntriesFiltered()
+    private void RefreshEntriesFiltered(List<HostsEntry>? prefiltered = null)
     {
         // Inert until the initial load completes (and forever if it failed, or while an async
         // reload is rebuilding the Core list on a background thread) — BulkPopulateEntries
@@ -369,7 +382,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        BulkPopulateEntries();
+        BulkPopulateEntries(prefiltered);
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
         _selectionService.UpdateSelectionDependentButtons();
@@ -1676,7 +1689,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _suspendSelectionTracking = true;
             try
             {
-                RefreshEntriesFiltered();
+                // Reuse the list we just filtered instead of letting BulkPopulateEntries filter the
+                // whole ~400K list a second time (#74).
+                RefreshEntriesFiltered(newList);
             }
             finally
             {

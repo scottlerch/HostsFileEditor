@@ -22,7 +22,7 @@
     <!-- Single version source for this app: drives AssemblyVersion, FileVersion, the exe's
          ProductVersion resource, and (stamped in Directory.Build.targets) the MSIX manifest
          Identity/@Version. ProductVersion is not an SDK-recognized property and was ignored. -->
-    <Version>1.4.0.0</Version>
+    <Version>1.4.1.0</Version>
     <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
     <!-- Native AOT isn't working yet with WinForms, specifically Binding is explicitly not supported throwing NotSupportedException -->
     <!--<PublishAot>true</PublishAot>-->
