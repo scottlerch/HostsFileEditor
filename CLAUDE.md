@@ -149,6 +149,29 @@ Tests are MSTest classes (`[TestClass]`/`[TestMethod]`) using **Shouldly** asser
 registry `KitsRoot10`). Test signing cert is `HostsFileEditorTestCert.pfx` (password `test`) — for
 local/dev only.
 
+## Store release automation (`publish-store.ps1`)
+
+Both editions ship to the Microsoft Store as separate apps — **classic `9NF73PSPK332`**, **modern
+`9NBQWCDXGF9R`**. Instead of the Partner Center portal UI, `publish-store.ps1` scripts the
+submissions with the **Microsoft Store Developer CLI (`msstore`)** — the official CLI over the
+Partner Center APIs (preview; free products only, which both editions are).
+
+- **Install tooling (one-time):** `.\publish-store.ps1 -InstallTooling` — winget-installs the .NET 9
+  Desktop Runtime and the `msstore` CLI. (`msstore` is a separate install; it does not ship with
+  Windows or VS.)
+- **Authenticate (one-time):** create an Azure AD app in Partner Center (Account settings → User
+  management → *Azure AD applications*, **Manager** role) to get the **TenantId / ClientId /
+  ClientSecret**; the numeric **SellerId** is in Account settings. Then
+  `msstore reconfigure --tenantId <T> --sellerId <S> --clientId <C> --clientSecret <SECRET>`. Never
+  commit these — use secrets.
+- **Each release:** `.\build-all.ps1 -Sign` (produces `artifacts\store\HostsFileEditor-<flavor>-<arch>.msix`)
+  then `.\publish-store.ps1` — for each edition it does `msstore submission get` → patch packages +
+  the per-edition "What's new" notes → `submission update` → `publish` → `poll`. `-NoCommit` leaves a
+  Draft for a final portal check; `-Edition classic|modern` limits scope.
+- **Open item:** the exact submission-JSON field paths (`applicationPackages` shape / `releaseNotes`
+  location) vary per account. Run `.\publish-store.ps1 -Inspect` once to dump the JSON and fill in the
+  two marked lines in the script before the first real run.
+
 ## Gotchas
 
 - **Warnings are errors.** A change that compiles in isolation can still fail the solution build.

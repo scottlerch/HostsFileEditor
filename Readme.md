@@ -127,6 +127,13 @@ the package, not the exe files inside it, so without `-Sign` the on-demand eleva
 (Azure Trusted Signing); this also builds SmartScreen reputation for the self-distributed GitHub-release
 zip. See [docs/signing.md](docs/signing.md) for setup.
 
+To **submit** those Store packages without the Partner Center portal, `publish-store.ps1` scripts the
+submissions via the [Microsoft Store Developer CLI](https://learn.microsoft.com/windows/apps/publish/msstore-dev-cli/overview)
+(`msstore`). Run `.\publish-store.ps1 -InstallTooling` once to install the CLI, authenticate with
+`msstore reconfigure`, then `.\publish-store.ps1` after a signed build to update both editions'
+submissions with the new packages and "What's new" notes. See the *Store release automation* section
+in [CLAUDE.md](CLAUDE.md) for the one-time Partner Center setup.
+
 ### Build Outputs
 
 - Built files are automatically copied to the `.\bin` directory after publishing
