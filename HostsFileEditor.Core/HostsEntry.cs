@@ -465,6 +465,38 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
     public override string ToString() => $"{IpAddress} {HostNames} {Comment}";
 
+    /// <summary>
+    /// The canonical hosts-entry filter predicate shared by both editions (issue #75). Returns
+    /// <see langword="true"/> when <paramref name="entry"/> should remain visible under the three
+    /// filter rules, applied in this order:
+    /// <list type="number">
+    ///   <item>hide comment-only lines when <paramref name="hideComments"/> is set;</item>
+    ///   <item>hide disabled (non-comment) entries when <paramref name="hideDisabled"/> is set;</item>
+    ///   <item>keep only rows whose text contains <paramref name="filterText"/>.</item>
+    /// </list>
+    /// The text match is case-insensitive (<see cref="StringComparison.OrdinalIgnoreCase"/>) over
+    /// <see cref="ToString"/>. <paramref name="filterText"/> is matched as-is — callers hoist any
+    /// trimming/normalization out of the per-row loop (an O(n) filter pass over a 400K-entry file
+    /// must not re-trim per row), and an empty or <see langword="null"/> value matches everything.
+    /// </summary>
+    public static bool MatchesFilter(HostsEntry entry, bool hideComments, bool hideDisabled, string? filterText)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        if (hideComments && entry.HasCommentOnly)
+        {
+            return false;
+        }
+
+        if (hideDisabled && !entry.Enabled && !entry.HasCommentOnly)
+        {
+            return false;
+        }
+
+        return string.IsNullOrEmpty(filterText)
+            || entry.ToString().Contains(filterText, StringComparison.OrdinalIgnoreCase);
+    }
+
     public void Ping()
     {
         // Only ping addresses that parse. The Ping is created on demand and disposed

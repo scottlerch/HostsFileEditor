@@ -630,8 +630,10 @@ internal sealed partial class MainForm : Form
 
         bindingSourceView.DataSource = _hostEntriesView;
 
-        _filter = new HostsFilter(
-                hostEntry => hostEntry.ToString().Contains(textFilter.Text));
+        // Supply the trimmed filter text; HostsFilter routes matching through HostsEntry.MatchesFilter
+        // so the classic and modern filters share one predicate (issue #75). This also makes the
+        // classic text match case-insensitive and trimmed, matching modern (was case-sensitive).
+        _filter = new HostsFilter(() => textFilter.Text.Trim());
 
         _hostEntriesView.Filter = _filter;
 
