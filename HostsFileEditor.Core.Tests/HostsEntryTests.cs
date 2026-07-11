@@ -88,6 +88,38 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void PingActivity_RaisesOnZeroBoundaryOnly()
+    {
+        var events = 0;
+        void Handler(object? s, EventArgs e) => events++;
+        HostsEntry.PingActivityChanged += Handler;
+        try
+        {
+            HostsEntry.IsPingInProgress.ShouldBeFalse();
+
+            HostsEntry.BeginPing();               // 0 -> 1: fires "started"
+            HostsEntry.IsPingInProgress.ShouldBeTrue();
+            events.ShouldBe(1);
+
+            HostsEntry.BeginPing();               // 1 -> 2: no fire
+            events.ShouldBe(1);
+            HostsEntry.IsPingInProgress.ShouldBeTrue();
+
+            HostsEntry.EndPing();                 // 2 -> 1: no fire
+            events.ShouldBe(1);
+            HostsEntry.IsPingInProgress.ShouldBeTrue();
+
+            HostsEntry.EndPing();                 // 1 -> 0: fires "stopped"
+            events.ShouldBe(2);
+            HostsEntry.IsPingInProgress.ShouldBeFalse();
+        }
+        finally
+        {
+            HostsEntry.PingActivityChanged -= Handler;
+        }
+    }
+
+    [TestMethod]
     public void CloneConstructor_CopiesValues()
     {
         var entry = new HostsEntry("127.0.0.1 localhost # hi");

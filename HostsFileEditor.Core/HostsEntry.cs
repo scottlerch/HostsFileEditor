@@ -323,6 +323,64 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     /// </summary>
     public static SynchronizationContext? UiSynchronizationContext { get; set; }
 
+    // Number of pings currently in flight across all entries. Pings are fire-and-forget and can be
+    // started en masse (auto-ping fires one per valid entry during a load), so this is maintained with
+    // Interlocked and the change event is raised only when the count crosses the 0 boundary — a ping
+    // storm produces exactly one "started" and one "stopped" notification, not one per ping.
+    private static int _pendingPingCount;
+
+    /// <summary>
+    /// True while at least one ping is in flight. Bound by both editions to show a busy indicator in
+    /// the status bar (issue #9).
+    /// </summary>
+    public static bool IsPingInProgress => Volatile.Read(ref _pendingPingCount) > 0;
+
+    /// <summary>
+    /// Raised when ping activity starts (first ping in flight) and stops (last ping completed), so the
+    /// UI can show/hide its progress indicator. Marshalled to <see cref="UiSynchronizationContext"/>
+    /// when set (pings complete on the thread pool), so handlers run on the UI thread.
+    /// </summary>
+    public static event EventHandler? PingActivityChanged;
+
+    // internal (not private) so the 0-boundary event semantics can be unit-tested without a live
+    // network ping.
+    internal static void BeginPing()
+    {
+        if (Interlocked.Increment(ref _pendingPingCount) == 1)
+        {
+            RaisePingActivityChanged();
+        }
+    }
+
+    internal static void EndPing()
+    {
+        if (Interlocked.Decrement(ref _pendingPingCount) == 0)
+        {
+            RaisePingActivityChanged();
+        }
+    }
+
+    private static void RaisePingActivityChanged()
+    {
+        var handler = PingActivityChanged;
+        if (handler is null)
+        {
+            return;
+        }
+
+        // SendPingAsync completes on the thread pool, so marshal onto the UI context (as ping-failure
+        // reporting does) rather than raising into bound UI from a background thread.
+        var context = UiSynchronizationContext;
+        if (context is not null)
+        {
+            context.Post(_ => handler(null, EventArgs.Empty), null);
+        }
+        else
+        {
+            handler(null, EventArgs.Empty);
+        }
+    }
+
     public string Error => _errors is null ? string.Empty : string.Join(Environment.NewLine, _errors.Values);
 
     public string Comment
@@ -484,6 +542,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     {
         IPStatus status;
 
+        BeginPing();
         try
         {
             using var ping = new Ping();
@@ -494,6 +553,10 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         {
             // A failed/cancelled/invalid ping must not crash the fire-and-forget caller.
             return;
+        }
+        finally
+        {
+            EndPing();
         }
 
         if (status == IPStatus.Success)

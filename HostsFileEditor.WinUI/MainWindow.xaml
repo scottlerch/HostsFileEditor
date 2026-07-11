@@ -396,10 +396,25 @@
             <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                     Visibility="{x:Bind StatusBackplateVisibility, Mode=OneWay}"/>
             <Border Background="Transparent" Padding="14,5">
-                <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
-                           Style="{StaticResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           VerticalAlignment="Center"/>
+                <Grid>
+                    <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                    <!-- Ping-in-progress indicator (issue #9): an indeterminate ring shown on the
+                         right while any ping is in flight. -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Spacing="8"
+                                Visibility="{x:Bind PingProgressVisibility, Mode=OneWay}">
+                        <ProgressRing IsActive="True" Width="16" Height="16"/>
+                        <TextBlock Text="Pinging…"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
     </Grid>

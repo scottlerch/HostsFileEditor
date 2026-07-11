@@ -52,6 +52,12 @@ internal sealed partial class MainForm : Form
     private bool _loadFailed;
 
     /// <summary>
+    /// Marquee progress bar shown in the status strip while any ping is in flight (issue #9). Created
+    /// programmatically (rather than in the designer) and toggled from HostsEntry.PingActivityChanged.
+    /// </summary>
+    private ToolStripProgressBar? _pingProgressBar;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainForm"/> class.
     /// </summary>
     public MainForm()
@@ -502,6 +508,20 @@ internal sealed partial class MainForm : Form
         // PropertyChanged into the bound grid from the thread pool.
         HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
 
+        // Ping-in-progress indicator (issue #9): a marquee bar on the right of the status strip,
+        // hidden until a ping is in flight. PingActivityChanged is marshalled to this UI context, so
+        // the handler runs on the UI thread.
+        _pingProgressBar = new ToolStripProgressBar
+        {
+            Style = ProgressBarStyle.Marquee,
+            Alignment = ToolStripItemAlignment.Right,
+            AutoSize = false,
+            Width = 100,
+            Visible = false,
+        };
+        statusStrip.Items.Add(_pingProgressBar);
+        HostsEntry.PingActivityChanged += OnPingActivityChanged;
+
         LoadSettings();
 
         _hostsArchiveView = new BindingListView<HostsArchive>(components)
@@ -709,6 +729,21 @@ internal sealed partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
+    /// <summary>
+    /// Shows/hides the status-strip ping indicator when ping activity starts/stops. Marshalled to the
+    /// UI thread by HostsEntry (see PingActivityChanged); guards against a late notification arriving
+    /// after the form is disposed.
+    /// </summary>
+    private void OnPingActivityChanged(object? sender, EventArgs e)
+    {
+        if (IsDisposed || Disposing || _pingProgressBar is null)
+        {
+            return;
+        }
+
+        _pingProgressBar.Visible = HostsEntry.IsPingInProgress;
+    }
+
     private void OnFormClosing(object sender, FormClosingEventArgs e)
     {
         // Minimize to tray only when the user closes the window. Never veto an OS-initiated

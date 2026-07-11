@@ -111,6 +111,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public string StatusText => _statusText;
 
+    // Ping-in-progress indicator (issue #9): visible while any ping is in flight, driven by
+    // HostsEntry.PingActivityChanged (see OnPingActivityChanged).
+    public Visibility PingProgressVisibility =>
+        HostsEntry.IsPingInProgress ? Visibility.Visible : Visibility.Collapsed;
+
+    private void OnPingActivityChanged(object? sender, EventArgs e)
+    {
+        // Marshalled to the UI thread by HostsEntry; a late notification can still arrive after close.
+        if (_isClosed)
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(PingProgressVisibility));
+    }
+
     // Above this many visible rows (at 100% scale), show the opaque backplate behind the status
     // bar. WinUI stops clipping the bottom-edge rows of an enormous virtualized list (see the XAML
     // comment on the status-bar Grid for the full investigation) and the strays would show through
@@ -218,6 +234,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // x:Bind-bound rows from the thread pool (RPC_E_WRONG_THREAD).
         HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
 
+        // Ping-in-progress indicator (issue #9): PingActivityChanged is marshalled to this UI context,
+        // so the handler runs on the UI thread and just re-evaluates PingProgressVisibility.
+        HostsEntry.PingActivityChanged += OnPingActivityChanged;
+
         // Apply persisted settings BEFORE the first HostsFile.Instance access (RefreshEntries
         // below): that access loads the hosts file and constructs every HostsEntry, so
         // RemoveDefaultText and AutoPingIPAddress must already be set or they are inert at
@@ -256,6 +276,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             _isClosed = true;
             Utilities.UndoManager.Instance.HistoryChanged -= OnUndoHistoryChanged;
+            HostsEntry.PingActivityChanged -= OnPingActivityChanged;
 
             // Unsubscribe unconditionally: the subscription is added once (after the initial load) and
             // persists across reloads, but a reload sets _isLoaded=false — gating on it would leak the
