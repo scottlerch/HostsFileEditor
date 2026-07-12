@@ -52,6 +52,14 @@ internal sealed partial class MainForm : Form
     private bool _loadFailed;
 
     /// <summary>
+    /// "Pinging…" label + marquee progress bar shown right-aligned in the status strip while any ping
+    /// is in flight (issue #9). Created programmatically (rather than in the designer) and toggled
+    /// together from HostsEntry.PingActivityChanged.
+    /// </summary>
+    private ToolStripStatusLabel? _pingLabel;
+    private ToolStripProgressBar? _pingProgressBar;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainForm"/> class.
     /// </summary>
     public MainForm()
@@ -533,6 +541,31 @@ internal sealed partial class MainForm : Form
         // PropertyChanged into the bound grid from the thread pool.
         HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
 
+        // Ping-in-progress indicator (issue #9): a "Pinging…" label + marquee bar, right-aligned and
+        // hidden until a ping is in flight. Right-aligned items stack from the right in Items order, so
+        // adding the bar FIRST puts it at the far right and the label lands to its left → "Pinging…
+        // [bar]". Overflow.Never keeps them on the strip instead of collapsing into the >> menu.
+        // PingActivityChanged is marshalled to this UI context, so the handler runs on the UI thread.
+        // The status strip owns these items and disposes them with the form.
+        _pingLabel = new ToolStripStatusLabel("Pinging…")
+        {
+            Alignment = ToolStripItemAlignment.Right,
+            Overflow = ToolStripItemOverflow.Never,
+            Visible = false,
+        };
+        _pingProgressBar = new ToolStripProgressBar
+        {
+            Style = ProgressBarStyle.Marquee,
+            Alignment = ToolStripItemAlignment.Right,
+            Overflow = ToolStripItemOverflow.Never,
+            AutoSize = false,
+            Width = 100,
+            Visible = false,
+        };
+        statusStrip.Items.Add(_pingProgressBar);
+        statusStrip.Items.Add(_pingLabel);
+        HostsEntry.PingActivityChanged += OnPingActivityChanged;
+
         LoadSettings();
 
         _hostsArchiveView = new BindingListView<HostsArchive>(components)
@@ -754,6 +787,23 @@ internal sealed partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
+    /// <summary>
+    /// Shows/hides the status-strip ping indicator when ping activity starts/stops. Marshalled to the
+    /// UI thread by HostsEntry (see PingActivityChanged); guards against a late notification arriving
+    /// after the form is disposed.
+    /// </summary>
+    private void OnPingActivityChanged(object? sender, EventArgs e)
+    {
+        if (IsDisposed || Disposing || _pingProgressBar is null || _pingLabel is null)
+        {
+            return;
+        }
+
+        var inProgress = HostsEntry.IsPingInProgress;
+        _pingLabel.Visible = inProgress;
+        _pingProgressBar.Visible = inProgress;
+    }
+
     private void OnFormClosing(object sender, FormClosingEventArgs e)
     {
         // Minimize to tray only when the user closes the window. Never veto an OS-initiated
@@ -1306,6 +1356,13 @@ internal sealed partial class MainForm : Form
         HostsEntry.AutoPingIPAddress = newState;
 
         menuPingIPs.Checked = newState;
+
+        // Ping the current entries immediately on enable (issue #9 follow-up), instead of waiting for
+        // the next reload/edit — so the user sees results (and the progress indicator) right away.
+        if (newState && !_loadFailed)
+        {
+            HostsFile.Instance.Entries.PingAll();
+        }
     }
 
     /// <summary>
