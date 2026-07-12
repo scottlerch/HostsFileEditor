@@ -67,6 +67,20 @@ public class HostsEntryList : BindingList<HostsEntry>
         });
     }
 
+    /// <summary>
+    /// Pings every entry right now (issue #9 follow-up): used when the user turns auto-ping on, so the
+    /// current entries are checked immediately instead of only on the next reload or edit. Entries
+    /// without a syntactically valid IP no-op inside <see cref="HostsEntry.Ping"/>, so this effectively
+    /// pings every valid entry — the same set an auto-ping-on-load would.
+    /// </summary>
+    public void PingAll()
+    {
+        foreach (var entry in this)
+        {
+            entry.Ping();
+        }
+    }
+
     public void MoveBefore(IEnumerable<HostsEntry> entries, HostsEntry beforeEntry)
     {
         ArgumentNullException.ThrowIfNull(entries);

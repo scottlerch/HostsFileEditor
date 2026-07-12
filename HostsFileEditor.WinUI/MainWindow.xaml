@@ -330,7 +330,19 @@
                                         <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{x:Bind Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{x:Bind IpAddress, Mode=OneWay}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                    <Grid Grid.Column="1" Margin="1,0">
+                                        <!-- The IP cell's tooltip explains a ping failure (see IpTooltip); the failed-ping
+                                             badge is IsHitTestVisible=False so it doesn't block editing, so hovering the badge
+                                             falls through to this TextBox's tooltip. -->
+                                        <TextBox Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{x:Bind local:HostEntryBrushHelper.IpTooltip(IpAddress, PingFailed), Mode=OneWay}" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                        <!-- Per-entry ping-failed indicator (issue #9): a critical badge on the right of the
+                                             IP cell, shown when the last ping to this IP didn't respond. -->
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEA39;" FontSize="14"
+                                                  Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                  IsHitTestVisible="False"
+                                                  Visibility="{x:Bind local:HostEntryBrushHelper.PingFailedVisibility(PingFailed), Mode=OneWay}"/>
+                                    </Grid>
                                     <TextBox Grid.Column="2" Text="{x:Bind HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
                                     <TextBox Grid.Column="3" Text="{x:Bind Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>
@@ -396,10 +408,25 @@
             <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                     Visibility="{x:Bind StatusBackplateVisibility, Mode=OneWay}"/>
             <Border Background="Transparent" Padding="14,5">
-                <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
-                           Style="{StaticResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           VerticalAlignment="Center"/>
+                <Grid>
+                    <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                    <!-- Ping-in-progress indicator (issue #9): an indeterminate ring shown on the
+                         right while any ping is in flight. -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Spacing="8"
+                                Visibility="{x:Bind PingProgressVisibility, Mode=OneWay}">
+                        <ProgressRing IsActive="True" Width="16" Height="16"/>
+                        <TextBlock Text="Pinging…"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
     </Grid>
