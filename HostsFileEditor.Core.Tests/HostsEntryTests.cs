@@ -88,6 +88,52 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void MatchesFilter_HideComments_HidesOnlyCommentOnlyLines()
+    {
+        var comment = new HostsEntry("# just a comment");
+        var entry = new HostsEntry("127.0.0.1 localhost");
+
+        // hideComments off: everything passes.
+        HostsEntry.MatchesFilter(comment, hideComments: false, hideDisabled: false, null).ShouldBeTrue();
+        // hideComments on: comment-only lines are hidden, real entries stay.
+        HostsEntry.MatchesFilter(comment, hideComments: true, hideDisabled: false, null).ShouldBeFalse();
+        HostsEntry.MatchesFilter(entry, hideComments: true, hideDisabled: false, null).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesFilter_HideDisabled_HidesDisabledEntriesButNotComments()
+    {
+        var disabled = new HostsEntry("# 127.0.0.1 localhost"); // disabled entry (valid IP)
+        var comment = new HostsEntry("# just a comment");        // comment-only
+        var enabled = new HostsEntry("127.0.0.1 localhost");
+
+        disabled.Enabled.ShouldBeFalse();
+        disabled.HasCommentOnly.ShouldBeFalse();
+
+        HostsEntry.MatchesFilter(disabled, hideComments: false, hideDisabled: true, null).ShouldBeFalse();
+        // A comment-only line is NOT a "disabled entry" — hideDisabled must leave it visible.
+        HostsEntry.MatchesFilter(comment, hideComments: false, hideDisabled: true, null).ShouldBeTrue();
+        HostsEntry.MatchesFilter(enabled, hideComments: false, hideDisabled: true, null).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesFilter_Text_IsCaseInsensitiveAndSubstring()
+    {
+        var entry = new HostsEntry("127.0.0.1 Ads.Example.COM");
+
+        HostsEntry.MatchesFilter(entry, false, false, "ads.example").ShouldBeTrue();   // case-insensitive
+        HostsEntry.MatchesFilter(entry, false, false, "ADS").ShouldBeTrue();
+        HostsEntry.MatchesFilter(entry, false, false, "127.0.0.1").ShouldBeTrue();     // matches IP too
+        HostsEntry.MatchesFilter(entry, false, false, "nomatch").ShouldBeFalse();
+        HostsEntry.MatchesFilter(entry, false, false, "").ShouldBeTrue();              // empty matches all
+        HostsEntry.MatchesFilter(entry, false, false, null).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesFilter_NullEntry_Throws() =>
+        Should.Throw<ArgumentNullException>(() => HostsEntry.MatchesFilter(null!, false, false, null));
+
+    [TestMethod]
     public void PingActivity_RaisesOnZeroBoundaryOnly()
     {
         var events = 0;

@@ -378,7 +378,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             return;
         }
 
-        if (_isLoaded)
+        if (IsLoaded)
         {
             _ = ImportArchiveFromJumpListAsync(archivePath);
         }
@@ -516,20 +516,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             : string.Empty;
     }
 
-    private bool EntryPassesFilter(HostsEntry e, string filterText)
-    {
-        if (IsFilterCommentsHidden && e.HasCommentOnly)
-        {
-            return false;
-        }
-
-        if (IsFilterDisabledHidden && !e.Enabled && !e.HasCommentOnly)
-        {
-            return false;
-        }
-
-        return string.IsNullOrEmpty(filterText) || e.ToString().Contains(filterText, StringComparison.OrdinalIgnoreCase);
-    }
+    // Delegates to the single canonical predicate in Core (issue #75) so classic and modern filter
+    // identically. filterText is pre-trimmed once by CurrentFilterText and passed in, keeping the
+    // per-row cost out of the 400K filter pass.
+    private bool EntryPassesFilter(HostsEntry e, string filterText) =>
+        HostsEntry.MatchesFilter(e, IsFilterCommentsHidden, IsFilterDisabledHidden, filterText);
 
     private void OnCoreEntriesListChanged(object? sender, ListChangedEventArgs e)
     {
@@ -1981,7 +1972,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
                 // Ping the current entries immediately on enable (issue #9 follow-up) instead of
                 // waiting for the next reload/edit, so results and the indicator appear right away.
-                if (v && _isLoaded)
+                if (v && IsLoaded)
                 {
                     HostsFile.Instance.Entries.PingAll();
                 }
