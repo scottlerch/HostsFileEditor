@@ -52,6 +52,14 @@ internal sealed partial class MainForm : Form
     private bool _loadFailed;
 
     /// <summary>
+    /// "Pinging…" label + marquee progress bar shown right-aligned in the status strip while any ping
+    /// is in flight (issue #9). Created programmatically (rather than in the designer) and toggled
+    /// together from HostsEntry.PingActivityChanged.
+    /// </summary>
+    private ToolStripStatusLabel? _pingLabel;
+    private ToolStripProgressBar? _pingProgressBar;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainForm"/> class.
     /// </summary>
     public MainForm()
@@ -91,9 +99,40 @@ internal sealed partial class MainForm : Form
             }
 
             this.ShowOrActivate();
+
+            // A second instance launched from a Jump List preset forwarded the archive path here
+            // (issue #10). Open it AFTER this message returns — BeginInvoke defers it out of the
+            // synchronous cross-process SendMessage, so the unsaved-changes MessageBox doesn't pump
+            // messages re-entrantly inside WndProc.
+            var pendingArchive = TaskbarJumpList.TakePendingOpenArchive();
+            if (pendingArchive is not null)
+            {
+                BeginInvoke(() => RequestOpenArchive(pendingArchive));
+            }
         }
 
         base.WndProc(ref message);
+    }
+
+    /// <summary>
+    /// Opens a Jump List preset (issue #10): warns if there are unsaved changes (offering to save),
+    /// then imports the archive into the editor. Shared by the fresh-launch path (OnFomLoad) and the
+    /// already-running path (WndProc forwarding).
+    /// </summary>
+    private void RequestOpenArchive(string archivePath)
+    {
+        if (string.IsNullOrEmpty(archivePath) || !File.Exists(archivePath))
+        {
+            return;
+        }
+
+        if (!ConfirmDiscardUnsavedChanges(
+                "You have unsaved changes to the hosts file. Save them before opening the preset?"))
+        {
+            return;
+        }
+
+        HostsFile.Instance.Import(archivePath);
     }
 
     /// <inheritdoc />
@@ -502,6 +541,31 @@ internal sealed partial class MainForm : Form
         // PropertyChanged into the bound grid from the thread pool.
         HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
 
+        // Ping-in-progress indicator (issue #9): a "Pinging…" label + marquee bar, right-aligned and
+        // hidden until a ping is in flight. Right-aligned items stack from the right in Items order, so
+        // adding the bar FIRST puts it at the far right and the label lands to its left → "Pinging…
+        // [bar]". Overflow.Never keeps them on the strip instead of collapsing into the >> menu.
+        // PingActivityChanged is marshalled to this UI context, so the handler runs on the UI thread.
+        // The status strip owns these items and disposes them with the form.
+        _pingLabel = new ToolStripStatusLabel("Pinging…")
+        {
+            Alignment = ToolStripItemAlignment.Right,
+            Overflow = ToolStripItemOverflow.Never,
+            Visible = false,
+        };
+        _pingProgressBar = new ToolStripProgressBar
+        {
+            Style = ProgressBarStyle.Marquee,
+            Alignment = ToolStripItemAlignment.Right,
+            Overflow = ToolStripItemOverflow.Never,
+            AutoSize = false,
+            Width = 100,
+            Visible = false,
+        };
+        statusStrip.Items.Add(_pingProgressBar);
+        statusStrip.Items.Add(_pingLabel);
+        HostsEntry.PingActivityChanged += OnPingActivityChanged;
+
         LoadSettings();
 
         _hostsArchiveView = new BindingListView<HostsArchive>(components)
@@ -630,8 +694,10 @@ internal sealed partial class MainForm : Form
 
         bindingSourceView.DataSource = _hostEntriesView;
 
-        _filter = new HostsFilter(
-                hostEntry => hostEntry.ToString().Contains(textFilter.Text));
+        // Supply the trimmed filter text; HostsFilter routes matching through HostsEntry.MatchesFilter
+        // so the classic and modern filters share one predicate (issue #75). This also makes the
+        // classic text match case-insensitive and trimmed, matching modern (was case-sensitive).
+        _filter = new HostsFilter(() => textFilter.Text.Trim());
 
         _hostEntriesView.Filter = _filter;
 
@@ -646,6 +712,20 @@ internal sealed partial class MainForm : Form
         menuContextDisable.Checked = !HostsFile.IsEnabled;
 
         UpdateNotifyIcon();
+
+        // Taskbar Jump List (issue #10): publish the current presets, and keep it in sync as archives
+        // are created/deleted.
+        TaskbarJumpList.Refresh();
+        HostsArchiveList.Instance.ListChanged += (s1, e1) => TaskbarJumpList.Refresh();
+
+        // If launched fresh from a Jump List entry (--open-archive "<path>"), open that preset now
+        // that the hosts file is loaded. The already-running case is handled in WndProc (a second
+        // instance forwards the path via TaskbarJumpList). RequestOpenArchive warns on unsaved changes.
+        var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(Environment.GetCommandLineArgs());
+        if (openArchivePath is not null)
+        {
+            RequestOpenArchive(openArchivePath);
+        }
 
         // HACK: Make sure a newly added row gets committed after
         // the first cell is validated so HostsEntry validation and data
@@ -709,6 +789,23 @@ internal sealed partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
+    /// <summary>
+    /// Shows/hides the status-strip ping indicator when ping activity starts/stops. Marshalled to the
+    /// UI thread by HostsEntry (see PingActivityChanged); guards against a late notification arriving
+    /// after the form is disposed.
+    /// </summary>
+    private void OnPingActivityChanged(object? sender, EventArgs e)
+    {
+        if (IsDisposed || Disposing || _pingProgressBar is null || _pingLabel is null)
+        {
+            return;
+        }
+
+        var inProgress = HostsEntry.IsPingInProgress;
+        _pingLabel.Visible = inProgress;
+        _pingProgressBar.Visible = inProgress;
+    }
+
     private void OnFormClosing(object sender, FormClosingEventArgs e)
     {
         // Minimize to tray only when the user closes the window. Never veto an OS-initiated
@@ -803,7 +900,8 @@ internal sealed partial class MainForm : Form
     /// If there are unsaved hosts-file changes, prompts to save/discard/cancel. Returns true if
     /// the caller should proceed with exiting (saved or discarded), false to abort the exit.
     /// </summary>
-    private bool ConfirmDiscardUnsavedChanges()
+    private bool ConfirmDiscardUnsavedChanges(
+        string prompt = "You have unsaved changes to the hosts file. Save them before exiting?")
     {
         // A failed load never built any state to lose, and touching HostsFile.Instance would rethrow
         // the cached load exception (tray/File Exit reach here even after a failed load).
@@ -814,7 +912,7 @@ internal sealed partial class MainForm : Form
 
         var result = MessageBox.Show(
             this,
-            "You have unsaved changes to the hosts file. Save them before exiting?",
+            prompt,
             "Unsaved Changes",
             MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);
@@ -927,15 +1025,9 @@ internal sealed partial class MainForm : Form
                 dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveAfter(selectedEntries, belowEntry);
 
-                // Skip the anchor re-find for a huge selection: the restore below drops it and nulls
-                // CurrentCell anyway (its >MaxSelectionRestoreCount branch), so the O(n) scan + scroll
-                // would be wasted — same gate the sort path uses.
-                if (selectedEntries.Count <= HostsEntryList.HugeSelectionThreshold)
-                {
-                    dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
-                }
-
-                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                // Re-anchor the current cell and restore the selection in one pass over the reordered
+                // view (a huge selection drops both, so the anchor re-find isn't wasted on it).
+                dataGridViewHostsEntries.RestoreSelection(selectedEntries, anchorEntry, anchorColumn);
             }
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null && dataGridViewHostsEntries.CurrentRow != null)
@@ -949,8 +1041,7 @@ internal sealed partial class MainForm : Form
 
                 HostsFile.Instance.Entries.MoveAfter([currentEntry], belowEntry);
 
-                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
-                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                dataGridViewHostsEntries.RestoreSelection(selectedEntries, anchorEntry, anchorColumn);
             }
         }
     }
@@ -986,13 +1077,8 @@ internal sealed partial class MainForm : Form
                 dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveBefore(selectedEntries, aboveEntry);
 
-                // See OnMoveDownClick: skip the wasted anchor re-find for a huge (dropped) selection.
-                if (selectedEntries.Count <= HostsEntryList.HugeSelectionThreshold)
-                {
-                    dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
-                }
-
-                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                // See OnMoveDownClick: re-anchor + restore selection in one pass (huge drops both).
+                dataGridViewHostsEntries.RestoreSelection(selectedEntries, anchorEntry, anchorColumn);
             }
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null && dataGridViewHostsEntries.CurrentRow != null)
@@ -1006,8 +1092,7 @@ internal sealed partial class MainForm : Form
 
                 HostsFile.Instance.Entries.MoveBefore([currentEntry], aboveEntry);
 
-                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
-                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                dataGridViewHostsEntries.RestoreSelection(selectedEntries, anchorEntry, anchorColumn);
             }
         }
     }
@@ -1273,6 +1358,13 @@ internal sealed partial class MainForm : Form
         HostsEntry.AutoPingIPAddress = newState;
 
         menuPingIPs.Checked = newState;
+
+        // Ping the current entries immediately on enable (issue #9 follow-up), instead of waiting for
+        // the next reload/edit — so the user sees results (and the progress indicator) right away.
+        if (newState && !_loadFailed)
+        {
+            HostsFile.Instance.Entries.PingAll();
+        }
     }
 
     /// <summary>

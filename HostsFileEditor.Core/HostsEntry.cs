@@ -378,6 +378,86 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     /// </summary>
     public static SynchronizationContext? UiSynchronizationContext { get; set; }
 
+    // Number of pings currently in flight across all entries. Pings are fire-and-forget and can be
+    // started en masse (auto-ping fires one per valid entry during a load), so this is maintained with
+    // Interlocked and the change event is raised only when the count crosses the 0 boundary — a ping
+    // storm produces exactly one "started" and one "stopped" notification, not one per ping.
+    private static int _pendingPingCount;
+
+    /// <summary>
+    /// True while at least one ping is in flight. Bound by both editions to show a busy indicator in
+    /// the status bar (issue #9).
+    /// </summary>
+    public static bool IsPingInProgress => Volatile.Read(ref _pendingPingCount) > 0;
+
+    /// <summary>
+    /// Raised when ping activity starts (first ping in flight) and stops (last ping completed), so the
+    /// UI can show/hide its progress indicator. Marshalled to <see cref="UiSynchronizationContext"/>
+    /// when set (pings complete on the thread pool), so handlers run on the UI thread.
+    /// </summary>
+    public static event EventHandler? PingActivityChanged;
+
+    private bool _pingFailed;
+
+    /// <summary>
+    /// True when this entry's most recent ping did not succeed (issue #9). Bindable so an edition can
+    /// show a per-entry "ping failed" indicator; cleared when a later ping succeeds or the IP is edited.
+    /// The classic edition instead surfaces the failure via <see cref="IDataErrorInfo"/> on the IP cell.
+    /// </summary>
+    public bool PingFailed => _pingFailed;
+
+    // Change-gated so a load-time ping storm (mostly successes on already-not-failed entries) raises no
+    // notifications, and so re-validating every entry on parse costs nothing.
+    private void SetPingFailed(bool value)
+    {
+        if (_pingFailed == value)
+        {
+            return;
+        }
+
+        _pingFailed = value;
+        OnPropertyChanged(nameof(PingFailed));
+    }
+
+    // internal (not private) so the 0-boundary event semantics can be unit-tested without a live
+    // network ping.
+    internal static void BeginPing()
+    {
+        if (Interlocked.Increment(ref _pendingPingCount) == 1)
+        {
+            RaisePingActivityChanged();
+        }
+    }
+
+    internal static void EndPing()
+    {
+        if (Interlocked.Decrement(ref _pendingPingCount) == 0)
+        {
+            RaisePingActivityChanged();
+        }
+    }
+
+    private static void RaisePingActivityChanged()
+    {
+        var handler = PingActivityChanged;
+        if (handler is null)
+        {
+            return;
+        }
+
+        // SendPingAsync completes on the thread pool, so marshal onto the UI context (as ping-failure
+        // reporting does) rather than raising into bound UI from a background thread.
+        var context = UiSynchronizationContext;
+        if (context is not null)
+        {
+            context.Post(_ => handler(null, EventArgs.Empty), null);
+        }
+        else
+        {
+            handler(null, EventArgs.Empty);
+        }
+    }
+
     public string Error => _errors is null ? string.Empty : string.Join(Environment.NewLine, _errors.Values);
 
     public string Comment
@@ -520,6 +600,38 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
     public override string ToString() => $"{IpAddress} {HostNames} {Comment}";
 
+    /// <summary>
+    /// The canonical hosts-entry filter predicate shared by both editions (issue #75). Returns
+    /// <see langword="true"/> when <paramref name="entry"/> should remain visible under the three
+    /// filter rules, applied in this order:
+    /// <list type="number">
+    ///   <item>hide comment-only lines when <paramref name="hideComments"/> is set;</item>
+    ///   <item>hide disabled (non-comment) entries when <paramref name="hideDisabled"/> is set;</item>
+    ///   <item>keep only rows whose text contains <paramref name="filterText"/>.</item>
+    /// </list>
+    /// The text match is case-insensitive (<see cref="StringComparison.OrdinalIgnoreCase"/>) over
+    /// <see cref="ToString"/>. <paramref name="filterText"/> is matched as-is — callers hoist any
+    /// trimming/normalization out of the per-row loop (an O(n) filter pass over a 400K-entry file
+    /// must not re-trim per row), and an empty or <see langword="null"/> value matches everything.
+    /// </summary>
+    public static bool MatchesFilter(HostsEntry entry, bool hideComments, bool hideDisabled, string? filterText)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        if (hideComments && entry.HasCommentOnly)
+        {
+            return false;
+        }
+
+        if (hideDisabled && !entry.Enabled && !entry.HasCommentOnly)
+        {
+            return false;
+        }
+
+        return string.IsNullOrEmpty(filterText)
+            || entry.ToString().Contains(filterText, StringComparison.OrdinalIgnoreCase);
+    }
+
     public void Ping()
     {
         // Only ping addresses that parse. The Ping is created on demand and disposed
@@ -539,6 +651,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     {
         IPStatus status;
 
+        BeginPing();
         try
         {
             using var ping = new Ping();
@@ -550,15 +663,33 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
             // A failed/cancelled/invalid ping must not crash the fire-and-forget caller.
             return;
         }
+        finally
+        {
+            EndPing();
+        }
 
-        if (status == IPStatus.Success)
+        // Nothing to report on a success unless a PRIOR ping had failed (recovered) — this keeps a
+        // load-time storm of successful pings from marshalling 400K no-op updates onto the UI thread.
+        if (status == IPStatus.Success && !_pingFailed)
         {
             return;
         }
 
-        void ReportFailure()
+        void Report()
         {
-            SetError(nameof(IpAddress), string.Format(CultureInfo.CurrentCulture, Resources.PingFailed, status));
+            if (status == IPStatus.Success)
+            {
+                // Recovered: clear the ping-failure state. Only a ping failure could have set an IP
+                // error on a valid IP (an invalid IP never pings), so clearing it here is safe.
+                SetError(nameof(IpAddress), null);
+                SetPingFailed(false);
+            }
+            else
+            {
+                SetError(nameof(IpAddress), string.Format(CultureInfo.CurrentCulture, Resources.PingFailed, status));
+                SetPingFailed(true);
+            }
+
             OnPropertyChanged(nameof(IpAddress));
         }
 
@@ -568,11 +699,11 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         var context = syncContext ?? UiSynchronizationContext;
         if (context is not null)
         {
-            context.Post(_ => ReportFailure(), null);
+            context.Post(_ => Report(), null);
         }
         else
         {
-            ReportFailure();
+            Report();
         }
     }
 
@@ -626,6 +757,11 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
     private void ValidateIpAddress()
     {
+        // The IP is (re)validated because it was set/changed, so any prior ping result is stale —
+        // clear the failure flag (change-gated, so it's free on the parse path where it's already
+        // false). If auto-ping is on, the ping below re-establishes it from the fresh result.
+        SetPingFailed(false);
+
         if (string.IsNullOrWhiteSpace(_ipAddress) && !_enabled)
         {
             // A disabled entry with a blank IP is being edited, not an error. Mirror

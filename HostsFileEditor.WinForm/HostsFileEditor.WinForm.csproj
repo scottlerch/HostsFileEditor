@@ -56,6 +56,9 @@
   <ItemGroup>
     <PackageReference Include="7ZipCLI" Version="9.20.0" GeneratePathProperty="true" />
     <PackageReference Include="Equin.ApplicationFramework.BindingListView" Version="1.4.5222.35545" />
+    <!-- Taskbar JumpList support (issue #10). -->
+    <PackageReference Include="WindowsAPICodePackCore" Version="8.0.15.2" />
+    <PackageReference Include="WindowsAPICodePackShell" Version="8.0.15.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HostsFileEditor.Core\HostsFileEditor.Core.csproj" />
