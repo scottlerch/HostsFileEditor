@@ -510,22 +510,29 @@ internal sealed partial class MainForm : Form
         // PropertyChanged into the bound grid from the thread pool.
         HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
 
-        // Ping-in-progress indicator (issue #9): a "Pinging…" label + marquee bar, right-aligned (a
-        // spring filler pushes them to the right edge — the reliable StatusStrip idiom), hidden until a
-        // ping is in flight. PingActivityChanged is marshalled to this UI context, so the handler runs
-        // on the UI thread. The status strip owns these items and disposes them with the form.
-        var pingSpring = new ToolStripStatusLabel { Spring = true, Text = string.Empty };
-        _pingLabel = new ToolStripStatusLabel("Pinging…") { Visible = false, Margin = new Padding(0, 3, 2, 2) };
+        // Ping-in-progress indicator (issue #9): a "Pinging…" label + marquee bar, right-aligned and
+        // hidden until a ping is in flight. Right-aligned items stack from the right in Items order, so
+        // adding the bar FIRST puts it at the far right and the label lands to its left → "Pinging…
+        // [bar]". Overflow.Never keeps them on the strip instead of collapsing into the >> menu.
+        // PingActivityChanged is marshalled to this UI context, so the handler runs on the UI thread.
+        // The status strip owns these items and disposes them with the form.
+        _pingLabel = new ToolStripStatusLabel("Pinging…")
+        {
+            Alignment = ToolStripItemAlignment.Right,
+            Overflow = ToolStripItemOverflow.Never,
+            Visible = false,
+        };
         _pingProgressBar = new ToolStripProgressBar
         {
             Style = ProgressBarStyle.Marquee,
+            Alignment = ToolStripItemAlignment.Right,
+            Overflow = ToolStripItemOverflow.Never,
             AutoSize = false,
             Width = 100,
             Visible = false,
         };
-        statusStrip.Items.Add(pingSpring);
-        statusStrip.Items.Add(_pingLabel);
         statusStrip.Items.Add(_pingProgressBar);
+        statusStrip.Items.Add(_pingLabel);
         HostsEntry.PingActivityChanged += OnPingActivityChanged;
 
         LoadSettings();
