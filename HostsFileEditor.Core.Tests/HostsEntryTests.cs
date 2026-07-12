@@ -117,6 +117,84 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void MatchesFilter_HideComments_HidesOnlyCommentOnlyLines()
+    {
+        var comment = new HostsEntry("# just a comment");
+        var entry = new HostsEntry("127.0.0.1 localhost");
+
+        // hideComments off: everything passes.
+        HostsEntry.MatchesFilter(comment, hideComments: false, hideDisabled: false, null).ShouldBeTrue();
+        // hideComments on: comment-only lines are hidden, real entries stay.
+        HostsEntry.MatchesFilter(comment, hideComments: true, hideDisabled: false, null).ShouldBeFalse();
+        HostsEntry.MatchesFilter(entry, hideComments: true, hideDisabled: false, null).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesFilter_HideDisabled_HidesDisabledEntriesButNotComments()
+    {
+        var disabled = new HostsEntry("# 127.0.0.1 localhost"); // disabled entry (valid IP)
+        var comment = new HostsEntry("# just a comment");        // comment-only
+        var enabled = new HostsEntry("127.0.0.1 localhost");
+
+        disabled.Enabled.ShouldBeFalse();
+        disabled.HasCommentOnly.ShouldBeFalse();
+
+        HostsEntry.MatchesFilter(disabled, hideComments: false, hideDisabled: true, null).ShouldBeFalse();
+        // A comment-only line is NOT a "disabled entry" — hideDisabled must leave it visible.
+        HostsEntry.MatchesFilter(comment, hideComments: false, hideDisabled: true, null).ShouldBeTrue();
+        HostsEntry.MatchesFilter(enabled, hideComments: false, hideDisabled: true, null).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesFilter_Text_IsCaseInsensitiveAndSubstring()
+    {
+        var entry = new HostsEntry("127.0.0.1 Ads.Example.COM");
+
+        HostsEntry.MatchesFilter(entry, false, false, "ads.example").ShouldBeTrue();   // case-insensitive
+        HostsEntry.MatchesFilter(entry, false, false, "ADS").ShouldBeTrue();
+        HostsEntry.MatchesFilter(entry, false, false, "127.0.0.1").ShouldBeTrue();     // matches IP too
+        HostsEntry.MatchesFilter(entry, false, false, "nomatch").ShouldBeFalse();
+        HostsEntry.MatchesFilter(entry, false, false, "").ShouldBeTrue();              // empty matches all
+        HostsEntry.MatchesFilter(entry, false, false, null).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void MatchesFilter_NullEntry_Throws() =>
+        Should.Throw<ArgumentNullException>(() => HostsEntry.MatchesFilter(null!, false, false, null));
+
+    [TestMethod]
+    public void PingActivity_RaisesOnZeroBoundaryOnly()
+    {
+        var events = 0;
+        void Handler(object? s, EventArgs e) => events++;
+        HostsEntry.PingActivityChanged += Handler;
+        try
+        {
+            HostsEntry.IsPingInProgress.ShouldBeFalse();
+
+            HostsEntry.BeginPing();               // 0 -> 1: fires "started"
+            HostsEntry.IsPingInProgress.ShouldBeTrue();
+            events.ShouldBe(1);
+
+            HostsEntry.BeginPing();               // 1 -> 2: no fire
+            events.ShouldBe(1);
+            HostsEntry.IsPingInProgress.ShouldBeTrue();
+
+            HostsEntry.EndPing();                 // 2 -> 1: no fire
+            events.ShouldBe(1);
+            HostsEntry.IsPingInProgress.ShouldBeTrue();
+
+            HostsEntry.EndPing();                 // 1 -> 0: fires "stopped"
+            events.ShouldBe(2);
+            HostsEntry.IsPingInProgress.ShouldBeFalse();
+        }
+        finally
+        {
+            HostsEntry.PingActivityChanged -= Handler;
+        }
+    }
+
+    [TestMethod]
     public void CloneConstructor_CopiesValues()
     {
         var entry = new HostsEntry("127.0.0.1 localhost # hi");
@@ -206,6 +284,41 @@ public class HostsEntryTests
         entry.Enabled.ShouldBeFalse();
         entry.Valid.ShouldBeTrue();
         entry.UnparsedText.ShouldBe(raw);
+    }
+
+    [TestMethod]
+    [DataRow("999.999.999.999 host.example.com")]  // octets out of range
+    [DataRow("notanip host.example.com")]           // not an address at all
+    [DataRow("192.168.1.1:8080 host.example.com")]  // address with a port
+    [DataRow("# 999.999.999.999 host.example.com")] // same, disabled form
+    [DataRow("# notanip host.example.com")]
+    public void Parse_StructuralEntryWithInvalidIp_IsCommentNotEntry(string raw)
+    {
+        // Issue #80: entry-ness is gated on a syntactically valid IP first token. A line that is
+        // structurally shaped like an entry ("<token> <valid-hostnames>") but whose first token is
+        // not a real IP is a comment, not a (would-be) disabled entry — and it round-trips verbatim.
+        var entry = new HostsEntry(raw);
+        entry.HasCommentOnly.ShouldBeTrue();
+        entry.Valid.ShouldBeFalse();
+        entry.Enabled.ShouldBeFalse();
+        entry.IpAddress.ShouldBeEmpty();
+        entry.HostNames.ShouldBeEmpty();
+        entry.UnparsedText.ShouldBe(raw);
+    }
+
+    [TestMethod]
+    [DataRow("127.0.0.1 host.example.com", "127.0.0.1")]
+    [DataRow("::1 localhost", "::1")]
+    [DataRow("fe80::1 host.example.com", "fe80::1")]
+    [DataRow("2001:db8::1 host.example.com", "2001:db8::1")]
+    [DataRow("fe80::1%eth0 host.example.com", "fe80::1%eth0")] // zone / scope id
+    public void Parse_ValidIpForms_StayEntries(string raw, string expectedIp)
+    {
+        // The strict-IP gate must accept every IP form the framework does — all IPv6 shapes, zone
+        // ids — so these are still parsed as entries, not demoted to comments.
+        var entry = new HostsEntry(raw);
+        entry.Valid.ShouldBeTrue();
+        entry.IpAddress.ShouldBe(expectedIp);
     }
 
     [TestMethod]

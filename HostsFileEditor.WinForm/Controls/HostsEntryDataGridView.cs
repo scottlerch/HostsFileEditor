@@ -112,50 +112,125 @@ internal sealed class HostsEntryDataGridView : DataGridView
             return result;
         }
 
-        set
+        // Restoring a selection without re-anchoring the current cell is the no-anchor case of
+        // RestoreSelection; delegate so the huge-selection cap and the membership scan live in one place.
+        set => RestoreSelection(value, anchorEntry: null, anchorColumnIndex: -1);
+    }
+
+    /// <summary>
+    /// Restores <paramref name="entries"/> as the selection and, when an anchor is supplied,
+    /// re-establishes the current-cell anchor on the row now holding <paramref name="anchorEntry"/> —
+    /// in a SINGLE pass over the bound view. This fuses what used to be two O(view.Count) scans per
+    /// sort/move (a separate anchor re-find, then the selection setter to reselect) into one walk of
+    /// ~400K rows instead of two.
+    /// <para>
+    /// Selection membership uses our own reference-comparer set — like Core's Remove — so a
+    /// caller-supplied set with a value-based comparer can't match the wrong duplicate row. Above
+    /// <see cref="MaxSelectionRestoreCount"/> nothing is restored and the current cell is nulled: with
+    /// the selection gone, the command handlers fall through to their <see cref="CurrentHostEntry"/>
+    /// fallback, so a survived current row would make the user's next repeat gesture (e.g. Alt+Up
+    /// after moving a &gt;20K block) silently act on ONE row — tearing it out of the block they
+    /// believe is still selected. See the constant's remarks for why full restores are O(k^2).
+    /// </para>
+    /// </summary>
+    public void RestoreSelection(IEnumerable<HostsEntry> entries, HostsEntry? anchorEntry, int anchorColumnIndex)
+    {
+        // Count before building the membership set (a >20K restore is dropped, so the set — up to
+        // ~8MB at 400K — would be allocated only to read its Count). Callers pass a List, so O(1).
+        var requested = entries as ICollection<HostsEntry> ?? [.. entries];
+
+        if (requested.Count > MaxSelectionRestoreCount)
         {
-            // Restore a selection cheaply on a huge grid: clear once, then select ONLY the matched
-            // rows by their view index (view order == grid row order; only matched rows get realized
-            // via Rows[index]). Membership uses our own reference-comparer set — like Core's Remove —
-            // so a caller-supplied set with a value-based comparer can't match the wrong duplicate
-            // row. Restores beyond MaxSelectionRestoreCount restore nothing at all (see below and
-            // the constant's remarks for why full restores are O(k^2) inside the framework).
+            // Restore NOTHING above the cap (an honest empty selection) and null the current cell.
             ClearSelection();
+            CurrentCell = null;
+            return;
+        }
 
-            // Count before building the membership set (a >20K restore is dropped, so the set — up
-            // to ~8MB at 400K — would be allocated only to read its Count). Callers pass a List, so
-            // this is O(1).
-            var requested = value as ICollection<HostsEntry> ?? [.. value];
-            if (requested.Count == 0)
+        var wantAnchor = anchorEntry is not null && anchorColumnIndex >= 0;
+
+        if (!wantAnchor)
+        {
+            // No anchor to re-establish: clear once, then select ONLY the matched rows by their view
+            // index (view order == grid row order; only matched rows get realized via Rows[index]).
+            ClearSelection();
+            if (requested.Count == 0 || BoundView() is not { } plainViews)
             {
                 return;
             }
 
-            if (requested.Count > MaxSelectionRestoreCount)
+            var plainSelected = new HashSet<HostsEntry>(requested);
+            var plainCount = Math.Min(plainViews.Count, RowCount);
+            for (var index = 0; index < plainCount; index++)
             {
-                // Restore NOTHING above the cap (an honest empty selection), and null the current
-                // cell too: with the selection gone, the command handlers fall through to their
-                // CurrentHostEntry fallback, so a survived current row would make the user's next
-                // repeat gesture (e.g. Alt+Up after moving a >20K block) silently act on ONE row —
-                // tearing it out of the block they believe is still selected. The earlier behavior
-                // of selecting just the first matched row caused exactly that corruption.
-                CurrentCell = null;
-                return;
-            }
-
-            if (BoundView() is not { } views)
-            {
-                return;
-            }
-
-            var selected = new HashSet<HostsEntry>(requested);
-            var count = Math.Min(views.Count, RowCount);
-            for (var index = 0; index < count; index++)
-            {
-                if (views[index] is { Object: { } entry } && selected.Contains(entry))
+                if (plainViews[index] is { Object: { } entry } && plainSelected.Contains(entry))
                 {
                     Rows[index].Selected = true;
                 }
+            }
+
+            return;
+        }
+
+        if (BoundView() is not { } views)
+        {
+            ClearSelection();
+            return;
+        }
+
+        // One pass: locate the anchor row and collect the rows to reselect. The anchor's row index is
+        // captured (not acted on) so the current cell can be set AFTER the scan but BEFORE reselecting
+        // — setting CurrentCell resets the selection in the grid's RowHeaderSelect mode, so it must
+        // precede the Rows[i].Selected calls that layer the selection back on. That set-then-clear-
+        // then-reselect ordering reproduces the old RestoreCurrentCell-then-setter sequence exactly
+        // (the incidental single-row selection from setting CurrentCell is dropped by ClearSelection,
+        // so a non-selected anchor is not left selected).
+        var selected = requested.Count == 0 ? null : new HashSet<HostsEntry>(requested);
+        var count = Math.Min(views.Count, RowCount);
+        List<int>? toSelect = null;
+        var anchorRowIndex = -1;
+        for (var index = 0; index < count; index++)
+        {
+            if (views[index] is not { Object: { } entry })
+            {
+                continue;
+            }
+
+            if (anchorRowIndex < 0 && ReferenceEquals(entry, anchorEntry))
+            {
+                anchorRowIndex = index;
+            }
+
+            if (selected is not null && selected.Contains(entry))
+            {
+                (toSelect ??= []).Add(index);
+            }
+        }
+
+        if (anchorRowIndex >= 0)
+        {
+            var cell = Rows[anchorRowIndex].Cells[anchorColumnIndex];
+            if (cell.Visible)
+            {
+                try
+                {
+                    CurrentCell = cell;
+                }
+                catch (InvalidOperationException)
+                {
+                    // The framework can refuse the assignment (e.g. mid-validation); leaving the
+                    // anchor unset matches the pre-restore post-sort state, so it is not a regression.
+                }
+            }
+        }
+
+        ClearSelection();
+
+        if (toSelect is not null)
+        {
+            foreach (var index in toSelect)
+            {
+                Rows[index].Selected = true;
             }
         }
     }
@@ -373,15 +448,9 @@ internal sealed class HostsEntryDataGridView : DataGridView
         _sortColumn = column;
         _sortDirection = direction;
 
-        // For a huge selection the restore below drops it and nulls CurrentCell (its
-        // >MaxSelectionRestoreCount branch), so the O(view.Count) anchor re-find + scroll would be
-        // wasted — skip it there.
-        if (restore.Count <= MaxSelectionRestoreCount)
-        {
-            RestoreCurrentCell(anchorEntry, anchorColumn);
-        }
-
-        SelectedHostEntries = restore;
+        // Re-anchor the current cell and restore the selection in one pass over the reordered view
+        // (a huge selection drops both, so the anchor re-find isn't wasted on it).
+        RestoreSelection(restore, anchorEntry, anchorColumn);
         OnSorted(EventArgs.Empty);
     }
 
@@ -404,50 +473,6 @@ internal sealed class HostsEntryDataGridView : DataGridView
         {
             // The framework can refuse to leave the current cell mid-validation; the edit is already
             // committed by EndEdit, so proceed without finalizing the placeholder rather than aborting.
-        }
-    }
-
-    /// <summary>
-    /// Re-establishes the current-cell anchor on the row now holding <paramref name="anchorEntry"/>
-    /// after a Reset reordered the view. The framework keeps <see cref="DataGridView.CurrentCell"/> at
-    /// a fixed row INDEX across a Reset, so after a sort or a Move that index holds a different entry and
-    /// <see cref="CurrentHostEntry"/> drifts — the Insert Above/Below and Move Up/Down handlers that key
-    /// off it would then act on (or no-op against) the wrong entry. Used by the sort (which also nulls
-    /// CurrentCell via <see cref="FinalizePendingNewRow"/> to fire the new-row commit) and by Move.
-    /// Called BEFORE the selection is restored, so setting the anchor can't collapse a multi-row
-    /// selection, and only for selections within the restore cap — a huge selection drops both the
-    /// selection and the anchor by design, so the caller skips this scan there.
-    /// </summary>
-    internal void RestoreCurrentCell(HostsEntry? anchorEntry, int anchorColumnIndex)
-    {
-        if (anchorEntry is null || anchorColumnIndex < 0 || BoundView() is not { } view)
-        {
-            return;
-        }
-
-        var count = Math.Min(view.Count, RowCount);
-        for (var index = 0; index < count; index++)
-        {
-            if (view[index] is not { Object: { } entry } || !ReferenceEquals(entry, anchorEntry))
-            {
-                continue;
-            }
-
-            var cell = Rows[index].Cells[anchorColumnIndex];
-            if (cell.Visible)
-            {
-                try
-                {
-                    CurrentCell = cell;
-                }
-                catch (InvalidOperationException)
-                {
-                    // The framework can refuse the assignment (e.g. mid-validation); leaving the
-                    // anchor unset matches the pre-restore post-sort state, so it is not a regression.
-                }
-            }
-
-            return;
         }
     }
 
@@ -485,12 +510,8 @@ internal sealed class HostsEntryDataGridView : DataGridView
         _sortColumn = null;
         _sortDirection = SortOrder.None;
 
-        if (restore.Count <= MaxSelectionRestoreCount)
-        {
-            RestoreCurrentCell(anchorEntry, anchorColumn);
-        }
-
-        SelectedHostEntries = restore;
+        // Re-anchor and restore selection in one pass over the un-sorted view (see ApplyColumnSort).
+        RestoreSelection(restore, anchorEntry, anchorColumn);
         OnSorted(EventArgs.Empty);
     }
 

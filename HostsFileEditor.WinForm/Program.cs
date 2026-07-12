@@ -36,6 +36,15 @@ internal static class Program
         }
         else
         {
+            // A Jump List "open preset" launched this second instance (issue #10). Hand the archive
+            // path to the already-running instance (which reads it when the show-broadcast arrives),
+            // then bring it to the foreground and exit.
+            var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(Environment.GetCommandLineArgs());
+            if (openArchivePath is not null)
+            {
+                TaskbarJumpList.WritePendingOpenArchive(openArchivePath);
+            }
+
             ProgramSingleInstance.ShowFirstInstance();
         }
     }
