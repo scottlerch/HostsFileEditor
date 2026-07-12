@@ -123,6 +123,14 @@ public partial class App : Application
             {
                 _window?.Activate();
 
+                // Window.Activate() alone doesn't steal foreground from another app's window (the
+                // Windows foreground lock), so a redirect that arrives while the app is behind another
+                // window would load the preset but not surface. Force it to the front.
+                if (_window is not null)
+                {
+                    BringWindowToForeground(_window);
+                }
+
                 if (openArchivePath is not null && _window is MainWindow mw)
                 {
                     mw.RequestOpenArchive(openArchivePath);
@@ -134,4 +142,76 @@ public partial class App : Application
             }
         });
     }
+
+    // Brings the window to the foreground, working around the Windows foreground lock (SetForegroundWindow
+    // is ignored for a background process unless it briefly attaches to the current foreground thread's
+    // input queue). Restores it first if minimized.
+    private static void BringWindowToForeground(Window window)
+    {
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+        if (hwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        if (IsIconic(hwnd))
+        {
+            _ = ShowWindow(hwnd, SwRestore);
+        }
+
+        var foregroundThread = GetWindowThreadProcessId(GetForegroundWindow(), out _);
+        var currentThread = GetCurrentThreadId();
+
+        if (foregroundThread != 0 && foregroundThread != currentThread)
+        {
+            _ = AttachThreadInput(foregroundThread, currentThread, true);
+            _ = BringWindowToTop(hwnd);
+            _ = SetForegroundWindow(hwnd);
+            _ = AttachThreadInput(foregroundThread, currentThread, false);
+        }
+        else
+        {
+            _ = BringWindowToTop(hwnd);
+            _ = SetForegroundWindow(hwnd);
+        }
+    }
+
+    private const int SwRestore = 9;
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial IntPtr GetForegroundWindow();
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    [LibraryImport("kernel32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial uint GetCurrentThreadId();
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool AttachThreadInput(uint idAttach, uint idAttachTo, [MarshalAs(UnmanagedType.Bool)] bool fAttach);
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool BringWindowToTop(IntPtr hWnd);
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetForegroundWindow(IntPtr hWnd);
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool IsIconic(IntPtr hWnd);
 }
