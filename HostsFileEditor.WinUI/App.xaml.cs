@@ -32,10 +32,13 @@ public partial class App : Application
         var keyInstance = AppInstance.FindOrRegisterForKey("HostsFileEditor.SingleInstance");
         if (!keyInstance.IsCurrent)
         {
-            // Hand this activation to the already-running instance, then exit. Wait for the
-            // redirect to complete instead of racing it with Environment.Exit (fire-and-forget).
-            keyInstance.RedirectActivationToAsync(AppInstance.GetCurrent().GetActivatedEventArgs())
-                .AsTask().GetAwaiter().GetResult();
+            // Hand this activation to the already-running instance, then exit. The redirect MUST run
+            // off the UI thread: RedirectActivationToAsync is a cross-process COM call, and blocking
+            // this STA thread with .GetResult() deadlocks it (the thread can't pump COM to complete
+            // the redirect) — so the running instance never receives the activation and appears to
+            // hang when e.g. a Jump List preset is clicked while it's open. Run it on a thread-pool
+            // (MTA) thread and wait via a semaphore, the canonical single-instance pattern.
+            RedirectActivationTo(AppInstance.GetCurrent().GetActivatedEventArgs(), keyInstance);
             Environment.Exit(0);
             return;
         }
@@ -56,6 +59,19 @@ public partial class App : Application
         }
 
         _window.Activate();
+    }
+
+    // Performs the cross-process activation redirect on a thread-pool thread and blocks this
+    // (soon-to-exit) instance until it completes — never on the UI/STA thread (see OnLaunched).
+    private static void RedirectActivationTo(AppActivationArguments args, AppInstance keyInstance)
+    {
+        using var redirected = new SemaphoreSlim(0, 1);
+        _ = Task.Run(() =>
+        {
+            keyInstance.RedirectActivationToAsync(args).AsTask().GetAwaiter().GetResult();
+            redirected.Release();
+        });
+        redirected.Wait();
     }
 
     private void OnInstanceActivated(object? sender, AppActivationArguments e) =>
