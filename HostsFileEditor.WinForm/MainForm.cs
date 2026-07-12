@@ -52,9 +52,11 @@ internal sealed partial class MainForm : Form
     private bool _loadFailed;
 
     /// <summary>
-    /// Marquee progress bar shown in the status strip while any ping is in flight (issue #9). Created
-    /// programmatically (rather than in the designer) and toggled from HostsEntry.PingActivityChanged.
+    /// "Pinging…" label + marquee progress bar shown right-aligned in the status strip while any ping
+    /// is in flight (issue #9). Created programmatically (rather than in the designer) and toggled
+    /// together from HostsEntry.PingActivityChanged.
     /// </summary>
+    private ToolStripStatusLabel? _pingLabel;
     private ToolStripProgressBar? _pingProgressBar;
 
     /// <summary>
@@ -508,17 +510,21 @@ internal sealed partial class MainForm : Form
         // PropertyChanged into the bound grid from the thread pool.
         HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
 
-        // Ping-in-progress indicator (issue #9): a marquee bar on the right of the status strip,
-        // hidden until a ping is in flight. PingActivityChanged is marshalled to this UI context, so
-        // the handler runs on the UI thread.
+        // Ping-in-progress indicator (issue #9): a "Pinging…" label + marquee bar, right-aligned (a
+        // spring filler pushes them to the right edge — the reliable StatusStrip idiom), hidden until a
+        // ping is in flight. PingActivityChanged is marshalled to this UI context, so the handler runs
+        // on the UI thread. The status strip owns these items and disposes them with the form.
+        var pingSpring = new ToolStripStatusLabel { Spring = true, Text = string.Empty };
+        _pingLabel = new ToolStripStatusLabel("Pinging…") { Visible = false, Margin = new Padding(0, 3, 2, 2) };
         _pingProgressBar = new ToolStripProgressBar
         {
             Style = ProgressBarStyle.Marquee,
-            Alignment = ToolStripItemAlignment.Right,
             AutoSize = false,
             Width = 100,
             Visible = false,
         };
+        statusStrip.Items.Add(pingSpring);
+        statusStrip.Items.Add(_pingLabel);
         statusStrip.Items.Add(_pingProgressBar);
         HostsEntry.PingActivityChanged += OnPingActivityChanged;
 
@@ -736,12 +742,14 @@ internal sealed partial class MainForm : Form
     /// </summary>
     private void OnPingActivityChanged(object? sender, EventArgs e)
     {
-        if (IsDisposed || Disposing || _pingProgressBar is null)
+        if (IsDisposed || Disposing || _pingProgressBar is null || _pingLabel is null)
         {
             return;
         }
 
-        _pingProgressBar.Visible = HostsEntry.IsPingInProgress;
+        var inProgress = HostsEntry.IsPingInProgress;
+        _pingLabel.Visible = inProgress;
+        _pingProgressBar.Visible = inProgress;
     }
 
     private void OnFormClosing(object sender, FormClosingEventArgs e)
@@ -1308,6 +1316,13 @@ internal sealed partial class MainForm : Form
         HostsEntry.AutoPingIPAddress = newState;
 
         menuPingIPs.Checked = newState;
+
+        // Ping the current entries immediately on enable (issue #9 follow-up), instead of waiting for
+        // the next reload/edit — so the user sees results (and the progress indicator) right away.
+        if (newState && !_loadFailed)
+        {
+            HostsFile.Instance.Entries.PingAll();
+        }
     }
 
     /// <summary>

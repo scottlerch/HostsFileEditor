@@ -330,7 +330,18 @@
                                         <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{x:Bind Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{x:Bind IpAddress, Mode=OneWay}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                    <Grid Grid.Column="1" Margin="1,0">
+                                        <TextBox Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{x:Bind IpAddress, Mode=OneWay}" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                        <!-- Per-entry ping-failed indicator (issue #9): a critical badge on the right of the
+                                             IP cell, shown when the last ping to this IP didn't respond. IsHitTestVisible=False
+                                             so it doesn't block editing the IP underneath. -->
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEA39;" FontSize="14"
+                                                  Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                  IsHitTestVisible="False"
+                                                  ToolTipService.ToolTip="Ping failed — the host did not respond."
+                                                  Visibility="{x:Bind local:HostEntryBrushHelper.PingFailedVisibility(PingFailed), Mode=OneWay}"/>
+                                    </Grid>
                                     <TextBox Grid.Column="2" Text="{x:Bind HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
                                     <TextBox Grid.Column="3" Text="{x:Bind Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>

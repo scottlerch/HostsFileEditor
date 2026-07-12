@@ -29,6 +29,13 @@ internal static class HostEntryBrushHelper
             : new SolidColorBrush(Color.FromArgb(0xFF, 0xFF, 0xE5, 0xE5));
     }
 
+    /// <summary>
+    /// Visibility of the per-row "ping failed" indicator (issue #9). Bound via x:Bind function binding
+    /// to <see cref="HostsEntry.PingFailed"/>, so it re-evaluates when that flag changes.
+    /// </summary>
+    public static Visibility PingFailedVisibility(bool pingFailed) =>
+        pingFailed ? Visibility.Visible : Visibility.Collapsed;
+
     private static Brush? GetResourceBrush(string key) => Application.Current.Resources[key] as Brush;
 
     private static Brush? GetFirstExistingBrush(params string[] keys)

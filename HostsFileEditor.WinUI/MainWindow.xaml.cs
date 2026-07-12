@@ -1877,7 +1877,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private void OnPingIPsClick(object sender, RoutedEventArgs e) =>
-        ApplyToggleSetting("AutoPingIPs", v => { IsPingIPs = v; HostsEntry.AutoPingIPAddress = v; }, nameof(IsPingIPs), sender);
+        ApplyToggleSetting(
+            "AutoPingIPs",
+            v =>
+            {
+                IsPingIPs = v;
+                HostsEntry.AutoPingIPAddress = v;
+
+                // Ping the current entries immediately on enable (issue #9 follow-up) instead of
+                // waiting for the next reload/edit, so results and the indicator appear right away.
+                if (v && _isLoaded)
+                {
+                    HostsFile.Instance.Entries.PingAll();
+                }
+            },
+            nameof(IsPingIPs),
+            sender);
 
     private void OnRemoveDefaultTextClick(object sender, RoutedEventArgs e) =>
         ApplyToggleSetting("RemoveDefaultText", v => { IsRemoveDefaultText = v; HostsFile.RemoveDefaultText = v; }, nameof(IsRemoveDefaultText), sender);
