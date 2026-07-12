@@ -83,23 +83,4 @@ internal static class TaskbarJumpList
         !string.IsNullOrEmpty(arguments) && arguments.StartsWith(OpenArchivePrefix, StringComparison.Ordinal)
             ? arguments[OpenArchivePrefix.Length..]
             : null;
-
-    /// <summary>
-    /// Appends a diagnostic line to a jump-list log under the per-user data dir. Best-effort; used to
-    /// capture failures in the fire-and-forget activation/import path that would otherwise be invisible.
-    /// </summary>
-    public static void Log(string message)
-    {
-        try
-        {
-            Directory.CreateDirectory(HostsFile.AppDataDirectory);
-            File.AppendAllText(
-                Path.Combine(HostsFile.AppDataDirectory, "jumplist.log"),
-                $"{DateTime.Now:O} {message}{Environment.NewLine}");
-        }
-        catch (Exception)
-        {
-            // Logging is best-effort.
-        }
-    }
 }

@@ -112,9 +112,9 @@ public partial class App : Application
         {
             openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(e);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            TaskbarJumpList.Log($"OnInstanceActivated (extract) failed: {ex}");
+            // Defensive: a malformed activation must not take down the running instance.
         }
 
         _window?.DispatcherQueue.TryEnqueue(() =>
@@ -136,9 +136,9 @@ public partial class App : Application
                     mw.RequestOpenArchive(openArchivePath);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                TaskbarJumpList.Log($"OnInstanceActivated (open) failed: {ex}");
+                // Defensive: keep the app alive if activation/foreground handling throws.
             }
         });
     }

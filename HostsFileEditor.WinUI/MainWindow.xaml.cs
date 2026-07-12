@@ -377,7 +377,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            TaskbarJumpList.Log($"ImportArchiveFromJumpListAsync failed: {ex}");
             if (!_isClosed)
             {
                 await ShowErrorDialogAsync("Error Opening Preset", $"An error occurred while opening the preset:\n\n{ex.Message}");
