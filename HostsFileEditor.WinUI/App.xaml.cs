@@ -2,6 +2,7 @@ using HostsFileEditor.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
+using System.Runtime.InteropServices;
 
 namespace HostsFileEditor;
 
@@ -61,18 +62,44 @@ public partial class App : Application
         _window.Activate();
     }
 
-    // Performs the cross-process activation redirect on a thread-pool thread and blocks this
-    // (soon-to-exit) instance until it completes — never on the UI/STA thread (see OnLaunched).
+    // Performs the cross-process activation redirect on a thread-pool thread while THIS (STA) thread
+    // waits with CoWaitForMultipleObjects — a COM-aware wait that keeps pumping the STA message loop.
+    // A plain blocking wait (SemaphoreSlim/WaitHandle) would stall the STA pump, and the redirect is a
+    // cross-apartment COM call that needs it — so it would deadlock (the running instance never gets
+    // the activation and hangs). This is the pattern from Microsoft's WinUI single-instance sample.
     private static void RedirectActivationTo(AppActivationArguments args, AppInstance keyInstance)
     {
-        using var redirected = new SemaphoreSlim(0, 1);
+        var redirectDone = CreateEventW(IntPtr.Zero, bManualReset: true, bInitialState: false, lpName: null);
         _ = Task.Run(() =>
         {
             keyInstance.RedirectActivationToAsync(args).AsTask().GetAwaiter().GetResult();
-            redirected.Release();
+            SetEvent(redirectDone);
         });
-        redirected.Wait();
+
+        _ = CoWaitForMultipleObjects(CwmoDefault, Infinite, 1, [redirectDone], out _);
+        CloseHandle(redirectDone);
     }
+
+    private const uint CwmoDefault = 0;
+    private const uint Infinite = 0xFFFFFFFF;
+
+    [LibraryImport("kernel32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial IntPtr CreateEventW(IntPtr lpEventAttributes, [MarshalAs(UnmanagedType.Bool)] bool bManualReset, [MarshalAs(UnmanagedType.Bool)] bool bInitialState, string? lpName);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetEvent(IntPtr hEvent);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool CloseHandle(IntPtr hObject);
+
+    [LibraryImport("ole32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int CoWaitForMultipleObjects(uint dwFlags, uint dwMilliseconds, uint nHandles, IntPtr[] pHandles, out uint lpdwIndex);
 
     private void OnInstanceActivated(object? sender, AppActivationArguments e) =>
         // Raised on a background thread; marshal to the UI thread to activate the window, and — if
