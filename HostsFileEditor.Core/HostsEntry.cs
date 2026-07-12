@@ -108,9 +108,23 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
                     _hostnames = TwoSpaceMatchRegex().Replace(_hostnames, " ");
                 }
 
-                ValidateIpAddress();
+                // The structural parse already gated entry-ness on a syntactically valid IP token
+                // (issue #80), so the IP is known valid here — trust it instead of re-running
+                // IPAddress.TryParse, which would double the per-entry IP-parse cost on the 400K-line
+                // hot load path. The IpAddress setter (edit path) still validates via ValidateIpAddress.
+                _ipAddressValid = true;
+                if (AutoPingIPAddress)
+                {
+                    Ping();
+                }
+
                 ValidateHostnames();
 
+                // Defensive: both structural engines now gate entry-ness on a valid IP token AND a
+                // structurally valid hostname (issue #80), so an Entry reaching here is already valid
+                // and this demotion is unreachable in practice. Kept as a belt-and-suspenders guard —
+                // for a tool that rewrites the system hosts file, silently treating an invalid line as
+                // a live entry would be the worst failure mode.
                 if (!_valid)
                 {
                     _enabled = false;
@@ -152,6 +166,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         if (match.Groups[LineComment].Success)
         {
             return new StructuralParse(LineKind.Comment, false, string.Empty, string.Empty, match.Groups[LineComment].Value);
+        }
+
+        // The entry alternative's ipaddress group is [^\s]+ (any non-space token). Gate entry-ness on
+        // a syntactically valid IP (issue #80) so the two engines stay in agreement: a would-be entry
+        // with an invalid IP demotes to a raw comment, matching the span engine's NoMatch path.
+        if (!IsValidIpToken(match.Groups[Address].Value))
+        {
+            return new StructuralParse(LineKind.NoMatch, false, string.Empty, string.Empty, string.Empty);
         }
 
         return new StructuralParse(
@@ -196,21 +218,42 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         // Try to parse an entry. Prefer treating a leading '#'-run as the "disabled" marker (the
         // regex's disabled group is greedy). If that yields no entry, retry treating the '#' as part
         // of the IP token — the regex backtracks to this, and it then demotes to a comment.
+        //
+        // Entry-ness is gated on a syntactically valid IP first token (issue #80): a line is an entry
+        // iff it starts with a real IP AND has a structurally valid hostname. A line that is
+        // structurally shaped like an entry but whose first token is not a valid IP (e.g.
+        // "# just a note", "999.999.999.999 host") is not an entry — it is a comment. Those are
+        // returned as NoMatch so ApplyStructuralParse preserves the raw text verbatim, which is
+        // byte-identical to the old match-anything-then-demote path.
         if (s[i] == '#')
         {
             var contentStart = i;
             while (contentStart < n && s[contentStart] == '#') { contentStart++; }
             while (contentStart < n && char.IsWhiteSpace(s[contentStart])) { contentStart++; }
 
-            if (TryParseEntry(s, contentStart, disabled: true, out var disabledEntry))
+            if (TryParseEntry(s, contentStart, disabled: true, out var disabledEntry, out var disabledBadIp))
             {
                 return disabledEntry;
             }
+
+            // A '#'-led line whose content is a would-be entry with an invalid IP demotes to the raw
+            // comment; there is no point retrying the non-disabled read (its IP token starts with '#',
+            // which can never be a valid IP).
+            if (disabledBadIp)
+            {
+                return new StructuralParse(LineKind.NoMatch, false, string.Empty, string.Empty, string.Empty);
+            }
         }
 
-        if (TryParseEntry(s, i, disabled: false, out var entry))
+        if (TryParseEntry(s, i, disabled: false, out var entry, out var badIp))
         {
             return entry;
+        }
+
+        // Structurally an entry but the first token is not a valid IP -> demote to a raw comment.
+        if (badIp)
+        {
+            return new StructuralParse(LineKind.NoMatch, false, string.Empty, string.Empty, string.Empty);
         }
 
         // --- Comment: [ws] #+ [one ws] COMMENT ---
@@ -226,10 +269,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         return new StructuralParse(LineKind.NoMatch, false, string.Empty, string.Empty, string.Empty);
 
         // Parses "IP  ws+  HOSTNAMES [ws]  (#+ AFTERCOMMENT)?" from 'start'. IP is the first
-        // non-whitespace run; the hostname must be structurally valid (else the regex would fall
-        // through to the comment alternative). Allocates only the field strings, and only on success.
-        static bool TryParseEntry(ReadOnlySpan<char> s, int start, bool disabled, out StructuralParse result)
+        // non-whitespace run; the hostname must be structurally valid AND the IP token must be a
+        // syntactically valid IP (issue #80) — otherwise it is not an entry. Allocates only the field
+        // strings, and only on success. 'ipInvalidButStructural' distinguishes "shaped like an entry
+        // but the first token is not a valid IP" (caller demotes to a raw comment) from "not
+        // structurally an entry at all" (caller falls through to the comment alternative).
+        static bool TryParseEntry(ReadOnlySpan<char> s, int start, bool disabled, out StructuralParse result, out bool ipInvalidButStructural)
         {
+            ipInvalidButStructural = false;
             var n = s.Length;
 
             var ipStart = start;
@@ -254,6 +301,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
                 if (hostEnd > hostStart && HostNameRegex().IsMatch(s[hostStart..hostEnd]))
                 {
+                    if (!IsValidIpToken(s[ipStart..ipEnd]))
+                    {
+                        // Structurally an entry, but the first token is not a valid IP -> not an entry.
+                        ipInvalidButStructural = true;
+                        result = default;
+                        return false;
+                    }
+
                     var afterComment = string.Empty;
                     if (hashIndex >= 0)
                     {
@@ -718,7 +773,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         }
         else
         {
-            _ipAddressValid = IPAddress.TryParse(IpAddress, out var _);
+            _ipAddressValid = IsValidIpToken(IpAddress);
 
             if (!_ipAddressValid)
             {
@@ -737,6 +792,14 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
         _valid = _ipAddressValid && _hostnamesValid;
     }
+
+    // Single source of truth for "is this token a syntactically valid IP address." Gates entry-ness
+    // at parse time (issue #80) in both the span and regex engines, and backs ValidateIpAddress so an
+    // edited address is flagged by the exact same rule. Uses IPAddress.TryParse, so IPv4 and every
+    // IPv6 form the framework accepts (::1, zone IDs, etc.) are accepted identically. The
+    // ReadOnlySpan<char> overload lets the structural parser validate the IP token without allocating
+    // it (string converts implicitly, so the edit path can pass IpAddress directly).
+    private static bool IsValidIpToken(ReadOnlySpan<char> token) => IPAddress.TryParse(token, out _);
 
     [GeneratedRegex(@"[ ]{2,}")]
     private static partial Regex TwoSpaceMatchRegex();
