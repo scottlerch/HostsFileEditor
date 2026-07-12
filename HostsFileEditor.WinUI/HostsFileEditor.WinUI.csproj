@@ -60,6 +60,10 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.2.0" />
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.4.1" />
     <PackageReference Include="System.Resources.Extensions" Version="10.0.9" />
+    <!-- Taskbar Jump List (issue #10) uses the WinRT Windows.UI.StartScreen.JumpList API — packaged-
+         native and AOT-compatible via CsWinRT — not WindowsAPICodePack (that library is pure COM
+         interop and fails Native AOT: `IL3052 COM interop is not supported`). Classic, which does not
+         AOT, still uses WindowsAPICodePack. -->
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HostsFileEditor.Core\HostsFileEditor.Core.csproj" />

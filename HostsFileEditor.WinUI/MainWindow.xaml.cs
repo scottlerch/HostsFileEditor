@@ -306,6 +306,82 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         RefreshEntriesFiltered();
         OnPropertyChanged(nameof(LoadingVisibility));
         OnPropertyChanged(nameof(IsEntriesInteractive));
+
+        // Taskbar Jump List (issue #10): publish the current presets and keep it in sync as archives
+        // change. Fire-and-forget — RefreshAsync no-ops when unpackaged (JumpList needs identity).
+        _ = TaskbarJumpList.RefreshAsync();
+        HostsArchiveList.Instance.ListChanged += (s, e) => _ = TaskbarJumpList.RefreshAsync();
+
+        // If a Jump List activation arrived before the load finished, honor it now.
+        if (_pendingJumpListArchive is { } pending)
+        {
+            _pendingJumpListArchive = null;
+            await ImportArchiveFromJumpListAsync(pending);
+        }
+    }
+
+    // Set by RequestOpenArchive when a Jump List activation arrives before the initial load completes;
+    // LoadEntriesAsync imports it once loaded.
+    private string? _pendingJumpListArchive;
+
+    /// <summary>
+    /// Opens the preset a taskbar Jump List entry pointed at (issue #10) — called by App on both a
+    /// fresh launch and a redirect to this already-running instance. If the initial load is still in
+    /// flight, the request is deferred until it completes. Must be called on the UI thread.
+    /// </summary>
+    public void RequestOpenArchive(string archivePath)
+    {
+        if (_isClosed || string.IsNullOrEmpty(archivePath))
+        {
+            return;
+        }
+
+        if (_isLoaded)
+        {
+            _ = ImportArchiveFromJumpListAsync(archivePath);
+        }
+        else
+        {
+            // Loading (or reloading) — remember it; LoadEntriesAsync will pick it up.
+            _pendingJumpListArchive = archivePath;
+        }
+    }
+
+    private async Task ImportArchiveFromJumpListAsync(string archivePath)
+    {
+        // Fire-and-forget from the activation path — catch everything so a failure is logged, not
+        // silently swallowed (or crashing the app).
+        try
+        {
+            if (_isClosed || !File.Exists(archivePath))
+            {
+                return;
+            }
+
+            // Opening a preset replaces the current entries, so warn before discarding unsaved edits.
+            if (HostsFile.Instance.IsModified)
+            {
+                var confirmed = await ShowConfirmationAsync(
+                    "Open preset?",
+                    "You have unsaved changes to the hosts file that will be lost. Open the preset anyway?",
+                    primaryText: "Open preset",
+                    closeText: "Cancel");
+
+                if (!confirmed || _isClosed)
+                {
+                    return;
+                }
+            }
+
+            await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Import(archivePath));
+        }
+        catch (Exception ex)
+        {
+            if (!_isClosed)
+            {
+                await ShowErrorDialogAsync("Error Opening Preset", $"An error occurred while opening the preset:\n\n{ex.Message}");
+            }
+        }
     }
 
     // One-shot bulk load of the (filtered) entries: build the list off the persistent collection
