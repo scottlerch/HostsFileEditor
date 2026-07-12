@@ -101,18 +101,37 @@ public partial class App : Application
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int CoWaitForMultipleObjects(uint dwFlags, uint dwMilliseconds, uint nHandles, IntPtr[] pHandles, out uint lpdwIndex);
 
-    private void OnInstanceActivated(object? sender, AppActivationArguments e) =>
-        // Raised on a background thread; marshal to the UI thread to activate the window, and — if
-        // this activation came from a Jump List preset (issue #10) — open that preset in the already-
-        // running instance (the redirect carries the launch arguments).
+    private void OnInstanceActivated(object? sender, AppActivationArguments e)
+    {
+        // Raised on a BACKGROUND thread. Read the archive path from the activation args HERE — the
+        // AppActivationArguments (and its .Data) is an apartment-bound COM object created on this
+        // thread; touching it from the UI thread throws (and crashed the running instance). Marshal
+        // only the resulting string to the UI thread.
+        string? openArchivePath = null;
+        try
+        {
+            openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(e);
+        }
+        catch (Exception ex)
+        {
+            TaskbarJumpList.Log($"OnInstanceActivated (extract) failed: {ex}");
+        }
+
         _window?.DispatcherQueue.TryEnqueue(() =>
         {
-            _window?.Activate();
-
-            var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(e);
-            if (openArchivePath is not null && _window is MainWindow mw)
+            try
             {
-                mw.RequestOpenArchive(openArchivePath);
+                _window?.Activate();
+
+                if (openArchivePath is not null && _window is MainWindow mw)
+                {
+                    mw.RequestOpenArchive(openArchivePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                TaskbarJumpList.Log($"OnInstanceActivated (open) failed: {ex}");
             }
         });
+    }
 }

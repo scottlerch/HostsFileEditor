@@ -349,27 +349,40 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private async Task ImportArchiveFromJumpListAsync(string archivePath)
     {
-        if (_isClosed || !File.Exists(archivePath))
+        // Fire-and-forget from the activation path — catch everything so a failure is logged, not
+        // silently swallowed (or crashing the app).
+        try
         {
-            return;
-        }
-
-        // Opening a preset replaces the current entries, so warn before discarding unsaved edits.
-        if (HostsFile.Instance.IsModified)
-        {
-            var confirmed = await ShowConfirmationAsync(
-                "Open preset?",
-                "You have unsaved changes to the hosts file that will be lost. Open the preset anyway?",
-                primaryText: "Open preset",
-                closeText: "Cancel");
-
-            if (!confirmed || _isClosed)
+            if (_isClosed || !File.Exists(archivePath))
             {
                 return;
             }
-        }
 
-        await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Import(archivePath));
+            // Opening a preset replaces the current entries, so warn before discarding unsaved edits.
+            if (HostsFile.Instance.IsModified)
+            {
+                var confirmed = await ShowConfirmationAsync(
+                    "Open preset?",
+                    "You have unsaved changes to the hosts file that will be lost. Open the preset anyway?",
+                    primaryText: "Open preset",
+                    closeText: "Cancel");
+
+                if (!confirmed || _isClosed)
+                {
+                    return;
+                }
+            }
+
+            await MutateCoreAndRefreshAsync(() => HostsFile.Instance.Import(archivePath));
+        }
+        catch (Exception ex)
+        {
+            TaskbarJumpList.Log($"ImportArchiveFromJumpListAsync failed: {ex}");
+            if (!_isClosed)
+            {
+                await ShowErrorDialogAsync("Error Opening Preset", $"An error occurred while opening the preset:\n\n{ex.Message}");
+            }
+        }
     }
 
     // One-shot bulk load of the (filtered) entries: build the list off the persistent collection
