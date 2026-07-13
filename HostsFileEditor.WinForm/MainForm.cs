@@ -106,6 +106,19 @@ internal sealed partial class MainForm : Form
         columnComment.DefaultCellStyle.NullValue = null;
         columnIpAddress.DefaultCellStyle.NullValue = null;
         columnHostnames.DefaultCellStyle.NullValue = null;
+
+        // Merge menu item (issue #26): added in code (rather than the designer/resx) just after
+        // Import in the File menu — it reuses Import's open-file dialog and appends the other file's
+        // unique entries. The File menu owns the item once inserted and disposes it with the form
+        // (hence the CA2000 suppression).
+#pragma warning disable CA2000
+        var menuMerge = new ToolStripMenuItem("Merge...") { Name = "menuMerge" };
+#pragma warning restore CA2000
+        menuMerge.Click += OnMergeClick;
+        if (menuImport.OwnerItem is ToolStripDropDownItem fileMenu)
+        {
+            fileMenu.DropDownItems.Insert(fileMenu.DropDownItems.IndexOf(menuImport) + 1, menuMerge);
+        }
     }
 
     /// <inheritdoc />
@@ -1019,6 +1032,41 @@ internal sealed partial class MainForm : Form
         {
             HostsFile.Instance.Import(
                 openFileDialog.FileName);
+        }
+    }
+
+    /// <summary>
+    /// Merges another hosts file into the current list, eliminating duplicates (issue #26). Appends
+    /// only entries not already present (by IP + host names); the user saves to write the result.
+    /// </summary>
+    private void OnMergeClick(object? sender, EventArgs e)
+    {
+        if (openFileDialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        try
+        {
+            var added = HostsFile.Instance.Merge(openFileDialog.FileName);
+
+            MessageBox.Show(
+                this,
+                added == 0
+                    ? "No new entries were added — every entry in that file is already present."
+                    : $"Merged {added} new {(added == 1 ? "entry" : "entries")}. Save to write them to the hosts file.",
+                "Merge complete",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"An error occurred while merging the hosts file:\n\n{ex.Message}",
+                Resources.ErrorCaption,
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
         }
     }
 

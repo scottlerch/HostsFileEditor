@@ -3,6 +3,7 @@ using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 
 namespace HostsFileEditor;
 
@@ -65,6 +66,66 @@ public class HostsEntryList : BindingList<HostsEntry>
                 }
             }
         });
+    }
+
+    /// <summary>
+    /// Merges the entries parsed from <paramref name="lines"/> (another hosts file) into this list,
+    /// eliminating duplicates (issue #26). Every <b>valid</b> incoming entry whose identity — its
+    /// <em>canonical</em> IP address plus parser-normalized host names, compared case-insensitively —
+    /// is not already present is appended in order; entries that duplicate an existing one, comment-only
+    /// lines, and blank lines are skipped. Enabled-vs-disabled is intentionally ignored when comparing
+    /// (the same mapping present twice, once commented out, is still a duplicate), so the existing copy
+    /// wins. Returns the number of entries actually added. The append goes through
+    /// <see cref="InsertRange"/>, so it is a single undoable step (one bound-view reset) and prior undo
+    /// history is preserved — a merge that adds nothing leaves both the list and the modified/undo
+    /// state untouched.
+    /// </summary>
+    public int MergeLines(IEnumerable<string> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+
+        var identities = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in this)
+        {
+            if (entry.Valid)
+            {
+                identities.Add(IdentityOf(entry));
+            }
+        }
+
+        var toAdd = new List<HostsEntry>();
+        foreach (var line in lines)
+        {
+            var entry = new HostsEntry(line);
+
+            // Merge only real host entries; skip comment-only lines and blanks from the incoming file.
+            if (!entry.Valid)
+            {
+                continue;
+            }
+
+            // HashSet.Add is false when the identity is already present (existing OR earlier in this
+            // same merge), so the first occurrence wins and later duplicates are dropped.
+            if (identities.Add(IdentityOf(entry)))
+            {
+                toAdd.Add(entry);
+            }
+        }
+
+        // One undoable, O(n) append (InsertRange no-ops on an empty list). No SuspendUndoRedo /
+        // ClearHistory: an append doesn't invalidate existing entries' indices, so prior undo actions
+        // stay valid, and the merge itself is a single undoable step (Ctrl+Z removes the added block).
+        InsertRange(toAdd);
+
+        return toAdd.Count;
+
+        // Identity uses the CANONICAL address (IPAddress round-trip), so "::1" and "0:0:0:0:0:0:0:1",
+        // or "127.0.0.1" and "127.1", are recognized as the same host — a valid entry always parses.
+        static string IdentityOf(HostsEntry entry)
+        {
+            var ip = IPAddress.TryParse(entry.IpAddress, out var parsed) ? parsed.ToString() : entry.IpAddress;
+            return $"{ip}\t{entry.HostNames}";
+        }
     }
 
     /// <summary>

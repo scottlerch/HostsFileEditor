@@ -116,6 +116,7 @@
                 <Button.Flyout>
                     <MenuFlyout Placement="BottomEdgeAlignedLeft">
                         <MenuFlyoutItem Text="Import" Icon="OpenFile" Click="OnImportClick"/>
+                        <MenuFlyoutItem Text="Merge…" Icon="Add" Click="OnMergeClick"/>
                         <MenuFlyoutItem Text="Save As" Icon="SaveLocal" Click="OnSaveAsClick" />
                         <MenuFlyoutItem Text="Archive" Click="OnArchiveClick">
                             <MenuFlyoutItem.Icon>

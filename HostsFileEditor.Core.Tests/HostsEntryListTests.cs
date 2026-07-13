@@ -15,6 +15,101 @@ public class HostsEntryListTests
     }
 
     [TestMethod]
+    public void MergeLines_AddsOnlyNewEntries_AndSkipsDuplicates()
+    {
+        var list = new HostsEntryList(["127.0.0.1 localhost", "1.2.3.4 existing.com"], filterDefault: false);
+
+        var added = list.MergeLines(
+        [
+            "1.2.3.4 existing.com",     // duplicate (same IP + host) -> skipped
+            "5.6.7.8 new.com",          // new -> added
+            "9.9.9.9 also-new.com",     // new -> added
+        ]);
+
+        added.ShouldBe(2);
+        list.Count.ShouldBe(4);
+        list.Any(e => e.IpAddress == "5.6.7.8" && e.HostNames == "new.com").ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void MergeLines_DuplicateIsCaseInsensitive_AndIgnoresEnabledState()
+    {
+        var list = new HostsEntryList(["1.2.3.4 Host.Example.COM"], filterDefault: false);
+
+        // Same mapping, different case and commented out (disabled) — still a duplicate.
+        var added = list.MergeLines(["# 1.2.3.4 host.example.com"]);
+
+        added.ShouldBe(0);
+        list.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public void MergeLines_SkipsCommentsAndBlanksFromIncomingFile()
+    {
+        var list = new HostsEntryList(["127.0.0.1 localhost"], filterDefault: false);
+
+        var added = list.MergeLines(["# a comment", "", "   ", "8.8.8.8 dns.example.com"]);
+
+        added.ShouldBe(1);
+        list.Count.ShouldBe(2);
+    }
+
+    [TestMethod]
+    public void MergeLines_DedupesWithinTheIncomingSet()
+    {
+        var list = new HostsEntryList();
+
+        var added = list.MergeLines(["1.2.3.4 dup.com", "1.2.3.4 dup.com", "1.2.3.4 dup.com"]);
+
+        added.ShouldBe(1);
+        list.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public void MergeLines_DuplicateAcrossDifferentIpSpellings()
+    {
+        var list = new HostsEntryList(["::1 localhost"], filterDefault: false);
+
+        // Same address written in the long form — canonical identity matches, so it's a duplicate.
+        var added = list.MergeLines(["0:0:0:0:0:0:0:1 localhost"]);
+
+        added.ShouldBe(0);
+        list.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public void MergeLines_IsUndoable()
+    {
+        var list = new HostsEntryList(["1.2.3.4 a.com"], filterDefault: false);
+        UndoManager.Instance.ClearHistory();
+
+        list.MergeLines(["5.6.7.8 b.com", "9.9.9.9 c.com"]).ShouldBe(2);
+        list.Count.ShouldBe(3);
+
+        // The append is one undoable step: Ctrl+Z removes the whole merged block.
+        UndoManager.Instance.Undo();
+        list.Count.ShouldBe(1);
+        list.Single().IpAddress.ShouldBe("1.2.3.4");
+
+        UndoManager.Instance.ClearHistory();
+    }
+
+    [TestMethod]
+    public void MergeLines_NoOpMerge_RecordsNoUndo()
+    {
+        var list = new HostsEntryList(["1.2.3.4 a.com"], filterDefault: false);
+        UndoManager.Instance.ClearHistory();
+
+        // Every incoming line is already present — nothing is added, so nothing is recorded (the
+        // document must not be marked modified for a no-op merge).
+        list.MergeLines(["1.2.3.4 a.com", "# a comment", ""]).ShouldBe(0);
+
+        UndoManager.Instance.CanUndo.ShouldBeFalse();
+
+        UndoManager.Instance.ClearHistory();
+    }
+
+    [TestMethod]
     public void Add_AddsBlankEntry()
     {
         var list = new HostsEntryList();
