@@ -142,8 +142,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     // Glyph shown in that badge: the icon of the currently sorted column (same glyphs as the menu
     // items), so the overlay tells you WHICH column is sorted, not just that a sort is on. Empty when
-    // no sort is active (the badge is collapsed then anyway).
-    public string SortActiveGlyph => _sortColumn switch
+    // no sort is active (the badge is collapsed then anyway). Consumed only by UpdateSortBadgeIcon.
+    private string SortActiveGlyph => _sortColumn switch
     {
         HostsEntry.SortColumn.IpAddress => "\uE774",
         HostsEntry.SortColumn.HostNames => "\uE8EC",
@@ -563,26 +563,32 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _sortDescending = descending;
         });
 
-        // Move/Insert enablement depends on IsSortActive; refresh it now that the sort changed.
-        _selectionService.UpdateSelectionDependentButtons();
-        _selectionService.UpdateContextMenuItems();
-        OnPropertyChanged(nameof(SortActiveBadgeVisibility));
-        UpdateSortBadgeIcon();
+        OnSortStateChanged();
     }
 
     private void ClearSort()
     {
-        if (!IsLoaded || _sortColumn is null)
+        if (!IsLoaded || !IsSortActive)
         {
             return;
         }
 
         MutateCoreAndRefreshPreservingSelection(() => _sortColumn = null);
+        OnSortStateChanged();
+    }
+
+    // Everything that must refresh after _sortColumn changes: Move/Insert enablement depends on
+    // IsSortActive (button + context menu), and the sort badge reflects the new column.
+    private void OnSortStateChanged()
+    {
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
         OnPropertyChanged(nameof(SortActiveBadgeVisibility));
         UpdateSortBadgeIcon();
     }
+
+    // The Segoe MDL2 symbol font never varies; share one instance across badge updates.
+    private static readonly FontFamily SortBadgeFontFamily = new("Segoe MDL2 Assets");
 
     // Assigns a FRESH FontIconSource to the sort badge for the current column. InfoBadge does not
     // re-render when the Glyph changes inside the same IconSource object, so swapping the whole object
@@ -592,7 +598,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             ? null
             : new FontIconSource
             {
-                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontFamily = SortBadgeFontFamily,
                 FontSize = 10,
                 Glyph = SortActiveGlyph,
             };

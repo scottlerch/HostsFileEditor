@@ -547,8 +547,10 @@ internal sealed class HostsEntryDataGridView : DataGridView
     /// <summary>
     /// Builds an emit-free, allocation-free comparer over <see cref="HostsEntry"/> for the given
     /// bound property and direction. The five shared columns delegate to the single Core comparer
-    /// <see cref="HostsEntry.GetComparer"/> (issue #75/#81) so classic and modern sort identically —
-    /// including the numeric (not lexical) IP ordering. Direct TYPED access still avoids reflection,
+    /// <see cref="HostsEntry.GetComparer"/> (issue #75/#81) so classic and modern share one ordering
+    /// key — including the numeric (not lexical) IP ordering. (Tie-break order can still differ: this
+    /// grid's Equin sort is unstable, whereas the modern edition uses a stable OrderBy.) Direct TYPED
+    /// access still avoids reflection,
     /// the Equin/.NET 10 emit crash, and per-comparison boxing (the earlier <c>Comparer&lt;object&gt;</c>
     /// variant boxed ~15M bools per header click on a 400K-row checkbox sort). Only the classic-only
     /// <see cref="HostsEntry.UnparsedText"/> column, which Core does not model, keeps a local compare.

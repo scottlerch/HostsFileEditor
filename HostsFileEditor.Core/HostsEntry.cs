@@ -614,25 +614,50 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
     /// <summary>
     /// Builds a comparer over <see cref="HostsEntry"/> for a given column and direction (issue #81) —
-    /// the single Core definition so both editions sort identically (cf. the classic edition's typed
-    /// <c>ComparerFor</c>). The IP column sorts <em>numerically</em> by address value (IPv4 before
-    /// IPv6, ascending; rows with no parseable IP sort last) — see <see cref="GetIpSortKey"/>. The
-    /// other string columns use culture-sensitive comparison, matching the framework's original
-    /// property sort. The comparer is allocation-free per comparison (no boxing) and does not mutate
-    /// entry order — a display sort must not touch the underlying list.
+    /// the single Core definition both editions share, so the sort <em>key</em> is identical across
+    /// editions (cf. the classic edition's typed <c>ComparerFor</c>). Note this fixes the ordering key,
+    /// not tie-break stability: the modern edition sorts with a stable <c>OrderBy</c>, while the classic
+    /// grid's underlying Equin sort is unstable, so rows with an equal key can land in a different order
+    /// between the two. The IP column sorts <em>numerically</em> by address value — IPv4 before IPv6,
+    /// and rows with no parseable IP last, in <em>both</em> directions (only the address value within a
+    /// family reverses for descending) — see <see cref="GetIpSortKey"/>. The other string columns use
+    /// culture-sensitive comparison, matching the framework's original property sort. The comparer is
+    /// allocation-free per comparison (no boxing) and does not mutate entry order.
     /// </summary>
     public static IComparer<HostsEntry> GetComparer(SortColumn column, bool descending)
     {
+        // IP sorts by numeric address value, not lexically — "10.0.0.2" < "10.0.0.10" and "8.8.8.8" <
+        // "172.16.0.4", which a string sort gets backwards (issue #81). The per-entry key is computed
+        // once and cached (GetIpSortKey), so a 400K-row sort parses each IP once. The Rank (family +
+        // the no-IP bucket) is compared direction-INDEPENDENTLY so IPv4 stays before IPv6 and no-IP
+        // rows stay last whether ascending or descending; only the address value within a rank flips.
+        if (column == SortColumn.IpAddress)
+        {
+            return Comparer<HostsEntry>.Create((x, y) =>
+            {
+                var kx = x.GetIpSortKey();
+                var ky = y.GetIpSortKey();
+                if (kx.Rank != ky.Rank)
+                {
+                    return kx.Rank.CompareTo(ky.Rank);
+                }
+
+                var c = kx.Hi.CompareTo(ky.Hi);
+                if (c == 0)
+                {
+                    c = kx.Lo.CompareTo(ky.Lo);
+                }
+
+                return descending ? -c : c;
+            });
+        }
+
         // Culture-sensitive string comparison is intentional (CA1309 suppressed): it matches the
         // classic edition's typed ComparerFor and the framework's original property sort, which routed
-        // through string.CompareTo — so the two editions order identically.
+        // through string.CompareTo.
 #pragma warning disable CA1309
         Comparer<HostsEntry> comparer = column switch
         {
-            // IP sorts by numeric address value, not lexically — "10.0.0.2" < "10.0.0.10" and
-            // "8.8.8.8" < "172.16.0.4", which a string sort gets backwards (issue #81). The per-entry
-            // key is computed once and cached (GetIpSortKey), so a 400K-row sort parses each IP once.
-            SortColumn.IpAddress => Comparer<HostsEntry>.Create(static (x, y) => x.GetIpSortKey().CompareTo(y.GetIpSortKey())),
             SortColumn.HostNames => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.HostNames, y.HostNames, StringComparison.CurrentCulture)),
             SortColumn.Comment => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.Comment, y.Comment, StringComparison.CurrentCulture)),
             SortColumn.Enabled => Comparer<HostsEntry>.Create(static (x, y) => x.Enabled.CompareTo(y.Enabled)),

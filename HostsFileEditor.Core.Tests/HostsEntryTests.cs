@@ -126,6 +126,24 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void GetComparer_IpAddress_Descending_KeepsFamiliesGroupedAndNoIpLast()
+    {
+        // Descending must reverse the address value but NOT the family/no-IP grouping: IPv4 stays
+        // before IPv6, and a no-IP row stays last, in both directions (issue #81).
+        var rows = new List<HostsEntry>
+        {
+            new("1.1.1.1 a"),
+            new("2.2.2.2 b"),
+            new("::1 v6"),
+            new("# note"),
+        };
+
+        var sorted = rows.OrderBy(e => e, HostsEntry.GetComparer(HostsEntry.SortColumn.IpAddress, descending: true)).ToList();
+
+        sorted.Select(e => e.HostNames).ShouldBe(["b", "a", "v6", string.Empty]);
+    }
+
+    [TestMethod]
     public void GetComparer_IpAddress_ReflectsEditedAddress()
     {
         // The cached sort key must invalidate when the IP is edited.
