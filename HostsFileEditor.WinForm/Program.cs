@@ -1,3 +1,4 @@
+using HostsFileEditor.CommandLine;
 using HostsFileEditor.Properties;
 
 namespace HostsFileEditor;
@@ -16,8 +17,19 @@ internal static class Program
     /// The main entry point for the application.
     /// </summary>
     [STAThread]
-    private static void Main()
+    private static int Main(string[] args)
     {
+        // Headless command line (issue #2): any argument that isn't the Jump List's GUI-launch switch
+        // (--open-archive) is treated as a command — run it against the launching console and exit with
+        // a status code, never showing a window (an unknown command reports an error rather than opening
+        // the GUI). No args, or --open-archive, falls through to the normal windowed startup.
+        if (args.Length > 0 &&
+            !string.Equals(args[0], TaskbarJumpList.OpenArchiveSwitch, StringComparison.OrdinalIgnoreCase))
+        {
+            ConsoleAttach.AttachToParentConsole();
+            return HostsCli.Run(args, Console.Out, Console.Error);
+        }
+
         // Ensure only one copy of the application is running at a time
         using var program = ProgramSingleInstance.Start();
         if (program.IsOnlyInstance)
@@ -47,6 +59,8 @@ internal static class Program
 
             ProgramSingleInstance.ShowFirstInstance();
         }
+
+        return 0;
     }
 
     /// <summary>
