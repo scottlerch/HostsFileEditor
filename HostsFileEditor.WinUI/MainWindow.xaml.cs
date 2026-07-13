@@ -738,16 +738,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             //
             // PreferredMinimum* are PHYSICAL pixels fed to WM_GETMINMAXINFO with no DPI awareness
             // (microsoft-ui-xaml #10452/#10475), while the chrome they protect (42epx title row,
-            // command bar, 32epx status row) is laid out in DIPs — a raw 300x320 stopped protecting
+            // command bar, 32epx status row) is laid out in DIPs — a raw 450x320 stopped protecting
             // the status row at >=250% display scale. Scale the DIP floor at apply time and
             // re-apply whenever the scale changes (XamlRoot.Changed fires on DPI/monitor moves);
             // XamlRoot is still null in the constructor, so the scaled value lands on Loaded.
+            //
+            // Width floor is 450 (not 300): below that the command bar's dynamic overflow plus the
+            // filter/sort pill get squeezed until the Sort options button clips and its overflow menu
+            // is unreachable, and the host/comment columns collapse.
             if (appWindow.Presenter is OverlappedPresenter presenter)
             {
                 void ApplyMinimumWindowSize()
                 {
                     var scale = Content?.XamlRoot?.RasterizationScale ?? 1.0;
-                    presenter.PreferredMinimumWidth = (int)Math.Ceiling(300 * scale);
+                    presenter.PreferredMinimumWidth = (int)Math.Ceiling(450 * scale);
                     presenter.PreferredMinimumHeight = (int)Math.Ceiling(320 * scale);
                 }
 
