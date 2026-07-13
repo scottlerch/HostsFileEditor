@@ -248,10 +248,10 @@ public static class HostsCli
 
     private static HostsArchive? FindPreset(string name)
     {
-        // Match the archive by file name, case-insensitively, with or without the exact spelling the
-        // user saved (they may or may not include an extension).
+        // Exact file-name match first (HostsArchiveList.FindByName), then a lenient match ignoring the
+        // extension so `MyHosts1` resolves `MyHosts1.txt` too.
         var presets = HostsArchiveList.Instance;
-        return presets.FirstOrDefault(a => string.Equals(a.FileName, name, StringComparison.OrdinalIgnoreCase))
+        return presets.FindByName(name)
             ?? presets.FirstOrDefault(a => string.Equals(Path.GetFileNameWithoutExtension(a.FileName), name, StringComparison.OrdinalIgnoreCase));
     }
 
