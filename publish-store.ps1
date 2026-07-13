@@ -65,17 +65,20 @@ $storeDir = Join-Path $PSScriptRoot 'artifacts\store'
 # ---- Per-release "What's new" copy (edit each release) ----
 $notes = @{
     classic = @'
-Performance and reliability update:
-- Much faster on very large hosts files - async load, ~3x faster parser, and bulk edits that used to freeze now finish in milliseconds.
-- Smaller, faster install.
-- Fixed a crash when sorting by a column header; fixed a Select-All/Delete data-loss case.
-- Tailscale/MagicDNS names ending in a dot (host.tailnet.ts.net.) now parse correctly.
+Feature update (v1.5.0):
+- Command line for scripts: switch presets, enable/disable, import, and merge (hfe on PATH; run "hfe help").
+- Taskbar Jump List: right-click the app icon to open any saved preset directly.
+- File > Merge combines another hosts file into the current one, skipping duplicates (undoable).
+- Global shortcut (default Ctrl+Shift+H, configurable) hides/restores the window from the tray.
+- IP column now sorts numerically; text filter is now case-insensitive; auto-ping shows a progress indicator and flags failed entries.
 '@
     modern = @'
-Performance and polish update:
-- Much faster on very large hosts files - async load, ~3x faster parser, instant bulk edits.
-- New status bar (line + host-entry counts); no more column flicker; selection kept across Check/Uncheck & Duplicate.
-- Tailscale/MagicDNS names ending in a dot now parse correctly.
+Feature update (v1.2.0):
+- Command line for scripts: switch presets, enable/disable, import, and merge (hfe on PATH; run "hfe help").
+- Taskbar Jump List: right-click the app icon to open any saved preset directly.
+- File > Merge combines another hosts file into the current one, skipping duplicates (undoable).
+- New Sort options next to the filter; the IP column sorts numerically.
+- Auto-ping shows a progress indicator and marks failed entries with an error badge.
 '@
 }
 
