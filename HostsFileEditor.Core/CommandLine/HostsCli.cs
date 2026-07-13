@@ -61,11 +61,23 @@ public static class HostsCli
             error.WriteLine("Cancelled: administrator permission is required and was declined.");
             return ExitError;
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        catch (UnauthorizedAccessException)
+        {
+            // Direct write was denied and elevation wasn't available (e.g. hfe.exe run without its
+            // Elevate\ helper alongside, or elevation blocked by policy).
+            error.WriteLine("Access denied. Run this from an elevated console, or run the copy of hfe.exe installed with the app (its elevation helper must sit alongside it).");
+            return ExitError;
+        }
+        // Top-level guard for a CLI: turn ANY other failure (a failed runas launch throws Win32Exception,
+        // a corrupt hosts file, etc.) into a clean one-line message + non-zero exit, never a raw
+        // stack-trace crash. CA1031 is intentional — this is the process's last-chance handler.
+#pragma warning disable CA1031
+        catch (Exception ex)
         {
             error.WriteLine($"Error: {ex.Message}");
             return ExitError;
         }
+#pragma warning restore CA1031
     }
 
     /// <summary>Parses argv into a <see cref="CliCommand"/>. Returns false with a message on bad input.</summary>
@@ -181,7 +193,19 @@ public static class HostsCli
         HostsFile.Instance.Import(archive.FilePath);
         HostsFile.Instance.Save();
         output.WriteLine($"Applied preset '{archive.FileName}' to the hosts file.");
+        NoteIfDisabled(output);
         return ExitSuccess;
+    }
+
+    // A mutating write goes to whatever file HostsFile currently targets — which is hosts.disabled when
+    // the hosts file is disabled. Warn so "Applied/Imported/Merged ... to the hosts file" isn't read as
+    // "the live file changed"; it takes effect on the next `enable`.
+    private static void NoteIfDisabled(TextWriter output)
+    {
+        if (!HostsFile.IsEnabled)
+        {
+            output.WriteLine("Note: the hosts file is currently DISABLED, so this changed the disabled copy - run 'enable' for it to take effect.");
+        }
     }
 
     private static int EnableDisable(bool enable, TextWriter output)
@@ -226,6 +250,7 @@ public static class HostsCli
         HostsFile.Instance.Import(path);
         HostsFile.Instance.Save();
         output.WriteLine($"Imported '{path}' and saved the hosts file.");
+        NoteIfDisabled(output);
         return ExitSuccess;
     }
 
@@ -243,16 +268,19 @@ public static class HostsCli
         output.WriteLine(added == 0
             ? "No new entries were added - every entry in that file is already present."
             : $"Merged {added} new {(added == 1 ? "entry" : "entries")} and saved the hosts file.");
+        NoteIfDisabled(output);
         return ExitSuccess;
     }
 
     private static HostsArchive? FindPreset(string name)
     {
-        // Exact file-name match first (HostsArchiveList.FindByName), then a lenient match ignoring the
-        // extension so `MyHosts1` resolves `MyHosts1.txt` too.
+        // Tolerate surrounding whitespace from a quoted argument, then match by exact file name
+        // (HostsArchiveList.FindByName) and finally ignoring the extension so `MyHosts1` resolves
+        // `MyHosts1.txt` too.
+        var trimmed = name.Trim();
         var presets = HostsArchiveList.Instance;
-        return presets.FindByName(name)
-            ?? presets.FirstOrDefault(a => string.Equals(Path.GetFileNameWithoutExtension(a.FileName), name, StringComparison.OrdinalIgnoreCase));
+        return presets.FindByName(trimmed)
+            ?? presets.FirstOrDefault(a => string.Equals(Path.GetFileNameWithoutExtension(a.FileName), trimmed, StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool TryMapVerb(string token, out CliVerb verb)
@@ -278,7 +306,7 @@ public static class HostsCli
         Hosts File Editor - command line
 
         Usage:
-          HostsFileEditor.exe <command> [argument]
+          hfe <command> [argument]
 
         Commands:
           apply <preset>    Switch the hosts file to a saved preset (archive). Alias: -s <preset>
@@ -292,10 +320,12 @@ public static class HostsCli
         Notes:
           Commands that change the hosts file need administrator rights; you will get a UAC
           prompt unless the shell is already elevated. With no command the app opens normally.
+          Use hfe.exe in scripts (cmd waits for it); HostsFileEditor.exe also works but, being a
+          windowed app, needs `start /wait` for sequential steps.
 
         Examples:
-          HostsFileEditor.exe -s MyHosts1
-          HostsFileEditor.exe disable
-          HostsFileEditor.exe merge "C:\path\to\extra-hosts.txt"
+          hfe -s MyHosts1
+          hfe disable
+          hfe merge "C:\path\to\extra-hosts.txt"
         """;
 }
