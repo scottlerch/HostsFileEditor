@@ -22,8 +22,12 @@ save changes to the hosts file, so day-to-day viewing, archiving, and backups ne
  * Cut, copy, paste, duplicate, enable, disable and move one or more entries at a time
  * Filter and sort when there are a large number of host entries
  * Quickly enable and disable the entire hosts file
- * Archive and restore various hosts file configurations when switching between environments
- * Automatically ping endpoints to check availability
+ * Archive and restore various hosts file configurations (presets) when switching between environments
+ * Merge another hosts file into the current one, skipping duplicates
+ * Automatically ping endpoints to check availability, with a status-bar progress indicator
+ * Switch presets straight from the taskbar &mdash; right-click the app for a Jump List of your archives
+ * Full [command line](#command-line) for scripting: switch presets, enable/disable, import/merge
+ * Global shortcut key (default `Ctrl+Shift+H`) to hide/restore the classic edition from the tray
  * Modern variant supports light and dark themes
 
 ![Main screen classic](images/classic.png)
@@ -40,6 +44,60 @@ When selecting rows to move, delete, copy, or cut be sure to select the entire r
 
 Using the filter and sort while editing is quirky. The filter and sort are applied once a cell is edited so your cell may change positions or disappear depending on the current sort and filter.
 
+## Command line
+
+Both editions include a headless command line (v1.5.0 classic / v1.2.0 modern) so scripts can switch
+presets and toggle the hosts file &mdash; for example, applying a preset before launching a program and
+restoring it afterward:
+
+```bat
+hfe -s MyHosts1
+program.exe
+hfe -s DefaultHosts
+```
+
+### Commands
+
+| Command | Effect |
+|---|---|
+| `apply <preset>` (alias `-s`, `switch`) | Switch the hosts file to a saved preset (archive) |
+| `enable` | Enable the hosts file |
+| `disable` | Disable the hosts file (renames it aside) |
+| `import <file>` | Replace the hosts file with `<file>`, then save |
+| `merge <file>` | Merge `<file>` into the hosts file, skipping duplicates, then save |
+| `list` | List available presets |
+| `help` (`--help`, `-h`) | Show usage |
+
+Presets are the archives you save in the app (the **Archive** feature); `apply` matches the archive
+name case-insensitively, with or without its file extension.
+
+**Exit codes:** `0` success &middot; `1` runtime error (preset or file not found, permission declined)
+&middot; `2` usage error (unknown or malformed command). Errors print a one-line message to stderr.
+
+### `hfe.exe` vs `HostsFileEditor.exe`
+
+Two executables run the same commands:
+
+* **`hfe.exe`** &mdash; a small console launcher that ships next to the app. **Use this in scripts**:
+  it is a console app, so `cmd` and PowerShell wait for it to finish before running the next line, and
+  its output pipes/redirects naturally. Store installs also register `hfe` on `PATH` (an app-execution
+  alias), so `hfe -s MyHosts1` works from any console.
+* **`HostsFileEditor.exe`** &mdash; the app itself also accepts the same commands and runs them headless
+  (no window). Because it is a windowed app, `cmd` does *not* wait for it &mdash; wrap it as
+  `start /wait "" HostsFileEditor.exe -s MyHosts1` for sequential steps, or just use `hfe.exe`.
+
+Run with no command and the app opens normally.
+
+### Permissions
+
+Commands that change the hosts file need administrator rights, exactly like saving in the GUI: run
+from an elevated console for silent operation, or accept the single UAC prompt per command. A declined
+prompt cancels cleanly with exit code `1`. `list` and `help` never need elevation.
+
+Note: the CLI runs independently of an open GUI window &mdash; if the editor is open with unsaved
+changes, a CLI change to the hosts file isn't reflected there until you refresh (F5), and saving stale
+GUI edits afterward overwrites the CLI's change (last writer wins).
+
 ## Download
 
 Runs on Windows 10 and 11, x64 or ARM64. Two editions are available &mdash; pick whichever you prefer;
@@ -52,12 +110,14 @@ Installs and updates automatically, with no separate download:
  * [Hosts File Editor (modern)](https://apps.microsoft.com/detail/9NBQWCDXGF9R) &mdash; the new WinUI edition
  * [Hosts File Editor (classic)](https://apps.microsoft.com/detail/9NF73PSPK332) &mdash; the classic WinForms edition
 
-### Portable &mdash; v1.4.1
+### Portable &mdash; v1.5.0
 
 The **classic edition** rebuilt on .NET 10: fully self-contained (no runtime to install), runs as a standard user, and elevates on demand (a single UAC prompt) only when you save changes to the hosts file. Binaries are signed. Download directly from [GitHub Releases](https://github.com/scottlerch/HostsFileEditor/releases):
 
- * [Download v1.4.1 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.4.1/HostsFileEditor-1.4.1-x64.zip)
- * [Download v1.4.1 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.4.1/HostsFileEditor-1.4.1-arm64.zip)
+ * [Download v1.5.0 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.5.0/HostsFileEditor-1.5.0-x64.zip)
+ * [Download v1.5.0 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.5.0/HostsFileEditor-1.5.0-arm64.zip)
+
+_What's new in v1.5.0 (classic) / v1.2.0 (modern):_ a **feature release**. A full **[command line](#command-line)** in both editions plus a new `hfe.exe` console launcher &mdash; switch presets, enable/disable, import, and merge from scripts (Store installs put `hfe` on `PATH`). A taskbar **Jump List**: right-click the app icon to open any preset directly. **File &rarr; Merge** combines another hosts file into the current one, skipping duplicates (undoable). The modern edition gains **Sort options** next to the filter, and the **IP column now sorts numerically** in both editions (`8.8.8.8` before `10.0.0.2` before `10.0.0.10`, IPv6 after IPv4). **Auto-ping** shows a status-bar progress indicator while pings are in flight, flags per-entry failures (modern gets an error badge with tooltip), and pings immediately when enabled. The classic edition adds a **global shortcut** (default `Ctrl+Shift+H`, configurable) to hide/restore from the tray, its text **filter is now case-insensitive** to match modern, the parser validates IPs strictly at parse time, and the portable zip dropped ~9 MB of unused libraries. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.5.0).
 
 _What's new in v1.4.1:_ a small maintenance patch &mdash; the classic edition no longer targets the wrong entry when you **Insert or Move right after a Move** (the current-row anchor is restored by identity), and the modern edition skips a redundant filter pass on very large selections. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.4.1).
 
