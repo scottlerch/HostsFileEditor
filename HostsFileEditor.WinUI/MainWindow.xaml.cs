@@ -136,9 +136,22 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // the file order those commands reorder.
     private bool IsSortActive => _sortColumn is not null;
 
-    // Visibility of the "sort active" dot overlaid on the Sort options button — the sort analog of the
-    // filter's ActiveFiltersBadge, so a glance at the command bar shows whether a sort is applied.
+    // Visibility of the "sort active" badge overlaid on the Sort options button — the sort analog of
+    // the filter's ActiveFiltersBadge, so a glance shows whether a sort is applied.
     public Visibility SortActiveBadgeVisibility => IsSortActive ? Visibility.Visible : Visibility.Collapsed;
+
+    // Glyph shown in that badge: the icon of the currently sorted column (same glyphs as the menu
+    // items), so the overlay tells you WHICH column is sorted, not just that a sort is on. Empty when
+    // no sort is active (the badge is collapsed then anyway).
+    public string SortActiveGlyph => _sortColumn switch
+    {
+        HostsEntry.SortColumn.IpAddress => "\uE774",
+        HostsEntry.SortColumn.HostNames => "\uE8EC",
+        HostsEntry.SortColumn.Comment => "\uE90A",
+        HostsEntry.SortColumn.Enabled => "\uE739",
+        HostsEntry.SortColumn.Valid => "\uE946",
+        _ => string.Empty,
+    };
 
     public Visibility LoadingVisibility => IsLoaded || LoadFailed ? Visibility.Collapsed : Visibility.Visible;
 
@@ -554,6 +567,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
         OnPropertyChanged(nameof(SortActiveBadgeVisibility));
+        OnPropertyChanged(nameof(SortActiveGlyph));
     }
 
     private void ClearSort()
@@ -567,6 +581,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
         OnPropertyChanged(nameof(SortActiveBadgeVisibility));
+        OnPropertyChanged(nameof(SortActiveGlyph));
     }
 
     // "Sort options" menu (issue #81): a RadioMenuFlyoutItem whose Tag is a HostsEntry.SortColumn name.
