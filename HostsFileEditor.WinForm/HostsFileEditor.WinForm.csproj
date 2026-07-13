@@ -106,6 +106,21 @@
     <Message Importance="high" Text="Bundled elevation helper into $(PublishDir)Elevate" />
   </Target>
 
+  <!-- Publish the console launcher (AOT, self-contained single native exe) for this app's RID and drop
+       hfe.exe into the publish root so the ZIP / MSIX package ships it (and the MSIX alias resolves). -->
+  <Target Name="PublishCliLauncher" AfterTargets="Publish" BeforeTargets="SignAndPackage">
+    <PropertyGroup>
+      <_CliRid Condition="'$(_CliRid)' == ''">$(RuntimeIdentifier)</_CliRid>
+      <_CliRid Condition="'$(_CliRid)' == ''">win-x64</_CliRid>
+      <_CliStaging>$(MSBuildProjectDirectory)\obj\cli\$(Configuration)\$(_CliRid)\</_CliStaging>
+    </PropertyGroup>
+    <MSBuild Projects="$(MSBuildThisFileDirectory)..\HostsFileEditor.Cli\HostsFileEditor.Cli.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(_CliRid);PublishDir=$(_CliStaging)" />
+    <Copy SourceFiles="$(_CliStaging)hfe.exe" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Bundled hfe.exe launcher into $(PublishDir)" />
+  </Target>
+
   <Target Name="CreateBuildDirectories" BeforeTargets="BeforeBuild">
     <MakeDir Directories="$(MSBuildProjectDirectory)\..\artifacts" Condition="!Exists('$(MSBuildProjectDirectory)\..\artifacts')" />
   </Target>
