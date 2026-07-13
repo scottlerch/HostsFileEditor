@@ -282,14 +282,21 @@
                         <Grid>
                             <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8CB;" FontSize="16"/>
                             <!-- Same size and corner position as the filter count badge, but shows the
-                                 icon of the currently sorted column (SortActiveGlyph) instead of a dot. -->
+                                 icon of the currently sorted column (SortActiveGlyph) instead of a dot.
+                                 Pin to a 16x16 circle (CornerRadius 8) so the icon glyph can't stretch it
+                                 into an oval; a smaller FontSize keeps the glyph inside the circle. -->
                             <InfoBadge x:Name="SortActiveBadge"
+                                       Width="16"
+                                       Height="16"
+                                       MinWidth="16"
+                                       CornerRadius="8"
                                        Visibility="{x:Bind SortActiveBadgeVisibility, Mode=OneWay}"
                                        HorizontalAlignment="Right"
                                        VerticalAlignment="Top"
                                        Margin="0,-4,-4,0">
                                 <InfoBadge.IconSource>
                                     <FontIconSource FontFamily="Segoe MDL2 Assets"
+                                                    FontSize="10"
                                                     Glyph="{x:Bind SortActiveGlyph, Mode=OneWay}"/>
                                 </InfoBadge.IconSource>
                             </InfoBadge>
