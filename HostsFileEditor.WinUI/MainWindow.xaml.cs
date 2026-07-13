@@ -123,6 +123,36 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     public string SelectAllBannerText => $"All {Entries.Count:N0} entries selected — press Esc or click a row to clear.";
 
+    // Display-sort state (issue #81). Null column == file order. The sort is a VIEW ordering applied
+    // to the filtered set in BulkPopulateEntries; it never mutates HostsFile.Instance.Entries, so Save
+    // still writes the user's file order, and it is not an undoable edit. It re-applies automatically
+    // across filter changes, reloads, and bulk edits because every rebind routes through
+    // BulkPopulateEntries.
+    private HostsEntry.SortColumn? _sortColumn;
+    private bool _sortDescending;
+
+    // True while a display sort is active. Position-relative commands (Move Up/Down, Insert
+    // Above/Below) are disabled while sorted — "above/below" in a sorted view does not correspond to
+    // the file order those commands reorder.
+    private bool IsSortActive => _sortColumn is not null;
+
+    // Visibility of the "sort active" badge overlaid on the Sort options button — the sort analog of
+    // the filter's ActiveFiltersBadge, so a glance shows whether a sort is applied.
+    public Visibility SortActiveBadgeVisibility => IsSortActive ? Visibility.Visible : Visibility.Collapsed;
+
+    // Glyph shown in that badge: the icon of the currently sorted column (same glyphs as the menu
+    // items), so the overlay tells you WHICH column is sorted, not just that a sort is on. Empty when
+    // no sort is active (the badge is collapsed then anyway). Consumed only by UpdateSortBadgeIcon.
+    private string SortActiveGlyph => _sortColumn switch
+    {
+        HostsEntry.SortColumn.IpAddress => "\uE774",
+        HostsEntry.SortColumn.HostNames => "\uE8EC",
+        HostsEntry.SortColumn.Comment => "\uE90A",
+        HostsEntry.SortColumn.Enabled => "\uE739",
+        HostsEntry.SortColumn.Valid => "\uE946",
+        _ => string.Empty,
+    };
+
     public Visibility LoadingVisibility => IsLoaded || LoadFailed ? Visibility.Collapsed : Visibility.Visible;
 
     // Bottom status bar text: total lines and host (enabled) entries, mirroring the classic edition's
@@ -232,7 +262,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         _selectionService = new SelectionStateService(
             hasSelection: () => _logicalSelectAll || _selectedEntries.Count > 0,
-            hasAnchoredSelection: () => _selectedEntries.Count > 0,
+            // Move Up/Down and Insert Above/Below reorder the FILE relative to an anchor row, which is
+            // meaningless while a display sort is applied (issue #81) — so gate them on !IsSortActive
+            // too, disabling those commands (button + context menu) while sorted.
+            hasAnchoredSelection: () => _selectedEntries.Count > 0 && !IsSortActive,
             setRemoveEnabled: v => { RemoveButton?.IsEnabled = v; },
             setDuplicateEnabled: v => { DuplicateButton?.IsEnabled = v; },
             setMoveUpEnabled: v => { MoveUpButton?.IsEnabled = v; },
@@ -445,6 +478,14 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             filtered = [.. HostsFile.Instance.Entries.Where(e => EntryPassesFilter(e, filterText))];
         }
 
+        // Apply the display sort (issue #81) to the filtered COPY — never to HostsFile.Instance.Entries
+        // — so Save writes file order. A stable order (OrderBy) keeps ties in file order, which avoids
+        // the "everything scrambles" surprise when sorting a boolean column (Enabled/Status).
+        if (_sortColumn is { } sortColumn)
+        {
+            filtered = [.. filtered.OrderBy(e => e, HostsEntry.GetComparer(sortColumn, _sortDescending))];
+        }
+
         Entries = new ObservableCollection<HostsEntry>(filtered);
         OnPropertyChanged(nameof(Entries));
 
@@ -504,6 +545,88 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(EntriesEmptyVisibility));
         OnPropertyChanged(nameof(EntriesFilteredVisibility));
         _selectionService.UpdateSelectionDependentButtons();
+    }
+
+    // Applies (or clears) the display sort (issue #81) and rebinds, PRESERVING the selection by
+    // identity across the reorder — the sort "mutation" is just setting the sort fields; the existing
+    // selection-preserving rebind does the O(n) re-sort (in BulkPopulateEntries) and O(k) reselect.
+    private void ApplySort(HostsEntry.SortColumn column, bool descending)
+    {
+        if (!IsLoaded)
+        {
+            return;
+        }
+
+        MutateCoreAndRefreshPreservingSelection(() =>
+        {
+            _sortColumn = column;
+            _sortDescending = descending;
+        });
+
+        OnSortStateChanged();
+    }
+
+    private void ClearSort()
+    {
+        if (!IsLoaded || !IsSortActive)
+        {
+            return;
+        }
+
+        MutateCoreAndRefreshPreservingSelection(() => _sortColumn = null);
+        OnSortStateChanged();
+    }
+
+    // Everything that must refresh after _sortColumn changes: Move/Insert enablement depends on
+    // IsSortActive (button + context menu), and the sort badge reflects the new column.
+    private void OnSortStateChanged()
+    {
+        _selectionService.UpdateSelectionDependentButtons();
+        _selectionService.UpdateContextMenuItems();
+        OnPropertyChanged(nameof(SortActiveBadgeVisibility));
+        UpdateSortBadgeIcon();
+    }
+
+    // The Segoe MDL2 symbol font never varies; share one instance across badge updates.
+    private static readonly FontFamily SortBadgeFontFamily = new("Segoe MDL2 Assets");
+
+    // Assigns a FRESH FontIconSource to the sort badge for the current column. InfoBadge does not
+    // re-render when the Glyph changes inside the same IconSource object, so swapping the whole object
+    // is what makes the overlay track the selected column (issue #81).
+    private void UpdateSortBadgeIcon() =>
+        SortActiveBadge.IconSource = _sortColumn is null
+            ? null
+            : new FontIconSource
+            {
+                FontFamily = SortBadgeFontFamily,
+                FontSize = 10,
+                Glyph = SortActiveGlyph,
+            };
+
+    // "Sort options" menu (issue #81): a RadioMenuFlyoutItem whose Tag is a HostsEntry.SortColumn name.
+    // The direction toggle is OnSortDirectionClick; clearing back to file order is OnResetSortClick.
+    private void OnSortColumnClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is RadioMenuFlyoutItem { Tag: string tag } && Enum.TryParse<HostsEntry.SortColumn>(tag, out var column))
+        {
+            ApplySort(column, _sortDescending);
+        }
+    }
+
+    private void OnSortDirectionClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleMenuFlyoutItem toggle)
+        {
+            return;
+        }
+
+        _sortDescending = toggle.IsChecked;
+
+        // Re-apply only when a column is active; direction alone means nothing in file order.
+        if (_sortColumn is { } column)
+        {
+            ApplySort(column, _sortDescending);
+        }
     }
 
     // Resolves the trimmed filter text once (a visual-tree FindName lookup). Hoist this before a
@@ -615,16 +738,20 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             //
             // PreferredMinimum* are PHYSICAL pixels fed to WM_GETMINMAXINFO with no DPI awareness
             // (microsoft-ui-xaml #10452/#10475), while the chrome they protect (42epx title row,
-            // command bar, 32epx status row) is laid out in DIPs — a raw 300x320 stopped protecting
+            // command bar, 32epx status row) is laid out in DIPs — a raw 450x320 stopped protecting
             // the status row at >=250% display scale. Scale the DIP floor at apply time and
             // re-apply whenever the scale changes (XamlRoot.Changed fires on DPI/monitor moves);
             // XamlRoot is still null in the constructor, so the scaled value lands on Loaded.
+            //
+            // Width floor is 450 (not 300): below that the command bar's dynamic overflow plus the
+            // filter/sort pill get squeezed until the Sort options button clips and its overflow menu
+            // is unreachable, and the host/comment columns collapse.
             if (appWindow.Presenter is OverlappedPresenter presenter)
             {
                 void ApplyMinimumWindowSize()
                 {
                     var scale = Content?.XamlRoot?.RasterizationScale ?? 1.0;
-                    presenter.PreferredMinimumWidth = (int)Math.Ceiling(300 * scale);
+                    presenter.PreferredMinimumWidth = (int)Math.Ceiling(450 * scale);
                     presenter.PreferredMinimumHeight = (int)Math.Ceiling(320 * scale);
                 }
 
@@ -972,7 +1099,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnInsertBelowClick(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded)
+        // IsSortActive: "below" in a sorted view has no defined file position (issue #81). Button is
+        // disabled while sorted; this also blocks the Ctrl+Down path.
+        if (!IsLoaded || IsSortActive)
         {
             return;
         }
@@ -985,7 +1114,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnInsertAboveClick(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded)
+        // See OnInsertBelowClick: no position-relative insert while a display sort is active (#81).
+        if (!IsLoaded || IsSortActive)
         {
             return;
         }
@@ -1048,7 +1178,9 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnMoveUpClick(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded)
+        // IsSortActive: Move reorders the file relative to a displayed neighbor, which is meaningless
+        // while sorted (issue #81). The button is already disabled; this also blocks the Alt+Up path.
+        if (!IsLoaded || IsSortActive)
         {
             return;
         }
@@ -1066,7 +1198,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnMoveDownClick(object sender, RoutedEventArgs e)
     {
-        if (!IsLoaded)
+        // See OnMoveUpClick: no file moves while a display sort is active (issue #81).
+        if (!IsLoaded || IsSortActive)
         {
             return;
         }
@@ -1601,6 +1734,28 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             OnPropertyChanged(nameof(ActiveFilterCount));
             OnPropertyChanged(nameof(ActiveFiltersBadgeVisibility));
         }
+    }
+
+    // Symmetry with Reset Filters: clear the display sort back to file order and reset the menu's
+    // column radios + the Descending toggle to their default (unchecked / ascending). Programmatic
+    // IsChecked changes don't raise Click, so this doesn't re-enter the sort handlers.
+    private void OnResetSortClick(object sender, RoutedEventArgs e)
+    {
+        foreach (var item in SortMenuFlyout.Items)
+        {
+            if (item is RadioMenuFlyoutItem radio)
+            {
+                radio.IsChecked = false;
+            }
+        }
+
+        _sortDescending = false;
+        if (SortDescendingToggle is not null)
+        {
+            SortDescendingToggle.IsChecked = false;
+        }
+
+        ClearSort();
     }
 
     private void OnCheckClick(object sender, RoutedEventArgs e)

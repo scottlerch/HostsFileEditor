@@ -88,6 +88,91 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void GetComparer_SortsByColumnAndDirection()
+    {
+        var a = new HostsEntry("1.1.1.1 alpha.com");
+        var b = new HostsEntry("2.2.2.2 bravo.com");
+        var c = new HostsEntry("3.3.3.3 charlie.com");
+        var list = new List<HostsEntry> { c, a, b };
+
+        list.Sort(HostsEntry.GetComparer(HostsEntry.SortColumn.HostNames, descending: false));
+        list.Select(e => e.HostNames).ShouldBe(["alpha.com", "bravo.com", "charlie.com"]);
+
+        list.Sort(HostsEntry.GetComparer(HostsEntry.SortColumn.IpAddress, descending: true));
+        list.Select(e => e.IpAddress).ShouldBe(["3.3.3.3", "2.2.2.2", "1.1.1.1"]);
+    }
+
+    [TestMethod]
+    public void GetComparer_IpAddress_SortsNumericallyNotLexically()
+    {
+        // Order chosen to break a lexical sort: "10.0.0.10" < "10.0.0.2" and "8.8.8.8" > "172..."
+        // lexically, but numerically 8.8.8.8 is smallest and .2 precedes .10. IPv6 sorts after all
+        // IPv4 (numeric within family); a comment-only line (no IP) sorts last.
+        var rows = new List<HostsEntry>
+        {
+            new("10.0.0.10 ten"),
+            new("10.0.0.2 two"),
+            new("8.8.8.8 google"),
+            new("172.16.0.4 priv"),
+            new("::1 v6loop"),
+            new("2001:db8::1 v6doc"),
+            new("# a plain comment"),
+        };
+
+        var sorted = rows.OrderBy(e => e, HostsEntry.GetComparer(HostsEntry.SortColumn.IpAddress, descending: false)).ToList();
+
+        sorted.Select(e => e.HostNames).ShouldBe(
+            ["google", "two", "ten", "priv", "v6loop", "v6doc", string.Empty]);
+    }
+
+    [TestMethod]
+    public void GetComparer_IpAddress_Descending_KeepsFamiliesGroupedAndNoIpLast()
+    {
+        // Descending must reverse the address value but NOT the family/no-IP grouping: IPv4 stays
+        // before IPv6, and a no-IP row stays last, in both directions (issue #81).
+        var rows = new List<HostsEntry>
+        {
+            new("1.1.1.1 a"),
+            new("2.2.2.2 b"),
+            new("::1 v6"),
+            new("# note"),
+        };
+
+        var sorted = rows.OrderBy(e => e, HostsEntry.GetComparer(HostsEntry.SortColumn.IpAddress, descending: true)).ToList();
+
+        sorted.Select(e => e.HostNames).ShouldBe(["b", "a", "v6", string.Empty]);
+    }
+
+    [TestMethod]
+    public void GetComparer_IpAddress_ReflectsEditedAddress()
+    {
+        // The cached sort key must invalidate when the IP is edited.
+        var a = new HostsEntry("10.0.0.9 a");
+        var b = new HostsEntry("10.0.0.1 b");
+        a.IpAddress = "10.0.0.0"; // now a < b numerically
+
+        var sorted = new List<HostsEntry> { b, a }
+            .OrderBy(e => e, HostsEntry.GetComparer(HostsEntry.SortColumn.IpAddress, descending: false))
+            .ToList();
+
+        sorted.Select(e => e.HostNames).ShouldBe(["a", "b"]);
+    }
+
+    [TestMethod]
+    public void GetComparer_DoesNotMutateOriginalOrder_WhenUsedForStableCopy()
+    {
+        var a = new HostsEntry("127.0.0.1 a") { };
+        var b = new HostsEntry("127.0.0.1 b") { };
+        var source = new List<HostsEntry> { b, a };
+
+        // A display sort must be non-destructive: sorting a COPY leaves the source order untouched.
+        var sorted = source.OrderBy(e => e, HostsEntry.GetComparer(HostsEntry.SortColumn.HostNames, false)).ToList();
+
+        sorted.Select(e => e.HostNames).ShouldBe(["a", "b"]);
+        source.Select(e => e.HostNames).ShouldBe(["b", "a"]);
+    }
+
+    [TestMethod]
     public void MatchesFilter_HideComments_HidesOnlyCommentOnlyLines()
     {
         var comment = new HostsEntry("# just a comment");
