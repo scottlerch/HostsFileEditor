@@ -189,28 +189,6 @@
                     </AppBarButton.Icon>
                 </AppBarButton>
                 <AppBarSeparator/>
-                <!-- Sort by (issue #81): sorts the DISPLAYED view non-destructively; "File order"
-                     clears back to the file's order. Sorting disables the position-relative Move /
-                     Insert commands. -->
-                <AppBarButton Label="Sort" x:Name="SortButton">
-                    <AppBarButton.Icon>
-                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8CB;"/>
-                    </AppBarButton.Icon>
-                    <AppBarButton.Flyout>
-                        <MenuFlyout>
-                            <RadioMenuFlyoutItem Text="File order" GroupName="SortColumn" Tag="None" IsChecked="True" Click="OnSortColumnClick"/>
-                            <MenuFlyoutSeparator/>
-                            <RadioMenuFlyoutItem Text="IP Address" GroupName="SortColumn" Tag="IpAddress" Click="OnSortColumnClick"/>
-                            <RadioMenuFlyoutItem Text="Host Names" GroupName="SortColumn" Tag="HostNames" Click="OnSortColumnClick"/>
-                            <RadioMenuFlyoutItem Text="Comment" GroupName="SortColumn" Tag="Comment" Click="OnSortColumnClick"/>
-                            <RadioMenuFlyoutItem Text="Enabled" GroupName="SortColumn" Tag="Enabled" Click="OnSortColumnClick"/>
-                            <RadioMenuFlyoutItem Text="Status" GroupName="SortColumn" Tag="Valid" Click="OnSortColumnClick"/>
-                            <MenuFlyoutSeparator/>
-                            <ToggleMenuFlyoutItem Text="Descending" x:Name="SortDescendingToggle" Click="OnSortDirectionClick"/>
-                        </MenuFlyout>
-                    </AppBarButton.Flyout>
-                </AppBarButton>
-                <AppBarSeparator/>
                 <AppBarToggleButton Label="View Archive" IsChecked="{x:Bind IsArchiveVisible, Mode=OneWay}" Click="OnViewArchiveClick">
                     <AppBarToggleButton.Icon>
                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE71D;"/>
@@ -225,11 +203,54 @@
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+                    <!-- Sort options (issue #81): icon-only dropdown mirroring the filter options button,
+                         placed just left of the filter component since sort and filter are conceptually
+                         close. A dot overlays the icon while a sort is active. Sorting is non-destructive
+                         (Save writes file order) and disables the position-relative Move/Insert commands. -->
+                    <Button x:Name="SortOptionsButton"
+                            Grid.Column="0"
+                            Width="40"
+                            Height="32"
+                            Margin="0,0,8,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            CornerRadius="4"
+                            BorderThickness="1"
+                            Style="{StaticResource FilterOptionsButtonStyle}"
+                            ToolTipService.ToolTip="Sort options">
+                        <Grid>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8CB;" FontSize="16"/>
+                            <InfoBadge x:Name="SortActiveBadge"
+                                       Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                                       Visibility="{x:Bind SortActiveBadgeVisibility, Mode=OneWay}"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Top"
+                                       Margin="0,-4,-4,0" />
+                        </Grid>
+                        <Button.Flyout>
+                            <MenuFlyout x:Name="SortMenuFlyout" Placement="BottomEdgeAlignedRight">
+                                <RadioMenuFlyoutItem Text="IP Address" GroupName="SortColumn" Tag="IpAddress" Click="OnSortColumnClick"/>
+                                <RadioMenuFlyoutItem Text="Host Names" GroupName="SortColumn" Tag="HostNames" Click="OnSortColumnClick"/>
+                                <RadioMenuFlyoutItem Text="Comment" GroupName="SortColumn" Tag="Comment" Click="OnSortColumnClick"/>
+                                <RadioMenuFlyoutItem Text="Enabled" GroupName="SortColumn" Tag="Enabled" Click="OnSortColumnClick"/>
+                                <RadioMenuFlyoutItem Text="Status" GroupName="SortColumn" Tag="Valid" Click="OnSortColumnClick"/>
+                                <MenuFlyoutSeparator/>
+                                <ToggleMenuFlyoutItem Text="Descending" x:Name="SortDescendingToggle" Click="OnSortDirectionClick"/>
+                                <MenuFlyoutSeparator/>
+                                <MenuFlyoutItem Text="Reset Sort" Click="OnResetSortClick">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
                     <TextBox x:Name="FilterTextBox"
-                             Grid.Column="0"
+                             Grid.Column="1"
                              Width="200"
                              PlaceholderText="Filter hosts..."
                              VerticalAlignment="Center"
@@ -241,7 +262,7 @@
                              LostFocus="OnFilterBoxLostFocus"
                              Padding="12,4,12,4"/>
                     <Button x:Name="FilterOptionsButton"
-                            Grid.Column="1"
+                            Grid.Column="2"
                             Width="40"
                             Height="32"
                             HorizontalAlignment="Right"

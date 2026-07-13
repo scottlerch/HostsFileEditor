@@ -136,6 +136,10 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
     // the file order those commands reorder.
     private bool IsSortActive => _sortColumn is not null;
 
+    // Visibility of the "sort active" dot overlaid on the Sort options button — the sort analog of the
+    // filter's ActiveFiltersBadge, so a glance at the command bar shows whether a sort is applied.
+    public Visibility SortActiveBadgeVisibility => IsSortActive ? Visibility.Visible : Visibility.Collapsed;
+
     public Visibility LoadingVisibility => IsLoaded || LoadFailed ? Visibility.Collapsed : Visibility.Visible;
 
     // Bottom status bar text: total lines and host (enabled) entries, mirroring the classic edition's
@@ -549,6 +553,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         // Move/Insert enablement depends on IsSortActive; refresh it now that the sort changed.
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
+        OnPropertyChanged(nameof(SortActiveBadgeVisibility));
     }
 
     private void ClearSort()
@@ -561,24 +566,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         MutateCoreAndRefreshPreservingSelection(() => _sortColumn = null);
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
+        OnPropertyChanged(nameof(SortActiveBadgeVisibility));
     }
 
-    // "Sort by" menu (issue #81): a RadioMenuFlyoutItem whose Tag is a HostsEntry.SortColumn name, or
-    // "None" for file order. The direction toggle is handled separately (OnSortDirectionClick).
+    // "Sort options" menu (issue #81): a RadioMenuFlyoutItem whose Tag is a HostsEntry.SortColumn name.
+    // The direction toggle is OnSortDirectionClick; clearing back to file order is OnResetSortClick.
     private void OnSortColumnClick(object sender, RoutedEventArgs e)
     {
-        if (sender is not RadioMenuFlyoutItem { Tag: string tag })
-        {
-            return;
-        }
-
-        if (Enum.TryParse<HostsEntry.SortColumn>(tag, out var column))
+        if (sender is RadioMenuFlyoutItem { Tag: string tag } && Enum.TryParse<HostsEntry.SortColumn>(tag, out var column))
         {
             ApplySort(column, _sortDescending);
-        }
-        else
-        {
-            ClearSort();
         }
     }
 
@@ -1699,6 +1696,28 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             OnPropertyChanged(nameof(ActiveFilterCount));
             OnPropertyChanged(nameof(ActiveFiltersBadgeVisibility));
         }
+    }
+
+    // Symmetry with Reset Filters: clear the display sort back to file order and reset the menu's
+    // column radios + the Descending toggle to their default (unchecked / ascending). Programmatic
+    // IsChecked changes don't raise Click, so this doesn't re-enter the sort handlers.
+    private void OnResetSortClick(object sender, RoutedEventArgs e)
+    {
+        foreach (var item in SortMenuFlyout.Items)
+        {
+            if (item is RadioMenuFlyoutItem radio)
+            {
+                radio.IsChecked = false;
+            }
+        }
+
+        _sortDescending = false;
+        if (SortDescendingToggle is not null)
+        {
+            SortDescendingToggle.IsChecked = false;
+        }
+
+        ClearSort();
     }
 
     private void OnCheckClick(object sender, RoutedEventArgs e)
