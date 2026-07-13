@@ -205,6 +205,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="FilterTextBox"
                              Grid.Column="0"
@@ -218,10 +219,16 @@
                              GotFocus="OnFilterBoxGotFocus"
                              LostFocus="OnFilterBoxLostFocus"
                              Padding="12,4,12,4"/>
+                    <!-- Filter options is the MIDDLE of the attached pill (textbox | filter | sort), so
+                         it's square (CornerRadius 0); its right border is the divider to the sort button.
+                         The count badge sits at the top-right corner (Margin -4,-4), identical to the
+                         sort badge. The sort button (declared after this one) renders on top, but its
+                         background is transparent, so this badge is not clipped where they overlap. -->
                     <Button x:Name="FilterOptionsButton"
                             Grid.Column="1"
                             Width="40"
                             Height="32"
+                            CornerRadius="0"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center"
                             Style="{StaticResource FilterOptionsButtonStyle}"
@@ -253,6 +260,78 @@
                                 </ToggleMenuFlyoutItem>
                                 <MenuFlyoutSeparator/>
                                 <MenuFlyoutItem Text="Reset Filters" Click="OnResetFiltersClick">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                    <!-- Sort options (issue #81): the right cap of the attached filter pill (just right
+                         of the filter options button, since sort and filter are conceptually close). A
+                         dot overlays the icon while a sort is active. Sorting is non-destructive (Save
+                         writes file order) and disables the position-relative Move/Insert commands. -->
+                    <Button x:Name="SortOptionsButton"
+                            Grid.Column="2"
+                            Width="40"
+                            Height="32"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource FilterOptionsButtonStyle}"
+                            ToolTipService.ToolTip="Sort options">
+                        <Grid>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8CB;" FontSize="16"/>
+                            <!-- Same size and corner position as the filter count badge, but shows the
+                                 icon of the currently sorted column instead of a dot. Pin to a 16x16
+                                 circle (CornerRadius 8) so the icon glyph can't stretch it into an oval.
+                                 The IconSource is assigned in code (UpdateSortBadgeIcon) — a fresh
+                                 FontIconSource per column change, because InfoBadge does not re-render
+                                 when the Glyph changes inside the same IconSource object. -->
+                            <InfoBadge x:Name="SortActiveBadge"
+                                       Width="16"
+                                       Height="16"
+                                       MinWidth="16"
+                                       CornerRadius="8"
+                                       Visibility="{x:Bind SortActiveBadgeVisibility, Mode=OneWay}"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Top"
+                                       Margin="0,-4,-4,0"/>
+                        </Grid>
+                        <Button.Flyout>
+                            <MenuFlyout x:Name="SortMenuFlyout" Placement="BottomEdgeAlignedRight">
+                                <RadioMenuFlyoutItem Text="IP Address" GroupName="SortColumn" Tag="IpAddress" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE774;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <RadioMenuFlyoutItem Text="Host Names" GroupName="SortColumn" Tag="HostNames" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8EC;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <RadioMenuFlyoutItem Text="Comment" GroupName="SortColumn" Tag="Comment" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <RadioMenuFlyoutItem Text="Enabled" GroupName="SortColumn" Tag="Enabled" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <RadioMenuFlyoutItem Text="Status" GroupName="SortColumn" Tag="Valid" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE946;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <MenuFlyoutSeparator/>
+                                <ToggleMenuFlyoutItem Text="Descending" x:Name="SortDescendingToggle" Click="OnSortDirectionClick">
+                                    <ToggleMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74B;"/>
+                                    </ToggleMenuFlyoutItem.Icon>
+                                </ToggleMenuFlyoutItem>
+                                <MenuFlyoutSeparator/>
+                                <MenuFlyoutItem Text="Reset Sort" Click="OnResetSortClick">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;"/>
                                     </MenuFlyoutItem.Icon>
@@ -330,7 +409,19 @@
                                         <ColumnDefinition Width="3*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox Grid.Column="0" HorizontalAlignment="Left" VerticalAlignment="Center" MinWidth="0" Margin="8,0" IsChecked="{x:Bind Enabled, Mode=TwoWay}"/>
-                                    <TextBox Grid.Column="1" Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{x:Bind IpAddress, Mode=OneWay}" Margin="1,0" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                    <Grid Grid.Column="1" Margin="1,0">
+                                        <!-- The IP cell's tooltip explains a ping failure (see IpTooltip); the failed-ping
+                                             badge is IsHitTestVisible=False so it doesn't block editing, so hovering the badge
+                                             falls through to this TextBox's tooltip. -->
+                                        <TextBox Text="{x:Bind IpAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTipService.ToolTip="{x:Bind local:HostEntryBrushHelper.IpTooltip(IpAddress, PingFailed), Mode=OneWay}" CornerRadius="4,0,0,4" PlaceholderText="IP address..." />
+                                        <!-- Per-entry ping-failed indicator (issue #9): a critical badge on the right of the
+                                             IP cell, shown when the last ping to this IP didn't respond. -->
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xEA39;" FontSize="14"
+                                                  Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                  IsHitTestVisible="False"
+                                                  Visibility="{x:Bind local:HostEntryBrushHelper.PingFailedVisibility(PingFailed), Mode=OneWay}"/>
+                                    </Grid>
                                     <TextBox Grid.Column="2" Text="{x:Bind HostNames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0" PlaceholderText="Host names..." />
                                     <TextBox Grid.Column="3" Text="{x:Bind Comment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="1,0" CornerRadius="0,4,4,0" HorizontalAlignment="Stretch" PlaceholderText="Comments..." />
                                 </Grid>
@@ -396,10 +487,25 @@
             <Border Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
                     Visibility="{x:Bind StatusBackplateVisibility, Mode=OneWay}"/>
             <Border Background="Transparent" Padding="14,5">
-                <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
-                           Style="{StaticResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           VerticalAlignment="Center"/>
+                <Grid>
+                    <TextBlock Text="{x:Bind StatusText, Mode=OneWay}"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                    <!-- Ping-in-progress indicator (issue #9): an indeterminate ring shown on the
+                         right while any ping is in flight. -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Spacing="8"
+                                Visibility="{x:Bind PingProgressVisibility, Mode=OneWay}">
+                        <ProgressRing IsActive="True" Width="16" Height="16"/>
+                        <TextBlock Text="Pinging…"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
             </Border>
         </Grid>
     </Grid>

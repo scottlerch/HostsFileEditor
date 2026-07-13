@@ -30,12 +30,20 @@ public class HostsEntrySpanParserDifferentialTests
         "## double hash", "#", "##", "#   ", "# ",
         "   # indented comment",
         "\t#\ttabbed",
-        // invalid ip -> demoted to comment
+        // invalid ip -> demoted to comment (issue #80: entry-ness gated on a valid IP first token).
+        // The multi-hash / multi-space forms exercise the demote-vs-comment boundary where the two
+        // engines' comment-text extraction could otherwise diverge under the gate.
         "notanip host.com",
         "# notanip host.com",
         "999.999.999.999 host.example.com",
         "# 1.2.3.4 bad/host",
         "1.2.3.4 bad/host",
+        "##   notanip host.com",
+        "#   999.1.1.1 host.example.com",
+        "   notanip host.com",
+        "##notanip host.com",
+        "# just prose that looks like tokens",
+        "192.168.1.1:8080 host",
         // hash inside content
         "1.2.3.4 #immediatehash",
         "1.2.3.4 host # a # b # c",
