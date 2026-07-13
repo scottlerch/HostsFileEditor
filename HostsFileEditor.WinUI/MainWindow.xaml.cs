@@ -567,7 +567,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
         OnPropertyChanged(nameof(SortActiveBadgeVisibility));
-        OnPropertyChanged(nameof(SortActiveGlyph));
+        UpdateSortBadgeIcon();
     }
 
     private void ClearSort()
@@ -581,8 +581,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         _selectionService.UpdateSelectionDependentButtons();
         _selectionService.UpdateContextMenuItems();
         OnPropertyChanged(nameof(SortActiveBadgeVisibility));
-        OnPropertyChanged(nameof(SortActiveGlyph));
+        UpdateSortBadgeIcon();
     }
+
+    // Assigns a FRESH FontIconSource to the sort badge for the current column. InfoBadge does not
+    // re-render when the Glyph changes inside the same IconSource object, so swapping the whole object
+    // is what makes the overlay track the selected column (issue #81).
+    private void UpdateSortBadgeIcon() =>
+        SortActiveBadge.IconSource = _sortColumn is null
+            ? null
+            : new FontIconSource
+            {
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 10,
+                Glyph = SortActiveGlyph,
+            };
 
     // "Sort options" menu (issue #81): a RadioMenuFlyoutItem whose Tag is a HostsEntry.SortColumn name.
     // The direction toggle is OnSortDirectionClick; clearing back to file order is OnResetSortClick.
