@@ -1608,6 +1608,14 @@ internal sealed partial class MainForm : Form
 
             settings.SplitterWidth = splitContainer.SplitterDistance;
 
+            // Re-assign the hot-key combo so it is always written to user.config. A user-scoped setting
+            // that is only ever READ at its default value stays absent from the file, leaving the user
+            // nothing to edit — assigning the current value (which preserves any manual edit, since the
+            // app never changes it programmatically) marks it dirty so the <GlobalShowHideHotkey> entry
+            // materializes (issue #35).
+            var hotkeyCombo = settings.GlobalShowHideHotkey;
+            settings.GlobalShowHideHotkey = hotkeyCombo;
+
             settings.Save();
         }
         catch (ConfigurationErrorsException)
