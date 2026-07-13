@@ -52,6 +52,34 @@ internal sealed partial class MainForm : Form
     private bool _loadFailed;
 
     /// <summary>
+    /// Identifier for the global show/hide hot key (issue #35). Any per-process-unique value; chosen
+    /// away from 0 to avoid clashing with a default-0 registration elsewhere.
+    /// </summary>
+    private const int GlobalShowHideHotkeyId = 0x4846; // 'HF'
+
+    /// <summary>
+    /// True once the configured global show/hide hot key is registered (see
+    /// <see cref="RegisterGlobalHotkey"/>); gates the unregister in <see cref="OnHandleDestroyed"/>.
+    /// </summary>
+    private bool _globalHotkeyRegistered;
+
+    /// <summary>
+    /// The configured combo that FAILED to register (another app already owns it, or it is malformed),
+    /// so <see cref="OnFomLoad"/> can surface a one-time popup telling the user how to change it. Null
+    /// when the hot key registered successfully or is intentionally disabled (blank setting).
+    /// </summary>
+    private string? _globalHotkeyFailedCombo;
+    private bool _globalHotkeyPopupShown;
+
+    /// <summary>
+    /// "Pinging…" label + marquee progress bar shown right-aligned in the status strip while any ping
+    /// is in flight (issue #9). Created programmatically (rather than in the designer) and toggled
+    /// together from HostsEntry.PingActivityChanged.
+    /// </summary>
+    private ToolStripStatusLabel? _pingLabel;
+    private ToolStripProgressBar? _pingProgressBar;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainForm"/> class.
     /// </summary>
     public MainForm()
@@ -94,6 +122,102 @@ internal sealed partial class MainForm : Form
     }
 
     /// <inheritdoc />
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+
+        // Register the global show/hide hot key against the (now valid) window handle. Done here — not
+        // in Load — so it survives a handle recreation (WinForms recreates the handle on some style
+        // changes); OnHandleDestroyed unregisters.
+        RegisterGlobalHotkey();
+    }
+
+    /// <summary>
+    /// Registers the configurable global show/hide hot key (issue #35) from the
+    /// <c>GlobalShowHideHotkey</c> setting (default Ctrl+Shift+H). A blank/None value disables it
+    /// silently; a non-blank value that is malformed or already owned by another app records the combo
+    /// so <see cref="OnFomLoad"/> can show a one-time popup explaining how to change it.
+    /// </summary>
+    private void RegisterGlobalHotkey()
+    {
+        // Settings.Default touches user.config, which can be corrupt (LoadSettings does the full
+        // recovery later); fall back to "no hot key this session" rather than throwing out of a handle
+        // callback. OnHandleCreated runs before LoadSettings, so read the value directly here.
+        string? configured;
+        try
+        {
+            configured = Settings.Default.GlobalShowHideHotkey;
+        }
+        catch (ConfigurationErrorsException)
+        {
+            return;
+        }
+
+        var trimmed = configured?.Trim() ?? string.Empty;
+
+        // Blank / explicitly-disabled → feature off, no registration, no popup.
+        if (trimmed.Length == 0 ||
+            trimmed.Equals("None", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("Disabled", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!NativeHotkey.TryParseHotkey(trimmed, out var modifiers, out var key))
+        {
+            _globalHotkeyFailedCombo = trimmed; // malformed → guide the user
+            return;
+        }
+
+        _globalHotkeyRegistered = NativeHotkey.RegisterHotKey(
+            Handle, GlobalShowHideHotkeyId, modifiers | NativeHotkey.ModNoRepeat, key);
+
+        _globalHotkeyFailedCombo = _globalHotkeyRegistered ? null : trimmed;
+    }
+
+    /// <summary>
+    /// Tells the user (once) that the configured global hot key could not be registered, and where to
+    /// change or disable it. Shown from <see cref="OnFomLoad"/> after the window is up.
+    /// </summary>
+    private void ShowGlobalHotkeyFailedMessage()
+    {
+        string configPath;
+        try
+        {
+            configPath = ConfigurationManager
+                .OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath;
+        }
+        catch (ConfigurationErrorsException)
+        {
+            configPath = "the application's user.config file";
+        }
+
+        MessageBox.Show(
+            this,
+            $"The global show/hide shortcut \"{_globalHotkeyFailedCombo}\" could not be registered — " +
+            "another application is probably already using it (or it is not a valid combination).\n\n" +
+            "The editor still works normally; only the global shortcut is unavailable.\n\n" +
+            "To change or disable it, close the app and edit the GlobalShowHideHotkey value in:\n\n" +
+            $"{configPath}\n\n" +
+            "Examples:  \"Control, Shift, H\"  or  \"Ctrl+Alt+F8\".  Leave it blank to disable the shortcut.",
+            "Global Shortcut Unavailable",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
+    }
+
+    /// <inheritdoc />
+    protected override void OnHandleDestroyed(EventArgs e)
+    {
+        if (_globalHotkeyRegistered)
+        {
+            NativeHotkey.UnregisterHotKey(Handle, GlobalShowHideHotkeyId);
+            _globalHotkeyRegistered = false;
+        }
+
+        base.OnHandleDestroyed(e);
+    }
+
+    /// <inheritdoc />
     protected override void WndProc(ref Message message)
     {
         if (message.Msg == ProgramSingleInstance.WmShowFirstInstance)
@@ -104,9 +228,64 @@ internal sealed partial class MainForm : Form
             }
 
             this.ShowOrActivate();
+
+            // A second instance launched from a Jump List preset forwarded the archive path here
+            // (issue #10). Open it AFTER this message returns — BeginInvoke defers it out of the
+            // synchronous cross-process SendMessage, so the unsaved-changes MessageBox doesn't pump
+            // messages re-entrantly inside WndProc.
+            var pendingArchive = TaskbarJumpList.TakePendingOpenArchive();
+            if (pendingArchive is not null)
+            {
+                BeginInvoke(() => RequestOpenArchive(pendingArchive));
+            }
+        }
+        else if (message.Msg == NativeHotkey.WmHotkey && (int)message.WParam == GlobalShowHideHotkeyId)
+        {
+            ToggleShowHide();
         }
 
         base.WndProc(ref message);
+    }
+
+    /// <summary>
+    /// Toggles the window for the global hot key (issue #35). Hides to the tray only when the window is
+    /// already the foreground window; otherwise it restores/surfaces it. Keying off foreground (not just
+    /// Visible) means a visible-but-buried window is brought forward rather than hidden, and pressing the
+    /// hot key while a modal dialog we own is up surfaces that dialog (the owner isn't foreground) instead
+    /// of hiding the main window out from under it. <see cref="FormExtensions.ShowOrActivate"/> already
+    /// shows a hidden window and un-minimizes, so the restore branch needs nothing more.
+    /// </summary>
+    private void ToggleShowHide()
+    {
+        if (Visible && WindowState != FormWindowState.Minimized && NativeHotkey.GetForegroundWindow() == Handle)
+        {
+            Hide();
+        }
+        else
+        {
+            this.ShowOrActivate();
+        }
+    }
+
+    /// <summary>
+    /// Opens a Jump List preset (issue #10): warns if there are unsaved changes (offering to save),
+    /// then imports the archive into the editor. Shared by the fresh-launch path (OnFomLoad) and the
+    /// already-running path (WndProc forwarding).
+    /// </summary>
+    private void RequestOpenArchive(string archivePath)
+    {
+        if (string.IsNullOrEmpty(archivePath) || !File.Exists(archivePath))
+        {
+            return;
+        }
+
+        if (!ConfirmDiscardUnsavedChanges(
+                "You have unsaved changes to the hosts file. Save them before opening the preset?"))
+        {
+            return;
+        }
+
+        HostsFile.Instance.Import(archivePath);
     }
 
     /// <inheritdoc />
@@ -515,7 +694,40 @@ internal sealed partial class MainForm : Form
         // PropertyChanged into the bound grid from the thread pool.
         HostsEntry.UiSynchronizationContext = SynchronizationContext.Current;
 
+        // Ping-in-progress indicator (issue #9): a "Pinging…" label + marquee bar, right-aligned and
+        // hidden until a ping is in flight. Right-aligned items stack from the right in Items order, so
+        // adding the bar FIRST puts it at the far right and the label lands to its left → "Pinging…
+        // [bar]". Overflow.Never keeps them on the strip instead of collapsing into the >> menu.
+        // PingActivityChanged is marshalled to this UI context, so the handler runs on the UI thread.
+        // The status strip owns these items and disposes them with the form.
+        _pingLabel = new ToolStripStatusLabel("Pinging…")
+        {
+            Alignment = ToolStripItemAlignment.Right,
+            Overflow = ToolStripItemOverflow.Never,
+            Visible = false,
+        };
+        _pingProgressBar = new ToolStripProgressBar
+        {
+            Style = ProgressBarStyle.Marquee,
+            Alignment = ToolStripItemAlignment.Right,
+            Overflow = ToolStripItemOverflow.Never,
+            AutoSize = false,
+            Width = 100,
+            Visible = false,
+        };
+        statusStrip.Items.Add(_pingProgressBar);
+        statusStrip.Items.Add(_pingLabel);
+        HostsEntry.PingActivityChanged += OnPingActivityChanged;
+
         LoadSettings();
+
+        // If the configured global hot key couldn't be registered (issue #35), surface the guidance
+        // popup once — deferred via BeginInvoke so it appears over the shown window, not mid-load.
+        if (_globalHotkeyFailedCombo is not null && !_globalHotkeyPopupShown)
+        {
+            _globalHotkeyPopupShown = true;
+            BeginInvoke(ShowGlobalHotkeyFailedMessage);
+        }
 
         _hostsArchiveView = new BindingListView<HostsArchive>(components)
         {
@@ -643,8 +855,10 @@ internal sealed partial class MainForm : Form
 
         bindingSourceView.DataSource = _hostEntriesView;
 
-        _filter = new HostsFilter(
-                hostEntry => hostEntry.ToString().Contains(textFilter.Text));
+        // Supply the trimmed filter text; HostsFilter routes matching through HostsEntry.MatchesFilter
+        // so the classic and modern filters share one predicate (issue #75). This also makes the
+        // classic text match case-insensitive and trimmed, matching modern (was case-sensitive).
+        _filter = new HostsFilter(() => textFilter.Text.Trim());
 
         _hostEntriesView.Filter = _filter;
 
@@ -659,6 +873,20 @@ internal sealed partial class MainForm : Form
         menuContextDisable.Checked = !HostsFile.IsEnabled;
 
         UpdateNotifyIcon();
+
+        // Taskbar Jump List (issue #10): publish the current presets, and keep it in sync as archives
+        // are created/deleted.
+        TaskbarJumpList.Refresh();
+        HostsArchiveList.Instance.ListChanged += (s1, e1) => TaskbarJumpList.Refresh();
+
+        // If launched fresh from a Jump List entry (--open-archive "<path>"), open that preset now
+        // that the hosts file is loaded. The already-running case is handled in WndProc (a second
+        // instance forwards the path via TaskbarJumpList). RequestOpenArchive warns on unsaved changes.
+        var openArchivePath = TaskbarJumpList.TryGetOpenArchivePath(Environment.GetCommandLineArgs());
+        if (openArchivePath is not null)
+        {
+            RequestOpenArchive(openArchivePath);
+        }
 
         // HACK: Make sure a newly added row gets committed after
         // the first cell is validated so HostsEntry validation and data
@@ -722,6 +950,23 @@ internal sealed partial class MainForm : Form
     /// <param name="e">
     /// The event arguments.
     /// </param>
+    /// <summary>
+    /// Shows/hides the status-strip ping indicator when ping activity starts/stops. Marshalled to the
+    /// UI thread by HostsEntry (see PingActivityChanged); guards against a late notification arriving
+    /// after the form is disposed.
+    /// </summary>
+    private void OnPingActivityChanged(object? sender, EventArgs e)
+    {
+        if (IsDisposed || Disposing || _pingProgressBar is null || _pingLabel is null)
+        {
+            return;
+        }
+
+        var inProgress = HostsEntry.IsPingInProgress;
+        _pingLabel.Visible = inProgress;
+        _pingProgressBar.Visible = inProgress;
+    }
+
     private void OnFormClosing(object sender, FormClosingEventArgs e)
     {
         // Minimize to tray only when the user closes the window. Never veto an OS-initiated
@@ -851,7 +1096,8 @@ internal sealed partial class MainForm : Form
     /// If there are unsaved hosts-file changes, prompts to save/discard/cancel. Returns true if
     /// the caller should proceed with exiting (saved or discarded), false to abort the exit.
     /// </summary>
-    private bool ConfirmDiscardUnsavedChanges()
+    private bool ConfirmDiscardUnsavedChanges(
+        string prompt = "You have unsaved changes to the hosts file. Save them before exiting?")
     {
         // A failed load never built any state to lose, and touching HostsFile.Instance would rethrow
         // the cached load exception (tray/File Exit reach here even after a failed load).
@@ -862,7 +1108,7 @@ internal sealed partial class MainForm : Form
 
         var result = MessageBox.Show(
             this,
-            "You have unsaved changes to the hosts file. Save them before exiting?",
+            prompt,
             "Unsaved Changes",
             MessageBoxButtons.YesNoCancel,
             MessageBoxIcon.Warning);
@@ -975,15 +1221,9 @@ internal sealed partial class MainForm : Form
                 dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveAfter(selectedEntries, belowEntry);
 
-                // Skip the anchor re-find for a huge selection: the restore below drops it and nulls
-                // CurrentCell anyway (its >MaxSelectionRestoreCount branch), so the O(n) scan + scroll
-                // would be wasted — same gate the sort path uses.
-                if (selectedEntries.Count <= HostsEntryList.HugeSelectionThreshold)
-                {
-                    dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
-                }
-
-                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                // Re-anchor the current cell and restore the selection in one pass over the reordered
+                // view (a huge selection drops both, so the anchor re-find isn't wasted on it).
+                dataGridViewHostsEntries.RestoreSelection(selectedEntries, anchorEntry, anchorColumn);
             }
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null && dataGridViewHostsEntries.CurrentRow != null)
@@ -997,8 +1237,7 @@ internal sealed partial class MainForm : Form
 
                 HostsFile.Instance.Entries.MoveAfter([currentEntry], belowEntry);
 
-                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
-                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                dataGridViewHostsEntries.RestoreSelection(selectedEntries, anchorEntry, anchorColumn);
             }
         }
     }
@@ -1034,13 +1273,8 @@ internal sealed partial class MainForm : Form
                 dataGridViewHostsEntries.ClearSelection();
                 HostsFile.Instance.Entries.MoveBefore(selectedEntries, aboveEntry);
 
-                // See OnMoveDownClick: skip the wasted anchor re-find for a huge (dropped) selection.
-                if (selectedEntries.Count <= HostsEntryList.HugeSelectionThreshold)
-                {
-                    dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
-                }
-
-                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                // See OnMoveDownClick: re-anchor + restore selection in one pass (huge drops both).
+                dataGridViewHostsEntries.RestoreSelection(selectedEntries, anchorEntry, anchorColumn);
             }
         }
         else if (dataGridViewHostsEntries.CurrentHostEntry != null && dataGridViewHostsEntries.CurrentRow != null)
@@ -1054,8 +1288,7 @@ internal sealed partial class MainForm : Form
 
                 HostsFile.Instance.Entries.MoveBefore([currentEntry], aboveEntry);
 
-                dataGridViewHostsEntries.RestoreCurrentCell(anchorEntry, anchorColumn);
-                dataGridViewHostsEntries.SelectedHostEntries = selectedEntries;
+                dataGridViewHostsEntries.RestoreSelection(selectedEntries, anchorEntry, anchorColumn);
             }
         }
     }
@@ -1321,6 +1554,13 @@ internal sealed partial class MainForm : Form
         HostsEntry.AutoPingIPAddress = newState;
 
         menuPingIPs.Checked = newState;
+
+        // Ping the current entries immediately on enable (issue #9 follow-up), instead of waiting for
+        // the next reload/edit — so the user sees results (and the progress indicator) right away.
+        if (newState && !_loadFailed)
+        {
+            HostsFile.Instance.Entries.PingAll();
+        }
     }
 
     /// <summary>
@@ -1415,6 +1655,14 @@ internal sealed partial class MainForm : Form
             }
 
             settings.SplitterWidth = splitContainer.SplitterDistance;
+
+            // Re-assign the hot-key combo so it is always written to user.config. A user-scoped setting
+            // that is only ever READ at its default value stays absent from the file, leaving the user
+            // nothing to edit — assigning the current value (which preserves any manual edit, since the
+            // app never changes it programmatically) marks it dirty so the <GlobalShowHideHotkey> entry
+            // materializes (issue #35).
+            var hotkeyCombo = settings.GlobalShowHideHotkey;
+            settings.GlobalShowHideHotkey = hotkeyCombo;
 
             settings.Save();
         }

@@ -23,5 +23,8 @@
     <Setting Name="SplitterWidth" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">520</Value>
     </Setting>
+    <Setting Name="GlobalShowHideHotkey" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Control, Shift, H</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
