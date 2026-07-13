@@ -106,6 +106,28 @@
     <Message Importance="high" Text="Bundled elevation helper into $(PublishDir)Elevate" />
   </Target>
 
+  <!-- Strip the WPF native libraries the .NET Windows Desktop runtime bundles. This is a WinForms app
+       (UseWindowsForms, never UseWPF) and never initializes WPF, so wpfgfx / PresentationNative / PenImc
+       / D3DCompiler and their vcruntime dependency are ~9 MB of dead weight — verified the app launches
+       and runs with all of them removed. Single-file leaves native libs loose next to the exe
+       (IncludeNativeLibrariesForSelfExtract isn't set), so delete them from the publish output before
+       the ZIP/MSIX is built. Same approach the modern app uses for its unused Windows App SDK libs. -->
+  <Target Name="_StripUnusedWpfNativeLibs" AfterTargets="Publish" BeforeTargets="SignAndPackage">
+    <ItemGroup>
+      <_UnusedWpfLib Include="$(PublishDir)wpfgfx_cor3.dll" />
+      <_UnusedWpfLib Include="$(PublishDir)PresentationNative_cor3.dll" />
+      <_UnusedWpfLib Include="$(PublishDir)PenImc_cor3.dll" />
+      <_UnusedWpfLib Include="$(PublishDir)D3DCompiler_47_cor3.dll" />
+      <_UnusedWpfLib Include="$(PublishDir)vcruntime140_cor3.dll" />
+    </ItemGroup>
+    <!-- Warn (don't fail) if one is missing: a future runtime bump that renames/relocates one would
+         otherwise silently stop stripping and the ~9 MB creeps back with no signal. -->
+    <Warning Condition="!Exists('%(_UnusedWpfLib.Identity)')"
+             Text="Expected unused WPF native lib not found (runtime layout may have changed): %(_UnusedWpfLib.Identity)" />
+    <Delete Files="@(_UnusedWpfLib)" />
+    <Message Importance="high" Text="Stripped unused WPF native libraries from the classic publish output." />
+  </Target>
+
   <!-- Publish the console launcher (AOT, self-contained single native exe) for this app's RID and drop
        hfe.exe into the publish root so the ZIP / MSIX package ships it (and the MSIX alias resolves). -->
   <Target Name="PublishCliLauncher" AfterTargets="Publish" BeforeTargets="SignAndPackage">
