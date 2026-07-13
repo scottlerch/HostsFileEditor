@@ -51,6 +51,7 @@ internal sealed partial class MainForm : Form
     /// </summary>
     private bool _loadFailed;
 
+    /// <summary>
     /// Identifier for the global show/hide hot key (issue #35). Any per-process-unique value; chosen
     /// away from 0 to avoid clashing with a default-0 registration elsewhere.
     /// </summary>
@@ -59,9 +60,10 @@ internal sealed partial class MainForm : Form
     /// <summary>
     /// The global hot key that toggles the window between the tray and the foreground: Ctrl+Alt+H.
     /// Registered system-wide so it works while the window is hidden/unfocused (a normal accelerator
-    /// cannot reach a hidden window). Failure to register (e.g. another app owns the combo) is ignored.
+    /// cannot reach a hidden window). MOD_NOREPEAT so holding the combo fires once, not a stream.
+    /// Failure to register (e.g. another app owns the combo) is ignored.
     /// </summary>
-    private const uint GlobalShowHideModifiers = NativeHotkey.ModControl | NativeHotkey.ModAlt;
+    private const uint GlobalShowHideModifiers = NativeHotkey.ModControl | NativeHotkey.ModAlt | NativeHotkey.ModNoRepeat;
     private const uint GlobalShowHideKey = (uint)Keys.H;
 
     private bool _globalHotkeyRegistered;
@@ -159,22 +161,21 @@ internal sealed partial class MainForm : Form
     }
 
     /// <summary>
-    /// Toggles the window between the tray and the foreground for the global hot key (issue #35).
-    /// Shown-and-not-minimized hides to the tray; hidden or minimized restores and activates.
+    /// Toggles the window for the global hot key (issue #35). Hides to the tray only when the window is
+    /// already the foreground window; otherwise it restores/surfaces it. Keying off foreground (not just
+    /// Visible) means a visible-but-buried window is brought forward rather than hidden, and pressing the
+    /// hot key while a modal dialog we own is up surfaces that dialog (the owner isn't foreground) instead
+    /// of hiding the main window out from under it. <see cref="FormExtensions.ShowOrActivate"/> already
+    /// shows a hidden window and un-minimizes, so the restore branch needs nothing more.
     /// </summary>
     private void ToggleShowHide()
     {
-        if (Visible && WindowState != FormWindowState.Minimized)
+        if (Visible && WindowState != FormWindowState.Minimized && NativeHotkey.GetForegroundWindow() == Handle)
         {
             Hide();
         }
         else
         {
-            if (WindowState == FormWindowState.Minimized)
-            {
-                WindowState = FormWindowState.Normal;
-            }
-
             this.ShowOrActivate();
         }
     }

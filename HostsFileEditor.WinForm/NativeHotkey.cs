@@ -17,6 +17,12 @@ internal static partial class NativeHotkey
     public const uint ModControl = 0x0002;
     public const uint ModShift = 0x0004;
 
+    /// <summary>
+    /// MOD_NOREPEAT — coalesce keyboard auto-repeat so holding the combo fires WM_HOTKEY once per
+    /// physical press instead of a stream that flickers the window (Windows 7+).
+    /// </summary>
+    public const uint ModNoRepeat = 0x4000;
+
     [LibraryImport("user32.dll", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -26,4 +32,9 @@ internal static partial class NativeHotkey
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool UnregisterHotKey(IntPtr hWnd, int id);
+
+    /// <summary>Foreground window HWND — lets the toggle hide only when the window is already in front.</summary>
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    public static partial IntPtr GetForegroundWindow();
 }
