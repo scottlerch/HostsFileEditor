@@ -203,54 +203,12 @@
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0" VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <!-- Sort options (issue #81): icon-only dropdown mirroring the filter options button,
-                         placed just left of the filter component since sort and filter are conceptually
-                         close. A dot overlays the icon while a sort is active. Sorting is non-destructive
-                         (Save writes file order) and disables the position-relative Move/Insert commands. -->
-                    <Button x:Name="SortOptionsButton"
-                            Grid.Column="0"
-                            Width="40"
-                            Height="32"
-                            Margin="0,0,8,0"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            CornerRadius="4"
-                            BorderThickness="1"
-                            Style="{StaticResource FilterOptionsButtonStyle}"
-                            ToolTipService.ToolTip="Sort options">
-                        <Grid>
-                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8CB;" FontSize="16"/>
-                            <InfoBadge x:Name="SortActiveBadge"
-                                       Style="{StaticResource AttentionDotInfoBadgeStyle}"
-                                       Visibility="{x:Bind SortActiveBadgeVisibility, Mode=OneWay}"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Top"
-                                       Margin="0,-4,-4,0" />
-                        </Grid>
-                        <Button.Flyout>
-                            <MenuFlyout x:Name="SortMenuFlyout" Placement="BottomEdgeAlignedRight">
-                                <RadioMenuFlyoutItem Text="IP Address" GroupName="SortColumn" Tag="IpAddress" Click="OnSortColumnClick"/>
-                                <RadioMenuFlyoutItem Text="Host Names" GroupName="SortColumn" Tag="HostNames" Click="OnSortColumnClick"/>
-                                <RadioMenuFlyoutItem Text="Comment" GroupName="SortColumn" Tag="Comment" Click="OnSortColumnClick"/>
-                                <RadioMenuFlyoutItem Text="Enabled" GroupName="SortColumn" Tag="Enabled" Click="OnSortColumnClick"/>
-                                <RadioMenuFlyoutItem Text="Status" GroupName="SortColumn" Tag="Valid" Click="OnSortColumnClick"/>
-                                <MenuFlyoutSeparator/>
-                                <ToggleMenuFlyoutItem Text="Descending" x:Name="SortDescendingToggle" Click="OnSortDirectionClick"/>
-                                <MenuFlyoutSeparator/>
-                                <MenuFlyoutItem Text="Reset Sort" Click="OnResetSortClick">
-                                    <MenuFlyoutItem.Icon>
-                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;"/>
-                                    </MenuFlyoutItem.Icon>
-                                </MenuFlyoutItem>
-                            </MenuFlyout>
-                        </Button.Flyout>
-                    </Button>
                     <TextBox x:Name="FilterTextBox"
-                             Grid.Column="1"
+                             Grid.Column="0"
                              Width="200"
                              PlaceholderText="Filter hosts..."
                              VerticalAlignment="Center"
@@ -261,10 +219,15 @@
                              GotFocus="OnFilterBoxGotFocus"
                              LostFocus="OnFilterBoxLostFocus"
                              Padding="12,4,12,4"/>
+                    <!-- Filter options is now the MIDDLE of the attached pill (textbox | filter | sort),
+                         so it's square (CornerRadius 0); its right border is the divider to the sort
+                         button. Its count badge is pulled in to the button's right edge (Margin right 0)
+                         so it doesn't overflow onto the adjacent sort button. -->
                     <Button x:Name="FilterOptionsButton"
-                            Grid.Column="2"
+                            Grid.Column="1"
                             Width="40"
                             Height="32"
+                            CornerRadius="0"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center"
                             Style="{StaticResource FilterOptionsButtonStyle}"
@@ -276,7 +239,7 @@
                                        Visibility="{x:Bind ActiveFiltersBadgeVisibility, Mode=OneWay}"
                                        HorizontalAlignment="Right"
                                        VerticalAlignment="Top"
-                                       Margin="0,-4,-4,0" />
+                                       Margin="0,-4,0,0" />
                         </Grid>
                         <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedRight">
@@ -296,6 +259,69 @@
                                 </ToggleMenuFlyoutItem>
                                 <MenuFlyoutSeparator/>
                                 <MenuFlyoutItem Text="Reset Filters" Click="OnResetFiltersClick">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                    <!-- Sort options (issue #81): the right cap of the attached filter pill (just right
+                         of the filter options button, since sort and filter are conceptually close). A
+                         dot overlays the icon while a sort is active. Sorting is non-destructive (Save
+                         writes file order) and disables the position-relative Move/Insert commands. -->
+                    <Button x:Name="SortOptionsButton"
+                            Grid.Column="2"
+                            Width="40"
+                            Height="32"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource FilterOptionsButtonStyle}"
+                            ToolTipService.ToolTip="Sort options">
+                        <Grid>
+                            <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8CB;" FontSize="16"/>
+                            <InfoBadge x:Name="SortActiveBadge"
+                                       Style="{StaticResource AttentionDotInfoBadgeStyle}"
+                                       Visibility="{x:Bind SortActiveBadgeVisibility, Mode=OneWay}"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Top"
+                                       Margin="0,-4,-4,0" />
+                        </Grid>
+                        <Button.Flyout>
+                            <MenuFlyout x:Name="SortMenuFlyout" Placement="BottomEdgeAlignedRight">
+                                <RadioMenuFlyoutItem Text="IP Address" GroupName="SortColumn" Tag="IpAddress" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE774;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <RadioMenuFlyoutItem Text="Host Names" GroupName="SortColumn" Tag="HostNames" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE8EC;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <RadioMenuFlyoutItem Text="Comment" GroupName="SortColumn" Tag="Comment" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE90A;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <RadioMenuFlyoutItem Text="Enabled" GroupName="SortColumn" Tag="Enabled" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE739;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <RadioMenuFlyoutItem Text="Status" GroupName="SortColumn" Tag="Valid" Click="OnSortColumnClick">
+                                    <RadioMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE946;"/>
+                                    </RadioMenuFlyoutItem.Icon>
+                                </RadioMenuFlyoutItem>
+                                <MenuFlyoutSeparator/>
+                                <ToggleMenuFlyoutItem Text="Descending" x:Name="SortDescendingToggle" Click="OnSortDirectionClick">
+                                    <ToggleMenuFlyoutItem.Icon>
+                                        <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE74B;"/>
+                                    </ToggleMenuFlyoutItem.Icon>
+                                </ToggleMenuFlyoutItem>
+                                <MenuFlyoutSeparator/>
+                                <MenuFlyoutItem Text="Reset Sort" Click="OnResetSortClick">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon FontFamily="Segoe MDL2 Assets" Glyph="&#xE72C;"/>
                                     </MenuFlyoutItem.Icon>
