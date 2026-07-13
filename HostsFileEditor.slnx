@@ -19,6 +19,7 @@
     <File Path="Readme.md" />
     <File Path="_config.yml" />
   </Folder>
+  <Project Path="HostsFileEditor.Cli/HostsFileEditor.Cli.csproj" />
   <Project Path="HostsFileEditor.Core.Tests/HostsFileEditor.Core.Tests.csproj" />
   <Project Path="HostsFileEditor.Core/HostsFileEditor.Core.csproj" />
   <Project Path="HostsFileEditor.Elevate/HostsFileEditor.Elevate.csproj" />

@@ -33,6 +33,27 @@ public class HostsArchiveListTests
     }
 
     [TestMethod]
+    public void FindByName_MatchesCaseInsensitively()
+    {
+        File.WriteAllText(Path.Combine(_tempDir, "MyHosts1"), "x");
+        File.WriteAllText(Path.Combine(_tempDir, "Default"), "y");
+        HostsArchiveList.Instance.Refresh();
+
+        HostsArchiveList.Instance.FindByName("MyHosts1").ShouldNotBeNull();
+        HostsArchiveList.Instance.FindByName("myhosts1")!.FileName.ShouldBe("MyHosts1");
+        HostsArchiveList.Instance.FindByName("DEFAULT")!.FileName.ShouldBe("Default");
+    }
+
+    [TestMethod]
+    public void FindByName_ReturnsNull_WhenMissing()
+    {
+        File.WriteAllText(Path.Combine(_tempDir, "MyHosts1"), "x");
+        HostsArchiveList.Instance.Refresh();
+
+        HostsArchiveList.Instance.FindByName("nope").ShouldBeNull();
+    }
+
+    [TestMethod]
     public void Delete_RemovesFile()
     {
         var path = Path.Combine(_tempDir, "a.txt");

@@ -199,7 +199,7 @@
           Condition="Exists('$(MSBuildProjectDirectory)\AppxManifest.xml')"
           DependsOnTargets="_ResolvePackagingTools;_StampSigningConfig"
           AfterTargets="Publish"
-          Inputs="@(ResolvedFileToPublish);$(ProjectDir)$(PublishDir)Elevate\HostsFileEditor.Elevate.exe;$(_PackagedOutputStampDir)$(ProjectName).signing.stamp"
+          Inputs="@(ResolvedFileToPublish);$(ProjectDir)$(PublishDir)Elevate\HostsFileEditor.Elevate.exe;$(ProjectDir)$(PublishDir)hfe.exe;$(_PackagedOutputStampDir)$(ProjectName).signing.stamp"
           Outputs="$(ProjectDir)$(PublishDir)$(AssemblyName).msix">
     <PropertyGroup>
       <_EffectivePublishDir>$(ProjectDir)$(PublishDir)</_EffectivePublishDir>
@@ -275,6 +275,8 @@
     <ItemGroup>
       <_FilesToSign Include="$(_EffectivePublishDir)$(AssemblyName).exe" Condition="Exists('$(_EffectivePublishDir)$(AssemblyName).exe')" />
       <_FilesToSign Include="$(_EffectivePublishDir)Elevate\HostsFileEditor.Elevate.exe" Condition="Exists('$(_EffectivePublishDir)Elevate\HostsFileEditor.Elevate.exe')" />
+      <!-- The console launcher (issue #2), bundled into the publish root by PublishCliLauncher. -->
+      <_FilesToSign Include="$(_EffectivePublishDir)hfe.exe" Condition="Exists('$(_EffectivePublishDir)hfe.exe')" />
     </ItemGroup>
     <Exec Condition="'$(EnableSigning)'=='true' and '$(_SignArgs)' != '' and '@(_FilesToSign)' != ''"
           Command="&quot;$(SignToolExe)&quot; sign $(_SignArgs) @(_FilesToSign->'&quot;%(FullPath)&quot;', ' ')" />

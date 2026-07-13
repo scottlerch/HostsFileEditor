@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Console subsystem (Exe, not WinExe): cmd/PowerShell WAIT for a console app, so `hfe -s Foo`
+         blocks in a script without needing `start /wait` — unlike the GUI HostsFileEditor.exe. -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <AssemblyName>hfe</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      Published self-contained + AOT so the launcher is a single native exe with no runtime
+      dependency, and therefore drops cleanly next to either app (including the self-contained WinUI
+      package). A plain Debug build stays framework-dependent for a fast inner loop — mirrors the
+      HostsFileEditor.Elevate helper.
+    -->
+    <PublishAot>true</PublishAot>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HostsFileEditor.Core\HostsFileEditor.Core.csproj" />
+  </ItemGroup>
+</Project>

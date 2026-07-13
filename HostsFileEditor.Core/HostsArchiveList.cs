@@ -32,6 +32,21 @@ public class HostsArchiveList : BindingList<HostsArchive>
 
     public static HostsArchiveList Instance => _instance.Value;
 
+    /// <summary>
+    /// Finds an archive by its file name, case-insensitively (the Windows file system's own rule and
+    /// the same comparison <see cref="HostsArchive.FileNameComparer"/> uses). Returns
+    /// <see langword="null"/> when no archive matches. Used by the command-line preset switch (issue
+    /// #2) to resolve a name like <c>MyHosts1</c> to the archive to apply; matches the exact file name
+    /// the archive was saved under (archives are stored as a file named for the archive).
+    /// </summary>
+    public HostsArchive? FindByName(string name)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+
+        return this.FirstOrDefault(
+            archive => string.Equals(archive.FileName, name, StringComparison.OrdinalIgnoreCase));
+    }
+
     public void Delete(HostsArchive archive)
     {
         ArgumentNullException.ThrowIfNull(archive);
