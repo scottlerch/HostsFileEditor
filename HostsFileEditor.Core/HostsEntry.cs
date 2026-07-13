@@ -615,9 +615,11 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     /// <summary>
     /// Builds a comparer over <see cref="HostsEntry"/> for a given column and direction (issue #81) —
     /// the single Core definition so both editions sort identically (cf. the classic edition's typed
-    /// <c>ComparerFor</c>). String columns use culture-sensitive comparison, matching the framework's
-    /// original property sort. The comparer is allocation-free per comparison (no boxing) and does not
-    /// mutate anything — a display sort must not touch the underlying entry order.
+    /// <c>ComparerFor</c>). The IP column sorts <em>numerically</em> by address value (IPv4 before
+    /// IPv6, ascending; rows with no parseable IP sort last) — see <see cref="GetIpSortKey"/>. The
+    /// other string columns use culture-sensitive comparison, matching the framework's original
+    /// property sort. The comparer is allocation-free per comparison (no boxing) and does not mutate
+    /// entry order — a display sort must not touch the underlying list.
     /// </summary>
     public static IComparer<HostsEntry> GetComparer(SortColumn column, bool descending)
     {
@@ -627,7 +629,10 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 #pragma warning disable CA1309
         Comparer<HostsEntry> comparer = column switch
         {
-            SortColumn.IpAddress => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.IpAddress, y.IpAddress, StringComparison.CurrentCulture)),
+            // IP sorts by numeric address value, not lexically — "10.0.0.2" < "10.0.0.10" and
+            // "8.8.8.8" < "172.16.0.4", which a string sort gets backwards (issue #81). The per-entry
+            // key is computed once and cached (GetIpSortKey), so a 400K-row sort parses each IP once.
+            SortColumn.IpAddress => Comparer<HostsEntry>.Create(static (x, y) => x.GetIpSortKey().CompareTo(y.GetIpSortKey())),
             SortColumn.HostNames => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.HostNames, y.HostNames, StringComparison.CurrentCulture)),
             SortColumn.Comment => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.Comment, y.Comment, StringComparison.CurrentCulture)),
             SortColumn.Enabled => Comparer<HostsEntry>.Create(static (x, y) => x.Enabled.CompareTo(y.Enabled)),
@@ -639,6 +644,62 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         return descending
             ? Comparer<HostsEntry>.Create((x, y) => comparer.Compare(y, x))
             : comparer;
+    }
+
+    // A numeric, allocation-free sort key for the IP column (issue #81). Ordering: Rank groups the
+    // families (0 = IPv4, 1 = IPv6, 2 = no parseable IP → sorts last), then Hi/Lo hold the address
+    // bytes big-endian so a plain unsigned compare == numeric address order. IPv4 packs its 4 bytes
+    // into the top of Hi (Lo stays 0); IPv6 packs all 16 bytes across Hi and Lo.
+    internal readonly record struct IpSortKey(byte Rank, ulong Hi, ulong Lo) : IComparable<IpSortKey>
+    {
+        public int CompareTo(IpSortKey other)
+        {
+            var c = Rank.CompareTo(other.Rank);
+            if (c != 0)
+            {
+                return c;
+            }
+
+            c = Hi.CompareTo(other.Hi);
+            return c != 0 ? c : Lo.CompareTo(other.Lo);
+        }
+    }
+
+    // Cached IP sort key. Lazily computed from _ipAddress and invalidated whenever the IP changes
+    // (see ValidateIpAddress), so a 400K-row IP sort parses each address once (O(n)) instead of on
+    // every comparison (O(n log n)).
+    private IpSortKey? _ipSortKey;
+
+    internal IpSortKey GetIpSortKey() => _ipSortKey ??= ComputeIpSortKey(_ipAddress);
+
+    private static IpSortKey ComputeIpSortKey(string ip)
+    {
+        if (!IPAddress.TryParse(ip, out var addr))
+        {
+            // Comment-only / invalid-IP line: no address to order by, so sort after all real IPs.
+            return new IpSortKey(2, 0, 0);
+        }
+
+        var bytes = addr.GetAddressBytes();
+        if (bytes.Length == 4)
+        {
+            var hi = ((ulong)bytes[0] << 56) | ((ulong)bytes[1] << 48) | ((ulong)bytes[2] << 40) | ((ulong)bytes[3] << 32);
+            return new IpSortKey(0, hi, 0);
+        }
+
+        // IPv6 (16 bytes): first 8 → Hi, last 8 → Lo, big-endian.
+        ulong high = 0, low = 0;
+        for (var i = 0; i < 8; i++)
+        {
+            high = (high << 8) | bytes[i];
+        }
+
+        for (var i = 8; i < 16; i++)
+        {
+            low = (low << 8) | bytes[i];
+        }
+
+        return new IpSortKey(1, high, low);
     }
 
     /// <summary>
@@ -798,6 +859,10 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
     private void ValidateIpAddress()
     {
+        // The IP is (re)validated because it was set/changed, so the cached numeric sort key (issue
+        // #81) is stale — drop it so the next IP sort recomputes from the new address.
+        _ipSortKey = null;
+
         // The IP is (re)validated because it was set/changed, so any prior ping result is stale —
         // clear the failure flag (change-gated, so it's free on the parse path where it's already
         // false). If auto-ping is on, the ping below re-establishes it from the fresh result.

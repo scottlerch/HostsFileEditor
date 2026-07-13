@@ -103,6 +103,44 @@ public class HostsEntryTests
     }
 
     [TestMethod]
+    public void GetComparer_IpAddress_SortsNumericallyNotLexically()
+    {
+        // Order chosen to break a lexical sort: "10.0.0.10" < "10.0.0.2" and "8.8.8.8" > "172..."
+        // lexically, but numerically 8.8.8.8 is smallest and .2 precedes .10. IPv6 sorts after all
+        // IPv4 (numeric within family); a comment-only line (no IP) sorts last.
+        var rows = new List<HostsEntry>
+        {
+            new("10.0.0.10 ten"),
+            new("10.0.0.2 two"),
+            new("8.8.8.8 google"),
+            new("172.16.0.4 priv"),
+            new("::1 v6loop"),
+            new("2001:db8::1 v6doc"),
+            new("# a plain comment"),
+        };
+
+        var sorted = rows.OrderBy(e => e, HostsEntry.GetComparer(HostsEntry.SortColumn.IpAddress, descending: false)).ToList();
+
+        sorted.Select(e => e.HostNames).ShouldBe(
+            ["google", "two", "ten", "priv", "v6loop", "v6doc", string.Empty]);
+    }
+
+    [TestMethod]
+    public void GetComparer_IpAddress_ReflectsEditedAddress()
+    {
+        // The cached sort key must invalidate when the IP is edited.
+        var a = new HostsEntry("10.0.0.9 a");
+        var b = new HostsEntry("10.0.0.1 b");
+        a.IpAddress = "10.0.0.0"; // now a < b numerically
+
+        var sorted = new List<HostsEntry> { b, a }
+            .OrderBy(e => e, HostsEntry.GetComparer(HostsEntry.SortColumn.IpAddress, descending: false))
+            .ToList();
+
+        sorted.Select(e => e.HostNames).ShouldBe(["a", "b"]);
+    }
+
+    [TestMethod]
     public void GetComparer_DoesNotMutateOriginalOrder_WhenUsedForStableCopy()
     {
         var a = new HostsEntry("127.0.0.1 a") { };

@@ -546,26 +546,43 @@ internal sealed class HostsEntryDataGridView : DataGridView
 
     /// <summary>
     /// Builds an emit-free, allocation-free comparer over <see cref="HostsEntry"/> for the given
-    /// bound property and direction. Direct TYPED property access avoids reflection, the
-    /// Equin/.NET 10 emit crash, and per-comparison boxing (the earlier <c>Comparer&lt;object&gt;</c>
-    /// variant boxed ~15M bools per header click on a 400K-row checkbox sort). String columns use
-    /// culture-sensitive comparison for parity with the framework's original property sort
-    /// (which routed through <see cref="string.CompareTo(string)"/>).
+    /// bound property and direction. The five shared columns delegate to the single Core comparer
+    /// <see cref="HostsEntry.GetComparer"/> (issue #75/#81) so classic and modern sort identically —
+    /// including the numeric (not lexical) IP ordering. Direct TYPED access still avoids reflection,
+    /// the Equin/.NET 10 emit crash, and per-comparison boxing (the earlier <c>Comparer&lt;object&gt;</c>
+    /// variant boxed ~15M bools per header click on a 400K-row checkbox sort). Only the classic-only
+    /// <see cref="HostsEntry.UnparsedText"/> column, which Core does not model, keeps a local compare.
     /// </summary>
     private static Comparer<HostsEntry> ComparerFor(string dataPropertyName, SortOrder direction)
     {
+        var descending = direction == SortOrder.Descending;
+
+        HostsEntry.SortColumn? coreColumn = dataPropertyName switch
+        {
+            nameof(HostsEntry.IpAddress) => HostsEntry.SortColumn.IpAddress,
+            nameof(HostsEntry.HostNames) => HostsEntry.SortColumn.HostNames,
+            nameof(HostsEntry.Comment) => HostsEntry.SortColumn.Comment,
+            nameof(HostsEntry.Enabled) => HostsEntry.SortColumn.Enabled,
+            nameof(HostsEntry.Valid) => HostsEntry.SortColumn.Valid,
+            _ => null,
+        };
+
+        if (coreColumn is { } column)
+        {
+            // GetComparer already folds in the direction; wrap its IComparer as a Comparer<T> for
+            // BindingListView.ApplySort. The wrap adds one delegate hop, no boxing (the IP key is a
+            // cached struct; Enabled/Valid use the non-boxing bool CompareTo inside Core).
+            var core = HostsEntry.GetComparer(column, descending);
+            return Comparer<HostsEntry>.Create((x, y) => core.Compare(x, y));
+        }
+
         var comparer = dataPropertyName switch
         {
-            nameof(HostsEntry.Enabled) => Comparer<HostsEntry>.Create(static (x, y) => x.Enabled.CompareTo(y.Enabled)),
-            nameof(HostsEntry.Valid) => Comparer<HostsEntry>.Create(static (x, y) => x.Valid.CompareTo(y.Valid)),
-            nameof(HostsEntry.IpAddress) => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.IpAddress, y.IpAddress, StringComparison.CurrentCulture)),
-            nameof(HostsEntry.HostNames) => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.HostNames, y.HostNames, StringComparison.CurrentCulture)),
-            nameof(HostsEntry.Comment) => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.Comment, y.Comment, StringComparison.CurrentCulture)),
             nameof(HostsEntry.UnparsedText) => Comparer<HostsEntry>.Create(static (x, y) => string.Compare(x.UnparsedText, y.UnparsedText, StringComparison.CurrentCulture)),
             _ => UnknownColumnComparer(dataPropertyName),
         };
 
-        return direction == SortOrder.Descending
+        return descending
             ? Comparer<HostsEntry>.Create((x, y) => comparer.Compare(y, x))
             : comparer;
     }
