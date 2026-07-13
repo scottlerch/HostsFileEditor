@@ -106,5 +106,17 @@ namespace HostsFileEditor.Properties {
                 this["SplitterWidth"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("Control, Shift, H")]
+        public string GlobalShowHideHotkey {
+            get {
+                return ((string)(this["GlobalShowHideHotkey"]));
+            }
+            set {
+                this["GlobalShowHideHotkey"] = value;
+            }
+        }
     }
 }

@@ -58,15 +58,18 @@ internal sealed partial class MainForm : Form
     private const int GlobalShowHideHotkeyId = 0x4846; // 'HF'
 
     /// <summary>
-    /// The global hot key that toggles the window between the tray and the foreground: Ctrl+Alt+H.
-    /// Registered system-wide so it works while the window is hidden/unfocused (a normal accelerator
-    /// cannot reach a hidden window). MOD_NOREPEAT so holding the combo fires once, not a stream.
-    /// Failure to register (e.g. another app owns the combo) is ignored.
+    /// True once the configured global show/hide hot key is registered (see
+    /// <see cref="RegisterGlobalHotkey"/>); gates the unregister in <see cref="OnHandleDestroyed"/>.
     /// </summary>
-    private const uint GlobalShowHideModifiers = NativeHotkey.ModControl | NativeHotkey.ModAlt | NativeHotkey.ModNoRepeat;
-    private const uint GlobalShowHideKey = (uint)Keys.H;
-
     private bool _globalHotkeyRegistered;
+
+    /// <summary>
+    /// The configured combo that FAILED to register (another app already owns it, or it is malformed),
+    /// so <see cref="OnFomLoad"/> can surface a one-time popup telling the user how to change it. Null
+    /// when the hot key registered successfully or is intentionally disabled (blank setting).
+    /// </summary>
+    private string? _globalHotkeyFailedCombo;
+    private bool _globalHotkeyPopupShown;
 
     /// <summary>
     /// "Pinging…" label + marquee progress bar shown right-aligned in the status strip while any ping
@@ -112,10 +115,81 @@ internal sealed partial class MainForm : Form
 
         // Register the global show/hide hot key against the (now valid) window handle. Done here — not
         // in Load — so it survives a handle recreation (WinForms recreates the handle on some style
-        // changes); OnHandleDestroyed unregisters. A failed registration (combo already owned) is left
-        // as an unavailable feature rather than surfaced as an error.
+        // changes); OnHandleDestroyed unregisters.
+        RegisterGlobalHotkey();
+    }
+
+    /// <summary>
+    /// Registers the configurable global show/hide hot key (issue #35) from the
+    /// <c>GlobalShowHideHotkey</c> setting (default Ctrl+Shift+H). A blank/None value disables it
+    /// silently; a non-blank value that is malformed or already owned by another app records the combo
+    /// so <see cref="OnFomLoad"/> can show a one-time popup explaining how to change it.
+    /// </summary>
+    private void RegisterGlobalHotkey()
+    {
+        // Settings.Default touches user.config, which can be corrupt (LoadSettings does the full
+        // recovery later); fall back to "no hot key this session" rather than throwing out of a handle
+        // callback. OnHandleCreated runs before LoadSettings, so read the value directly here.
+        string? configured;
+        try
+        {
+            configured = Settings.Default.GlobalShowHideHotkey;
+        }
+        catch (ConfigurationErrorsException)
+        {
+            return;
+        }
+
+        var trimmed = configured?.Trim() ?? string.Empty;
+
+        // Blank / explicitly-disabled → feature off, no registration, no popup.
+        if (trimmed.Length == 0 ||
+            trimmed.Equals("None", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Equals("Disabled", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!NativeHotkey.TryParseHotkey(trimmed, out var modifiers, out var key))
+        {
+            _globalHotkeyFailedCombo = trimmed; // malformed → guide the user
+            return;
+        }
+
         _globalHotkeyRegistered = NativeHotkey.RegisterHotKey(
-            Handle, GlobalShowHideHotkeyId, GlobalShowHideModifiers, GlobalShowHideKey);
+            Handle, GlobalShowHideHotkeyId, modifiers | NativeHotkey.ModNoRepeat, key);
+
+        _globalHotkeyFailedCombo = _globalHotkeyRegistered ? null : trimmed;
+    }
+
+    /// <summary>
+    /// Tells the user (once) that the configured global hot key could not be registered, and where to
+    /// change or disable it. Shown from <see cref="OnFomLoad"/> after the window is up.
+    /// </summary>
+    private void ShowGlobalHotkeyFailedMessage()
+    {
+        string configPath;
+        try
+        {
+            configPath = ConfigurationManager
+                .OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath;
+        }
+        catch (ConfigurationErrorsException)
+        {
+            configPath = "the application's user.config file";
+        }
+
+        MessageBox.Show(
+            this,
+            $"The global show/hide shortcut \"{_globalHotkeyFailedCombo}\" could not be registered — " +
+            "another application is probably already using it (or it is not a valid combination).\n\n" +
+            "The editor still works normally; only the global shortcut is unavailable.\n\n" +
+            "To change or disable it, close the app and edit the GlobalShowHideHotkey value in:\n\n" +
+            $"{configPath}\n\n" +
+            "Examples:  \"Control, Shift, H\"  or  \"Ctrl+Alt+F8\".  Leave it blank to disable the shortcut.",
+            "Global Shortcut Unavailable",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Information);
     }
 
     /// <inheritdoc />
@@ -633,6 +707,14 @@ internal sealed partial class MainForm : Form
         HostsEntry.PingActivityChanged += OnPingActivityChanged;
 
         LoadSettings();
+
+        // If the configured global hot key couldn't be registered (issue #35), surface the guidance
+        // popup once — deferred via BeginInvoke so it appears over the shown window, not mid-load.
+        if (_globalHotkeyFailedCombo is not null && !_globalHotkeyPopupShown)
+        {
+            _globalHotkeyPopupShown = true;
+            BeginInvoke(ShowGlobalHotkeyFailedMessage);
+        }
 
         _hostsArchiveView = new BindingListView<HostsArchive>(components)
         {
