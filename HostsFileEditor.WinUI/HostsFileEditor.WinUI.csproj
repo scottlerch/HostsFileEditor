@@ -38,6 +38,9 @@
          list minimal. -->
     <NoWarn>$(NoWarn);IDE0079;IDE0060;CA1822;IL2081;CA5392</NoWarn>
     <ApplicationIcon>Assets\HostsFileEditor.ico</ApplicationIcon>
+    <!-- Provide our own Program.Main (Program.cs) so a headless command-line invocation (issue #2) can
+         run before the WinUI stack boots. Disables the auto-generated XAML entry point. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <PackagingFlavor>modern</PackagingFlavor>
     <OutputPackagingDir>$(MSBuildProjectDirectory)\..\artifacts\modern\</OutputPackagingDir>
     <CreatePublishZip>false</CreatePublishZip>
