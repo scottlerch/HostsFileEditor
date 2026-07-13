@@ -213,20 +213,16 @@ public class HostsFile : INotifyPropertyChanged
 
     /// <summary>
     /// Merges another hosts file into the current entries, eliminating duplicates (issue #26). Reads
-    /// the file, then appends its valid entries that are not already present (by IP + host names,
-    /// case-insensitive) — see <see cref="HostsEntryList.MergeLines"/>. Returns the number of entries
-    /// added. Like <see cref="Import"/>, reads before mutating so a failed read leaves the current
-    /// entries intact, and clears undo history because a structural merge invalidates prior indices.
+    /// the file (before mutating, like <see cref="Import"/>, so a failed read leaves the current entries
+    /// intact), then appends its valid entries that are not already present (by canonical IP + host
+    /// names, case-insensitive) — see <see cref="HostsEntryList.MergeLines"/>, which performs the append
+    /// as a single undoable step. Returns the number of entries added; a merge that adds nothing leaves
+    /// the list, the modified flag, and undo history untouched.
     /// </summary>
     public int Merge(string mergeFilePath)
     {
         var lines = File.ReadAllLines(mergeFilePath);
-
-        UndoManager.Instance.ClearHistory();
-
-        var added = 0;
-        Entries.BatchUpdate(() => added = Entries.MergeLines(lines));
-        return added;
+        return Entries.MergeLines(lines);
     }
 
     public void Archive(string name)

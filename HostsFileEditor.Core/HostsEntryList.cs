@@ -3,6 +3,7 @@ using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 
 namespace HostsFileEditor;
 
@@ -69,14 +70,15 @@ public class HostsEntryList : BindingList<HostsEntry>
 
     /// <summary>
     /// Merges the entries parsed from <paramref name="lines"/> (another hosts file) into this list,
-    /// eliminating duplicates (issue #26). Every <b>valid</b> incoming entry whose identity — its IP
-    /// address plus parser-normalized host names, compared case-insensitively — is not already present
-    /// is appended in order; entries that duplicate an existing one, comment-only lines, and blank
-    /// lines are skipped. Enabled-vs-disabled is intentionally ignored when comparing (the same
-    /// mapping present twice, once commented out, is still a duplicate), so the existing copy wins.
-    /// Returns the number of entries actually added. Undo/redo is suspended for the bulk add; the
-    /// caller clears history (post-merge indices invalidate prior undo actions) and typically wraps
-    /// this in a <c>BatchUpdate</c> so the bound view resets once.
+    /// eliminating duplicates (issue #26). Every <b>valid</b> incoming entry whose identity — its
+    /// <em>canonical</em> IP address plus parser-normalized host names, compared case-insensitively —
+    /// is not already present is appended in order; entries that duplicate an existing one, comment-only
+    /// lines, and blank lines are skipped. Enabled-vs-disabled is intentionally ignored when comparing
+    /// (the same mapping present twice, once commented out, is still a duplicate), so the existing copy
+    /// wins. Returns the number of entries actually added. The append goes through
+    /// <see cref="InsertRange"/>, so it is a single undoable step (one bound-view reset) and prior undo
+    /// history is preserved — a merge that adds nothing leaves both the list and the modified/undo
+    /// state untouched.
     /// </summary>
     public int MergeLines(IEnumerable<string> lines)
     {
@@ -110,20 +112,20 @@ public class HostsEntryList : BindingList<HostsEntry>
             }
         }
 
-        if (toAdd.Count > 0)
-        {
-            UndoManager.Instance.SuspendUndoRedo(() =>
-            {
-                foreach (var entry in toAdd)
-                {
-                    Add(entry);
-                }
-            });
-        }
+        // One undoable, O(n) append (InsertRange no-ops on an empty list). No SuspendUndoRedo /
+        // ClearHistory: an append doesn't invalidate existing entries' indices, so prior undo actions
+        // stay valid, and the merge itself is a single undoable step (Ctrl+Z removes the added block).
+        InsertRange(toAdd);
 
         return toAdd.Count;
 
-        static string IdentityOf(HostsEntry entry) => $"{entry.IpAddress}\t{entry.HostNames}";
+        // Identity uses the CANONICAL address (IPAddress round-trip), so "::1" and "0:0:0:0:0:0:0:1",
+        // or "127.0.0.1" and "127.1", are recognized as the same host — a valid entry always parses.
+        static string IdentityOf(HostsEntry entry)
+        {
+            var ip = IPAddress.TryParse(entry.IpAddress, out var parsed) ? parsed.ToString() : entry.IpAddress;
+            return $"{ip}\t{entry.HostNames}";
+        }
     }
 
     /// <summary>

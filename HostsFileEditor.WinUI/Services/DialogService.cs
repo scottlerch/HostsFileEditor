@@ -5,7 +5,15 @@ namespace HostsFileEditor.Services;
 
 public class DialogService
 {
-    public async Task ShowErrorAsync(XamlRoot xamlRoot, string title, string message)
+    public Task ShowErrorAsync(XamlRoot xamlRoot, string title, string message) =>
+        ShowMessageAsync(xamlRoot, title, message);
+
+    public Task ShowInfoAsync(XamlRoot xamlRoot, string title, string message) =>
+        ShowMessageAsync(xamlRoot, title, message);
+
+    // Shared single-button message dialog. ShowErrorAsync/ShowInfoAsync are distinct entry points so
+    // error styling can later diverge without every info call site accidentally inheriting it.
+    private static async Task ShowMessageAsync(XamlRoot xamlRoot, string title, string message)
     {
         var dlg = new ContentDialog
         {

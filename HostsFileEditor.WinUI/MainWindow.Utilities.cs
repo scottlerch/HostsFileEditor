@@ -28,7 +28,7 @@ public sealed partial class MainWindow
     // Neutral title/message dialog (same single-button ContentDialog as the error path — the service
     // applies no error-specific styling); used for informational results such as a merge summary.
     private async Task ShowInfoDialogAsync(string title, string message) =>
-        await _dialogService.ShowErrorAsync(Content.XamlRoot, title, message);
+        await _dialogService.ShowInfoAsync(Content.XamlRoot, title, message);
 
     private async Task<bool> ShowConfirmationAsync(string title, string message, string primaryText = "Yes", string closeText = "No") =>
         await _dialogService.ShowConfirmationAsync(Content.XamlRoot, title, message, primaryText, closeText);
