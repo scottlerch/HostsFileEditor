@@ -2,8 +2,8 @@ using Equin.ApplicationFramework;
 using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
+using HostsFileEditor.Win32;
 using System.Configuration;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace HostsFileEditor;
@@ -206,7 +206,7 @@ internal sealed partial class MainForm : Form
         // install, %LocalAppData% writes are virtualized into the package's LocalCache, so the path
         // ConfigurationManager reports is the UNVIRTUALIZED location where an edit has no effect
         // (issue #108). Rather than send Store users to a dead path, give edition-appropriate guidance.
-        if (IsRunningPackaged())
+        if (NativeMethods.IsRunningPackaged())
         {
             message +=
                 "The Store version has no in-app setting to change or disable the shortcut yet. To " +
@@ -237,21 +237,6 @@ internal sealed partial class MainForm : Form
             "Global Shortcut Unavailable",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
-    }
-
-    private const int AppModelErrorNoPackage = 15700;
-
-    [LibraryImport("kernel32.dll", EntryPoint = "GetCurrentPackageFullName")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial int GetCurrentPackageFullName(ref int packageFullNameLength, IntPtr packageFullName);
-
-    // True when running from an installed MSIX/AppX package (has package identity); false for the
-    // portable build. Used to tailor the hotkey-failure guidance, whose user.config path is only
-    // meaningful for the unvirtualized portable build.
-    private static bool IsRunningPackaged()
-    {
-        var length = 0;
-        return GetCurrentPackageFullName(ref length, IntPtr.Zero) != AppModelErrorNoPackage;
     }
 
     /// <inheritdoc />
