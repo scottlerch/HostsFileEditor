@@ -1587,8 +1587,19 @@ internal sealed partial class MainForm : Form
         {
             settings = Settings.Default;
 
-            // The first property access loads user.config; a corrupt file throws here. Recover
-            // and start with defaults rather than failing to launch (issue #37).
+            // user.config is stored in a per-app-version folder, so on the first run after a version
+            // bump every saved setting would otherwise reset to defaults (window bounds, auto-ping,
+            // the configurable global hotkey, etc.). Upgrade() carries the previous version's values
+            // forward; a persisted flag makes it a one-time migration, and saving it immediately means
+            // a crash before exit can't cause a re-upgrade. This first property access also loads
+            // user.config, so a corrupt file throws here and is recovered below (issue #37).
+            if (!settings.SettingsUpgraded)
+            {
+                settings.Upgrade();
+                settings.SettingsUpgraded = true;
+                settings.Save();
+            }
+
             _ = settings.AutoPingIPAddresses;
         }
         catch (ConfigurationErrorsException ex)
