@@ -388,6 +388,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         HostsArchiveList.Instance.ListChanged += (s, e) => _ = TaskbarJumpList.RefreshAsync();
 
         // If a Jump List activation arrived before the load finished, honor it now.
+        await DrainPendingJumpListArchiveAsync();
+    }
+
+    // Honors a Jump List activation that arrived while a load OR reload was in flight (issue #101).
+    // RequestOpenArchive defers to _pendingJumpListArchive whenever IsLoaded is false — which covers
+    // both the initial load and a reload (Import/Merge/Refresh via MutateCoreAndRefreshAsync). Both
+    // completion paths call this so the deferred request isn't dropped; it was previously drained only
+    // by the initial load, so a preset clicked during a reload silently did nothing.
+    private async Task DrainPendingJumpListArchiveAsync()
+    {
         if (_pendingJumpListArchive is { } pending)
         {
             _pendingJumpListArchive = null;
@@ -395,8 +405,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    // Set by RequestOpenArchive when a Jump List activation arrives before the initial load completes;
-    // LoadEntriesAsync imports it once loaded.
+    // Set by RequestOpenArchive when a Jump List activation arrives before a load/reload completes;
+    // drained by DrainPendingJumpListArchiveAsync from both completion paths.
     private string? _pendingJumpListArchive;
 
     /// <summary>
@@ -1547,6 +1557,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
             _suspendSelectionTracking = false;
         }
+
+        // A Jump List preset clicked DURING this reload was deferred (IsLoaded was false); honor it
+        // now that the reload has finished (issue #101). After the try/finally so the nested import's
+        // own MutateCoreAndRefreshAsync runs sequentially rather than re-entrantly.
+        await DrainPendingJumpListArchiveAsync();
     }
 
     private void RemoveFromCoreAndRefresh(List<HostsEntry> items) =>
