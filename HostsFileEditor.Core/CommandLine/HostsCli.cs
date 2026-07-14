@@ -182,15 +182,22 @@ public static class HostsCli
 
     private static int ApplyPreset(string name, TextWriter output, TextWriter error)
     {
-        var archive = FindPreset(name);
-        if (archive is null)
+        switch (ResolvePreset(name, out var archive, out var ambiguousNames))
         {
-            error.WriteLine($"Preset '{name}' not found. Run 'list' to see available presets.");
-            return ExitError;
+            case PresetResolution.Ambiguous:
+                error.WriteLine(
+                    $"Preset '{name.Trim()}' is ambiguous - it matches {string.Join(", ", ambiguousNames)}. " +
+                    "Use the full preset name (with its extension).");
+                return ExitError;
+
+            case PresetResolution.NotFound:
+                error.WriteLine($"Preset '{name}' not found. Run 'list' to see available presets.");
+                return ExitError;
         }
 
+        // The switch returned for Ambiguous/NotFound, so Found guarantees a non-null archive here.
         PrivilegedFileOperations.UseElevationHelper();
-        HostsFile.Instance.Import(archive.FilePath);
+        HostsFile.Instance.Import(archive!.FilePath);
         HostsFile.Instance.Save();
         output.WriteLine($"Applied preset '{archive.FileName}' to the hosts file.");
         NoteIfDisabled(output);
@@ -272,15 +279,53 @@ public static class HostsCli
         return ExitSuccess;
     }
 
-    private static HostsArchive? FindPreset(string name)
+    internal enum PresetResolution
     {
-        // Tolerate surrounding whitespace from a quoted argument, then match by exact file name
-        // (HostsArchiveList.FindByName) and finally ignoring the extension so `MyHosts1` resolves
-        // `MyHosts1.txt` too.
+        Found,
+        NotFound,
+        Ambiguous,
+    }
+
+    // Resolves a preset name to a single archive. Tolerates surrounding whitespace from a quoted
+    // argument, then matches by exact file name (HostsArchiveList.FindByName) and finally, only if
+    // that fails, ignoring the extension so `MyHosts1` resolves `MyHosts1.txt`. When the
+    // extension-lenient match is ambiguous (e.g. both `Foo.txt` and `Foo.bak` exist) it returns
+    // Ambiguous rather than silently picking one by file-system enumeration order (#98) — silently
+    // applying the wrong preset over the live hosts file is exactly the risk to avoid. Internal for
+    // tests.
+    internal static PresetResolution ResolvePreset(string name, out HostsArchive? archive, out IReadOnlyList<string> ambiguousNames)
+    {
+        archive = null;
+        ambiguousNames = [];
+
         var trimmed = name.Trim();
         var presets = HostsArchiveList.Instance;
-        return presets.FindByName(trimmed)
-            ?? presets.FirstOrDefault(a => string.Equals(Path.GetFileNameWithoutExtension(a.FileName), trimmed, StringComparison.OrdinalIgnoreCase));
+
+        // Exact file-name match wins outright, so `Foo.txt` deterministically beats a `Foo` stem.
+        archive = presets.FindByName(trimmed);
+        if (archive is not null)
+        {
+            return PresetResolution.Found;
+        }
+
+        var stemMatches = presets
+            .Where(a => string.Equals(Path.GetFileNameWithoutExtension(a.FileName), trimmed, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(a => a, HostsArchive.FileNameComparer)
+            .ToList();
+
+        if (stemMatches.Count > 1)
+        {
+            ambiguousNames = [.. stemMatches.Select(a => a.FileName)];
+            return PresetResolution.Ambiguous;
+        }
+
+        if (stemMatches.Count == 1)
+        {
+            archive = stemMatches[0];
+            return PresetResolution.Found;
+        }
+
+        return PresetResolution.NotFound;
     }
 
     private static bool TryMapVerb(string token, out CliVerb verb)
