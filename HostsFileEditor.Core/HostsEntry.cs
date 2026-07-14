@@ -113,7 +113,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
                 // IPAddress.TryParse, which would double the per-entry IP-parse cost on the 400K-line
                 // hot load path. The IpAddress setter (edit path) still validates via ValidateIpAddress.
                 _ipAddressValid = true;
-                if (AutoPingIPAddress)
+                if (AutoPingIPAddress && !AutoPingSuspended)
                 {
                     Ping();
                 }
@@ -367,6 +367,47 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public static bool AutoPingIPAddress { get; set; }
+
+    // Thread-scoped: the suppression only needs to cover entries constructed on the SAME thread that
+    // opened the scope (MergeLines builds its probe entries inline on one thread). [ThreadStatic]
+    // keeps a concurrent construction on another thread — a background load, say — from having its
+    // legitimate auto-ping silently swallowed. Because it's thread-local, plain ++/-- suffice (no
+    // cross-thread contention). The scope must be disposed on the thread that created it.
+    [ThreadStatic]
+    private static int _autoPingSuspended;
+
+    /// <summary>
+    /// Suspends the parse-time auto-ping (the ping fired from the constructor when
+    /// <see cref="AutoPingIPAddress"/> is on) for the lifetime of the returned scope, on the CURRENT
+    /// thread. Used when entries are constructed only to be inspected and possibly discarded — e.g.
+    /// <see cref="HostsEntryList.MergeLines"/> builds one entry per incoming line to compute its dedup
+    /// identity, and without this every line of the merged file (including duplicates never added)
+    /// launched a live ping (issue #97). Callers ping the entries they actually keep afterwards.
+    /// Dispose on the same thread that created the scope.
+    /// </summary>
+    internal static IDisposable SuspendAutoPing()
+    {
+        _autoPingSuspended++;
+        return new AutoPingSuspension();
+    }
+
+    private static bool AutoPingSuspended => _autoPingSuspended > 0;
+
+    private sealed class AutoPingSuspension : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            _autoPingSuspended--;
+        }
+    }
 
     /// <summary>
     /// UI-thread synchronization context used to marshal ping-failure notifications when the ping
