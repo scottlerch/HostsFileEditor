@@ -213,7 +213,7 @@ function Complete-SubmissionIdempotent {
                 # Whitelist only the states that mean the commit was ACCEPTED. Notably NOT 'CommitFailed'
                 # (a commit that landed but then failed validation) and NOT 'PendingCommit' (not committed):
                 # both must fall through so a failed/uncommitted release isn't reported as shipped.
-                if ($st.status -in @('CommitStarted', 'PreProcessing', 'Certification', 'Release', 'Publishing', 'Published')) {
+                if ($st.status -in @('CommitStarted', 'PreProcessing', 'Certification', 'ReadyToPublish', 'PendingPublication', 'Release', 'Publishing', 'Published')) {
                     Write-Host "    commit returned an error but the submission is '$($st.status)' - already committed, continuing." -ForegroundColor DarkYellow
                     return
                 }
@@ -240,7 +240,7 @@ function Publish-Edition {
     # actually say "1.5.10" (or "11.5.1").
     $pkgVersion  = Get-MsixVersion $packages[0].FullName
     $shortVer    = if ($pkgVersion -eq '?') { '' } else { ($pkgVersion -split '\.')[0..2] -join '.' }
-    if ($shortVer -and $notes[$Name] -notmatch ('(?<![\d.])' + [regex]::Escape($shortVer) + '(?![\d.])')) {
+    if ($shortVer -and $notes[$Name] -notmatch ('(?<![\d.])' + [regex]::Escape($shortVer) + '(?!\d)')) {
         Write-Host "  WARNING: the '$Name' What's-new text does not mention version $shortVer (packages are $pkgVersion). Did you forget to update the `$notes block?" -ForegroundColor Yellow
     }
 
