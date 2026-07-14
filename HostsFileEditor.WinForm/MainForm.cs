@@ -236,6 +236,12 @@ internal sealed partial class MainForm : Form
         menuDisable.Checked = disabledNow;
         buttonDisable.Checked = disabledNow;
         menuContextDisable.Checked = disabledNow;
+
+        // Also refresh the tray icon (enabled vs disabled glyph). The primary #100 scenario is a
+        // tray-resident app that a CLI `hfe disable/enable` toggled; without this, restoring from the
+        // tray would fix the menu toggles but leave the tray icon showing the stale state. Matches
+        // OnDisableHostsClick and OnFomLoad, which both update the toggles and the icon together.
+        UpdateNotifyIcon();
     }
 
     /// <inheritdoc />
