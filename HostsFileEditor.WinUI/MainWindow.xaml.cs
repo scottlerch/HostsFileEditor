@@ -892,7 +892,17 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         Activated += (s, e) =>
         {
-            _backdropConfiguration?.IsInputActive = e.WindowActivationState != WindowActivationState.Deactivated;
+            var active = e.WindowActivationState != WindowActivationState.Deactivated;
+            _backdropConfiguration?.IsInputActive = active;
+
+            // Re-read the enabled/disabled state from the file system when the window comes forward:
+            // the CLI (or another process) may have toggled the hosts file while we were in the
+            // background, and the toggle binding would otherwise assert a stale state (#100).
+            // IsDisabledHosts is a cheap File.Exists that never forces the HostsFile lazy, so it's safe.
+            if (active)
+            {
+                OnPropertyChanged(nameof(IsDisabledHosts));
+            }
         };
 
         Closed += (s, e) =>

@@ -218,6 +218,27 @@ internal sealed partial class MainForm : Form
     }
 
     /// <inheritdoc />
+    protected override void OnActivated(EventArgs e)
+    {
+        base.OnActivated(e);
+
+        // The CLI (or another process) may have enabled/disabled the hosts file while our window was in
+        // the background. Re-sync the toggle from the file system whenever the window comes forward, so
+        // it never asserts a stale state — otherwise clicking "Disable" while it wrongly showed enabled
+        // would do the opposite of what's shown (#100). HostsFile.IsEnabled is a cheap File.Exists that
+        // never forces the HostsFile lazy, so this is safe even mid-load; only skip the failed-load exit.
+        if (_loadFailed)
+        {
+            return;
+        }
+
+        var disabledNow = !HostsFile.IsEnabled;
+        menuDisable.Checked = disabledNow;
+        buttonDisable.Checked = disabledNow;
+        menuContextDisable.Checked = disabledNow;
+    }
+
+    /// <inheritdoc />
     protected override void WndProc(ref Message message)
     {
         if (message.Msg == ProgramSingleInstance.WmShowFirstInstance)
