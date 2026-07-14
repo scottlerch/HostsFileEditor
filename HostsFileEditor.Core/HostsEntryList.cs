@@ -94,21 +94,28 @@ public class HostsEntryList : BindingList<HostsEntry>
         }
 
         var toAdd = new List<HostsEntry>();
-        foreach (var line in lines)
+
+        // Each incoming line is parsed only to compute its identity; most may be duplicates that are
+        // never added. Suspend the parse-time auto-ping so we don't fire a live ping per probed line
+        // (issue #97) — the entries actually kept are pinged once, after the append, below.
+        using (HostsEntry.SuspendAutoPing())
         {
-            var entry = new HostsEntry(line);
-
-            // Merge only real host entries; skip comment-only lines and blanks from the incoming file.
-            if (!entry.Valid)
+            foreach (var line in lines)
             {
-                continue;
-            }
+                var entry = new HostsEntry(line);
 
-            // HashSet.Add is false when the identity is already present (existing OR earlier in this
-            // same merge), so the first occurrence wins and later duplicates are dropped.
-            if (identities.Add(IdentityOf(entry)))
-            {
-                toAdd.Add(entry);
+                // Merge only real host entries; skip comment-only lines and blanks from the incoming file.
+                if (!entry.Valid)
+                {
+                    continue;
+                }
+
+                // HashSet.Add is false when the identity is already present (existing OR earlier in this
+                // same merge), so the first occurrence wins and later duplicates are dropped.
+                if (identities.Add(IdentityOf(entry)))
+                {
+                    toAdd.Add(entry);
+                }
             }
         }
 
@@ -116,6 +123,16 @@ public class HostsEntryList : BindingList<HostsEntry>
         // ClearHistory: an append doesn't invalidate existing entries' indices, so prior undo actions
         // stay valid, and the merge itself is a single undoable step (Ctrl+Z removes the added block).
         InsertRange(toAdd);
+
+        // Auto-ping the entries actually kept (parse-time ping was suspended above), matching the
+        // pre-fix behavior for added entries without the storm of pings for discarded duplicates.
+        if (HostsEntry.AutoPingIPAddress)
+        {
+            foreach (var entry in toAdd)
+            {
+                entry.Ping();
+            }
+        }
 
         return toAdd.Count;
 

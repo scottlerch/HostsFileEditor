@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Reflection;
 using HostsFileEditor.Utilities;
 
 namespace HostsFileEditor.Core.Tests;
@@ -12,6 +13,29 @@ public class HostsEntryListTests
         var lines = new[] { "127.0.0.1 localhost", "::1 localhost" };
         var list = new HostsEntryList(lines, filterDefault: false);
         list.Count.ShouldBe(lines.Length);
+    }
+
+    // #97: SuspendAutoPing must nest (ref-counted) and fully restore, so a merge can't leave the
+    // parse-time auto-ping permanently suppressed.
+    [TestMethod]
+    public void SuspendAutoPing_NestsAndRestores()
+    {
+        var field = typeof(HostsEntry).GetField("_autoPingSuspended", BindingFlags.NonPublic | BindingFlags.Static)!;
+        int Count() => (int)field.GetValue(null)!;
+
+        var start = Count();
+        using (HostsEntry.SuspendAutoPing())
+        {
+            Count().ShouldBe(start + 1);
+            using (HostsEntry.SuspendAutoPing())
+            {
+                Count().ShouldBe(start + 2);
+            }
+
+            Count().ShouldBe(start + 1);
+        }
+
+        Count().ShouldBe(start);
     }
 
     [TestMethod]

@@ -113,7 +113,7 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
                 // IPAddress.TryParse, which would double the per-entry IP-parse cost on the 400K-line
                 // hot load path. The IpAddress setter (edit path) still validates via ValidateIpAddress.
                 _ipAddressValid = true;
-                if (AutoPingIPAddress)
+                if (AutoPingIPAddress && !AutoPingSuspended)
                 {
                     Ping();
                 }
@@ -367,6 +367,40 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public static bool AutoPingIPAddress { get; set; }
+
+    private static int _autoPingSuspended;
+
+    /// <summary>
+    /// Suspends the parse-time auto-ping (the ping fired from the constructor when
+    /// <see cref="AutoPingIPAddress"/> is on) for the lifetime of the returned scope. Used when
+    /// entries are constructed only to be inspected and possibly discarded — e.g.
+    /// <see cref="HostsEntryList.MergeLines"/> builds one entry per incoming line to compute its dedup
+    /// identity, and without this every line of the merged file (including duplicates never added)
+    /// launched a live ping (issue #97). Callers ping the entries they actually keep afterwards.
+    /// </summary>
+    internal static IDisposable SuspendAutoPing()
+    {
+        Interlocked.Increment(ref _autoPingSuspended);
+        return new AutoPingSuspension();
+    }
+
+    private static bool AutoPingSuspended => Volatile.Read(ref _autoPingSuspended) > 0;
+
+    private sealed class AutoPingSuspension : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            Interlocked.Decrement(ref _autoPingSuspended);
+        }
+    }
 
     /// <summary>
     /// UI-thread synchronization context used to marshal ping-failure notifications when the ping
