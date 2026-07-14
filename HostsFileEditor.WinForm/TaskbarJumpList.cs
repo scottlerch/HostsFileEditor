@@ -1,5 +1,6 @@
 using Microsoft.WindowsAPICodePack.Shell;
 using Microsoft.WindowsAPICodePack.Taskbar;
+using HostsFileEditor.Win32;
 
 namespace HostsFileEditor;
 
@@ -17,6 +18,9 @@ internal static class TaskbarJumpList
 
     private const string PresetsCategory = "Presets";
 
+    /// <summary>The app-execution alias declared for the main app in the packaged manifest.</summary>
+    private const string AppExecutionAlias = "HostsFileEditor.exe";
+
     public static void Refresh()
     {
         if (!TaskbarManager.IsPlatformSupported)
@@ -24,11 +28,24 @@ internal static class TaskbarJumpList
             return;
         }
 
-        var exePath = Environment.ProcessPath;
-        if (string.IsNullOrEmpty(exePath))
+        var iconPath = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(iconPath))
         {
             return;
         }
+
+        // Jump list links are persisted by the shell and must survive an app update. A packaged
+        // (Store) build's ProcessPath is version-stamped (…\WindowsApps\…_1.5.0.0_…\), so every
+        // update strands the old links with a dead target (issue #106). Launch via the app-execution
+        // alias stub instead — %LOCALAPPDATA%\Microsoft\WindowsApps\HostsFileEditor.exe — which the OS
+        // repoints to the current version and which passes our --open-archive args through. The loose
+        // build has no alias, so it keeps using ProcessPath. (The icon stays on ProcessPath; it's
+        // cosmetic and refreshed on each launch, so a stale icon after an update is harmless.)
+        var launchPath = NativeMethods.IsRunningPackaged()
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Microsoft", "WindowsApps", AppExecutionAlias)
+            : iconPath;
 
         try
         {
@@ -43,10 +60,10 @@ internal static class TaskbarJumpList
                 var category = new JumpListCustomCategory(PresetsCategory);
                 foreach (var archive in archives)
                 {
-                    category.AddJumpListItems(new JumpListLink(exePath, archive.FileName)
+                    category.AddJumpListItems(new JumpListLink(launchPath, archive.FileName)
                     {
                         Arguments = $"{OpenArchiveSwitch} \"{archive.FilePath}\"",
-                        IconReference = new IconReference(exePath, 0),
+                        IconReference = new IconReference(iconPath, 0),
                     });
                 }
 
