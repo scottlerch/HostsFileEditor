@@ -53,6 +53,20 @@ internal sealed partial class MainForm : Form
     private bool _loadFailed;
 
     /// <summary>
+    /// Set once the initial off-thread hosts-file load has completed successfully and the grid is
+    /// bound. Until then, commands that touch <c>HostsFile.Instance</c> must not run — see
+    /// <see cref="RequestOpenArchive"/>, which defers a Jump List activation that arrives mid-load
+    /// rather than blocking the UI thread on the in-progress <c>Lazy</c> parse (issue #102).
+    /// </summary>
+    private bool _loaded;
+
+    /// <summary>
+    /// A Jump List preset whose activation arrived while the initial load was still running; opened by
+    /// <see cref="OnFomLoad"/> once the load completes. See <see cref="RequestOpenArchive"/>.
+    /// </summary>
+    private string? _pendingOpenArchive;
+
+    /// <summary>
     /// Identifier for the global show/hide hot key (issue #35). Any per-process-unique value; chosen
     /// away from 0 to avoid clashing with a default-0 registration elsewhere.
     /// </summary>
@@ -338,6 +352,18 @@ internal sealed partial class MainForm : Form
     {
         if (string.IsNullOrEmpty(archivePath) || !File.Exists(archivePath))
         {
+            return;
+        }
+
+        // The initial hosts-file load parses off the UI thread. Until it finishes, this method must
+        // not run: ConfirmDiscardUnsavedChanges reads HostsFile.Instance.IsModified, which would block
+        // the UI thread on the in-progress Lazy parse (a "Not Responding" freeze on a large file) — or,
+        // after a failed load, rethrow the cached Lazy exception out of this BeginInvoke'd callback into
+        // Application.ThreadException. Defer to _pendingOpenArchive; OnFomLoad opens it once loaded
+        // (issue #102). The command surfaces are disabled during the load for the same reason.
+        if (!_loaded)
+        {
+            _pendingOpenArchive = archivePath;
             return;
         }
 
@@ -941,6 +967,9 @@ internal sealed partial class MainForm : Form
         TaskbarJumpList.Refresh();
         HostsArchiveList.Instance.ListChanged += (s1, e1) => TaskbarJumpList.Refresh();
 
+        // The load succeeded and the grid is bound: RequestOpenArchive may now touch Instance safely.
+        _loaded = true;
+
         // If launched fresh from a Jump List entry (--open-archive "<path>"), open that preset now
         // that the hosts file is loaded. The already-running case is handled in WndProc (a second
         // instance forwards the path via TaskbarJumpList). RequestOpenArchive warns on unsaved changes.
@@ -948,6 +977,16 @@ internal sealed partial class MainForm : Form
         if (openArchivePath is not null)
         {
             RequestOpenArchive(openArchivePath);
+        }
+
+        // A Jump List activation forwarded by WndProc DURING the load was deferred (issue #102); open
+        // it now — unless a fresh-launch --open-archive already opened one above. Skipping it then
+        // avoids a double import plus a spurious "unsaved changes?" prompt (the first import marks the
+        // file modified); the fresh-launch preset takes precedence for this launch.
+        if (openArchivePath is null && _pendingOpenArchive is { } deferredArchive)
+        {
+            _pendingOpenArchive = null;
+            RequestOpenArchive(deferredArchive);
         }
 
         // HACK: Make sure a newly added row gets committed after
