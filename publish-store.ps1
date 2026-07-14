@@ -172,8 +172,11 @@ function Get-EditionPackages([string]$Name) {
 # 500/502-504 / gateway timeouts. Match HTTP status codes on word boundaries (so a byte count or an
 # unrelated code containing "502" doesn't false-trigger), plus the common textual signatures.
 function Test-Transient([string]$Message) {
-    return ($Message -match '\b(429|500|50[234])\b') -or
-           ($Message -match 'OriginTimeout|Gateway|Service Unavailable|Too Many Requests|throttl|timed? ?out|temporarily')
+    # Match 429/502-504 on word boundaries (so a byte count like 50234 doesn't false-trigger). Bare 500
+    # is deliberately NOT in the numeric set — "500" appears too often in prose (e.g. "500 files") — but
+    # a real HTTP 500 is caught by its "Internal Server Error" text below.
+    return ($Message -match '\b(429|50[234])\b') -or
+           ($Message -match 'OriginTimeout|Gateway|Service Unavailable|Internal Server Error|Too Many Requests|throttl|timed? ?out|temporarily')
 }
 
 # Retry transient failures with linear backoff; let real errors (400/401/409/...) surface immediately.
@@ -207,7 +210,10 @@ function Complete-SubmissionIdempotent {
             $m = ($_.Exception.Message -split "`n")[0]
             try {
                 $st = Get-ApplicationSubmissionStatus -AppId $ProductId -SubmissionId $SubmissionId -NoStatus
-                if ($st.status -and $st.status -ne 'PendingCommit') {
+                # Whitelist only the states that mean the commit was ACCEPTED. Notably NOT 'CommitFailed'
+                # (a commit that landed but then failed validation) and NOT 'PendingCommit' (not committed):
+                # both must fall through so a failed/uncommitted release isn't reported as shipped.
+                if ($st.status -in @('CommitStarted', 'PreProcessing', 'Certification', 'Release', 'Publishing', 'Published')) {
                     Write-Host "    commit returned an error but the submission is '$($st.status)' - already committed, continuing." -ForegroundColor DarkYellow
                     return
                 }
@@ -229,10 +235,12 @@ function Publish-Edition {
 
     # Guardrail against a forgotten $notes edit shipping a wrong version in the customer-facing
     # "What's new" (issue #127): warn if the notes text doesn't mention the package version. The msix
-    # version is 4-part (1.5.1.0); the notes use the 3-part marketing form (1.5.1), so compare on that.
+    # version is 4-part (1.5.1.0); the notes use the 3-part marketing form (1.5.1), so take the first
+    # three components. Match with digit/dot boundaries so "1.5.1" doesn't falsely satisfy notes that
+    # actually say "1.5.10" (or "11.5.1").
     $pkgVersion  = Get-MsixVersion $packages[0].FullName
-    $shortVer    = $pkgVersion -replace '\.0+$', ''
-    if ($shortVer -and $notes[$Name] -notmatch [regex]::Escape($shortVer)) {
+    $shortVer    = if ($pkgVersion -eq '?') { '' } else { ($pkgVersion -split '\.')[0..2] -join '.' }
+    if ($shortVer -and $notes[$Name] -notmatch ('(?<![\d.])' + [regex]::Escape($shortVer) + '(?![\d.])')) {
         Write-Host "  WARNING: the '$Name' What's-new text does not mention version $shortVer (packages are $pkgVersion). Did you forget to update the `$notes block?" -ForegroundColor Yellow
     }
 
