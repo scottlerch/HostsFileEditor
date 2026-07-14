@@ -178,22 +178,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(PingProgressVisibility));
     }
 
-    // Above this many visible rows (at 100% scale), show the opaque backplate behind the status
-    // bar. WinUI stops clipping the bottom-edge rows of an enormous virtualized list (see the XAML
-    // comment on the status-bar Grid for the full investigation) and the strays would show through
-    // the transparent Mica band. Empirically clean at 10K rows and broken between 10K and 50K —
-    // measured at 200% scale only, which cannot distinguish whether the underlying limit is
-    // DIP- or physical-pixel-denominated. The escape is raster-level, which favors physical, so the
-    // row count is scaled by the current RasterizationScale: at 100% the trigger is 10K (the
-    // measured-safe margin), at 200% it is 5K, at 300% ~3.3K — conservative under either
-    // hypothesis, while every realistic hosts file keeps the true-Mica look.
-    private const int StatusBackplateThreshold = 10_000;
-
-    public Visibility StatusBackplateVisibility =>
-        Entries.Count * (Content?.XamlRoot?.RasterizationScale ?? 1.0) > StatusBackplateThreshold
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-
     // The status row is 0 while the archive view is shown: its content collapses via
     // MainViewVisibility, but a FIXED 32px grid row keeps its height regardless — which left a
     // permanent dead band of blank Mica under the archive panel.
@@ -531,10 +515,6 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             _statusText = text;
             OnPropertyChanged(nameof(StatusText));
         }
-
-        // Cheap: x:Bind just re-reads Entries.Count and the rasterization scale. Raised on every
-        // recount so the backplate tracks the visible row count through loads, filters, and bulk edits.
-        OnPropertyChanged(nameof(StatusBackplateVisibility));
     }
 
     // A filter change can swap the entire visible set, so rebuild it with a single bulk rebind
@@ -782,14 +762,7 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
                         }
 
                         xamlRootChangedHooked = true;
-                        rootElement.XamlRoot.Changed += (_, _) =>
-                        {
-                            ApplyMinimumWindowSize();
-
-                            // The backplate trigger is scale-dependent too (raster-level escape —
-                            // see StatusBackplateVisibility).
-                            OnPropertyChanged(nameof(StatusBackplateVisibility));
-                        };
+                        rootElement.XamlRoot.Changed += (_, _) => ApplyMinimumWindowSize();
                     };
                 }
             }
