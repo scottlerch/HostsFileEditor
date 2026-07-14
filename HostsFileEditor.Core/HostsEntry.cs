@@ -467,6 +467,44 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         OnPropertyChanged(nameof(PingFailed));
     }
 
+    private static int _pingReportingSuspended;
+
+    /// <summary>
+    /// Suspends marshalling ping results onto the UI thread for the lifetime of the returned scope
+    /// (issue #103). A ping completion posts <see cref="OnPropertyChanged"/> onto the UI context,
+    /// which drives the bound <c>BindingList</c>'s child-change indexing. While a bulk mutation runs
+    /// the entry list off the UI thread (the modern app's async Import/Merge/Refresh mutates the list
+    /// on a thread-pool thread), that indexing races the mutation and can crash the UI. Callers wrap
+    /// the background mutation in this scope; reports that would fire during it are dropped. For
+    /// Import/Refresh the entries are replaced wholesale, so nothing is lost. Merge appends and keeps
+    /// existing entries, so a dropped RECOVERY report there could leave an entry showing a stale
+    /// "ping failed" until its next ping — acceptable versus a crash, since ping state is advisory and
+    /// self-heals on the next ping / reload / IP edit.
+    /// </summary>
+    public static IDisposable SuspendPingReporting()
+    {
+        Interlocked.Increment(ref _pingReportingSuspended);
+        return new PingReportingSuspension();
+    }
+
+    private static bool PingReportingSuspended => Volatile.Read(ref _pingReportingSuspended) > 0;
+
+    private sealed class PingReportingSuspension : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            Interlocked.Decrement(ref _pingReportingSuspended);
+        }
+    }
+
     // internal (not private) so the 0-boundary event semantics can be unit-tested without a live
     // network ping.
     internal static void BeginPing()
@@ -879,13 +917,15 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
         // Prefer the context captured at Ping() time; fall back to the app-registered UI context
         // (pings started during the background parse capture null). Only report inline when neither
-        // exists (headless/tests) — never onto bound UI from the thread pool.
+        // exists (headless/tests) — never onto bound UI from the thread pool. The suspension check
+        // runs where Report would execute (on the UI thread for the posted path) so a bulk list
+        // mutation in progress isn't raced by this report — see SuspendPingReporting (issue #103).
         var context = syncContext ?? UiSynchronizationContext;
         if (context is not null)
         {
-            context.Post(_ => Report(), null);
+            context.Post(_ => { if (!PingReportingSuspended) { Report(); } }, null);
         }
-        else
+        else if (!PingReportingSuspended)
         {
             Report();
         }
