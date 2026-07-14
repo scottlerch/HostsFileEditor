@@ -65,18 +65,13 @@ $storeDir = Join-Path $PSScriptRoot 'artifacts\store'
 # ---- Per-release "What's new" copy (edit each release) ----
 $notes = @{
     classic = @'
-Quality and reliability update (v1.5.1):
-- The command line no longer risks losing a saved (disabled) hosts configuration on a repeated disable, and reports ambiguous preset names instead of guessing.
-- Your settings (window size, auto-ping, the global shortcut) now carry forward across updates instead of resetting.
-- The tray icon and Disable toggle stay in sync after a command-line change, and the taskbar Jump List keeps working after updates.
-- Smaller polish: merges no longer ping skipped duplicates, and clearer messages.
+Quality update (v1.5.2):
+- An invalid host name now shows a clear "Invalid host names" validation message instead of a blank one.
 '@
     modern = @'
-Quality and reliability update (v1.2.1):
-- Fixed a rare crash when a background merge/import overlapped a ping.
-- A taskbar Jump List preset clicked while the app is reloading now opens correctly.
-- The command line no longer risks losing a saved (disabled) hosts configuration on a repeated disable, and reports ambiguous preset names instead of guessing.
-- Pasting while a sort is active now appends predictably; ping status stays accurate after editing an address.
+Quality update (v1.2.2):
+- List rows no longer bleed over the status bar on very large hosts files (100K+ entries) - the bottom rows stay clipped inside the list at any size.
+- An invalid host name now shows a clear "Invalid host names" validation message instead of a blank one.
 '@
 }
 
