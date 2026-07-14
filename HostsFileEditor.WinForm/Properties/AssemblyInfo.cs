@@ -19,6 +19,9 @@
 
 using System.Reflection;
 using System.Resources;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("HostsFileEditor.WinForm.Tests")]
 
 [assembly: AssemblyDescription(
     "Hosts File Editor makes it easy to change your hosts file as well as " +

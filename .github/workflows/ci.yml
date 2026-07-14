@@ -1,0 +1,102 @@
+name: CI
+
+# Gates every pull request (and pushes to master) on a clean build and a green test run on BOTH
+# target architectures — x64 and ARM64 — since the app ships for both.
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+# Cancel superseded runs on the same ref so a force-push doesn't pile up queued jobs.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: build & test (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: windows-latest
+            rid: win-x64
+          - arch: arm64
+            os: windows-11-arm
+            rid: win-arm64
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Installs the exact SDK pinned in global.json (10.0.301, rollForward latestFeature).
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      # Build the shared core, the headless CLI launcher, and the elevation helper. These are
+      # architecture-portable (a library / RID-agnostic builds), so no RID is needed here.
+      # TreatWarningsAsErrors is on repo-wide, so this also fails on any new analyzer warning.
+      - name: Build core, CLI and helper
+        run: |
+          dotnet build HostsFileEditor.Core/HostsFileEditor.Core.csproj       -c Release
+          dotnet build HostsFileEditor.Cli/HostsFileEditor.Cli.csproj         -c Release
+          dotnet build HostsFileEditor.Elevate/HostsFileEditor.Elevate.csproj -c Release
+
+      # Build the classic (WinForms) edition for THIS architecture. Both app projects default their
+      # RuntimeIdentifier to win-x64, so the RID must be passed explicitly or the arm64 leg would
+      # silently build x64 and never validate arm64.
+      - name: Build classic UI (WinForms)
+        run: dotnet build HostsFileEditor.WinForm/HostsFileEditor.WinForm.csproj -c Release -p:RuntimeIdentifier=${{ matrix.rid }}
+
+      # Build the modern (WinUI 3) edition for this architecture. A plain build (not publish) skips
+      # the AOT/trim/MSIX steps, so it needs no C++ toolchain — just the Windows App SDK NuGet.
+      - name: Build modern UI (WinUI)
+        run: dotnet build HostsFileEditor.WinUI/HostsFileEditor.WinUI.csproj -c Release -p:Platform=${{ matrix.arch }} -p:RuntimeIdentifier=${{ matrix.rid }}
+
+      # Runs the full Core/CLI test suite with OpenCover coverage (configured in coverage.runsettings).
+      - name: Test Core/CLI with coverage
+        run: >
+          dotnet test HostsFileEditor.Core.Tests/HostsFileEditor.Core.Tests.csproj
+          -c Release
+          --logger "trx;LogFileName=core-test-results.trx"
+          --results-directory ${{ github.workspace }}/TestResults
+
+      # Classic-edition (WinForms) UI-logic tests. The project pins RID win-x64, so it runs on the x64
+      # leg only; the modern edition is covered by its build gate above and shared logic lives in Core.
+      - name: Test classic UI (x64 only)
+        if: matrix.arch == 'x64'
+        run: >
+          dotnet test HostsFileEditor.WinForm.Tests/HostsFileEditor.WinForm.Tests.csproj
+          -c Release
+          --logger "trx;LogFileName=winform-test-results.trx"
+          --results-directory ${{ github.workspace }}/TestResults
+
+      - name: Coverage summary
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool 2>$null
+          $report = Get-ChildItem -Path "${{ github.workspace }}/TestResults" -Recurse -Filter coverage.opencover.xml | Select-Object -First 1
+          if (-not $report) { Write-Host "No coverage report found."; exit 0 }
+          reportgenerator -reports:"$($report.FullName)" -targetdir:"${{ github.workspace }}/CoverageReport" -reporttypes:"TextSummary;MarkdownSummaryGithub"
+          $md = "${{ github.workspace }}/CoverageReport/SummaryGithub.md"
+          if (Test-Path $md) { Get-Content $md | Add-Content -Path $env:GITHUB_STEP_SUMMARY }
+          Get-Content "${{ github.workspace }}/CoverageReport/Summary.txt" | Write-Host
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.arch }}
+          path: |
+            ${{ github.workspace }}/TestResults/**/*.trx
+            ${{ github.workspace }}/TestResults/**/coverage.opencover.xml
+          if-no-files-found: warn
