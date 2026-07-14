@@ -1600,18 +1600,28 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             // row as SelectedItem) but at the BOTTOM above it (logical select-all leaves it null) —
             // opposite file ends across an invisible 20K boundary. Rebind in bulk (not the per-item
             // RefreshEntries diff, which is O(n^2) for pasting a whole file).
-            var current = EntriesList.SelectedItem as HostsEntry;
-            if (current is null && _logicalSelectAll)
+            //
+            // While a display sort is active, the selected row's FILE position is unpredictable, so
+            // "insert before the selection" would drop the pasted rows at an arbitrary spot that then
+            // re-sorts elsewhere in the view (issue #104). Anchor on null → Core appends at the end of
+            // the file, a defined and predictable position — Insert/Move are disabled entirely while
+            // sorted for the same "no defined position" reason; Paste stays usable but appends.
+            HostsEntry? current = null;
+            if (!IsSortActive)
             {
-                current = Entries.FirstOrDefault();
-            }
-
-            if (current is null && _selectedEntries.Count > 0)
-            {
-                var (_, minIndex, _) = ScanSelectedRange();
-                if (minIndex >= 0)
+                current = EntriesList.SelectedItem as HostsEntry;
+                if (current is null && _logicalSelectAll)
                 {
-                    current = Entries[minIndex];
+                    current = Entries.FirstOrDefault();
+                }
+
+                if (current is null && _selectedEntries.Count > 0)
+                {
+                    var (_, minIndex, _) = ScanSelectedRange();
+                    if (minIndex >= 0)
+                    {
+                        current = Entries[minIndex];
+                    }
                 }
             }
 
