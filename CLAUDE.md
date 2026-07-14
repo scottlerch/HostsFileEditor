@@ -180,6 +180,40 @@ ML/Widgets libs from modern). Tool paths (`signtool.exe`/`makeappx.exe`) resolve
 via several fallbacks (VS dev shell env vars, then registry `KitsRoot10`). Test signing cert is
 `HostsFileEditorTestCert.pfx` (password `test`) — for local/dev only.
 
+## Store release automation (`publish-store.ps1`)
+
+Both editions ship to the Microsoft Store as separate apps — **classic `9NF73PSPK332`**, **modern
+`9NBQWCDXGF9R`**. Instead of the Partner Center portal UI, `publish-store.ps1` scripts the
+submissions with **StoreBroker** — Microsoft's PowerShell module over the Store submission REST API.
+(The `msstore` CLI was tried first and abandoned: its `publish` builds a project of a recognized
+type and can't push our pre-built, externally-signed MSIX to an existing app by product id.)
+
+- **Install tooling (one-time):** `.\publish-store.ps1 -InstallTooling` — `Install-Module StoreBroker
+  -Scope CurrentUser`. Pure PowerShell; no winget/runtime prerequisites.
+- **Authenticate:** create an Azure AD app in Partner Center (Account settings → User management →
+  *Azure AD applications*, **Manager** role) to get the **TenantId / ClientId** and a **client secret**
+  (a "Key"). The script calls `Set-StoreBrokerAuthentication` for you from those three values, resolved
+  in order: `-TenantId`/`-ClientId`/`-ClientSecret` params → `STOREBROKER_TENANTID`/`STOREBROKER_CLIENTID`/
+  `STOREBROKER_CLIENTSECRET` env vars → interactive prompt. The secret stays a `SecureString` and is
+  never written to disk by the script. No SellerId is needed (that was a `msstore`-ism). Never commit
+  the secret — env var or prompt only.
+- **Each release:** `.\build-all.ps1 -Sign` (produces `artifacts\store\HostsFileEditor-<flavor>-<arch>.msix`)
+  then `.\publish-store.ps1` — for each edition it **clones the current published submission**
+  (`New-ApplicationSubmission -Force`), marks the existing packages `PendingDelete` and adds the new
+  x64+arm64 msix as `PendingUpload`, sets the "What's new" on every listing locale
+  (`listings.<locale>.baseListing.releaseNotes` — note StoreBroker uses the **raw API camelCase**, not
+  msstore's PascalCase), pushes it (`Set-ApplicationSubmission`), uploads the packages as one zip
+  (`Set-SubmissionPackage`), then commits (`Complete-ApplicationSubmission`). Cloning preserves the
+  rich listing (description/screenshots); only packages + notes change. `-NoCommit` leaves a Draft for
+  a final portal check; `-Edition classic|modern` limits scope; `-Inspect` dumps the current submission.
+- **Verify on the first run:** use `-NoCommit` and confirm in Partner Center that **both** architectures
+  uploaded at the new version before committing there. The per-package summary line prints each msix's
+  manifest version so a forgotten version bump is caught before upload.
+- **Reruns / partial failure:** each edition publishes independently — if one fails, the other still
+  completes, a per-edition summary prints, and the script exits non-zero. `New-ApplicationSubmission
+  -Force` discards any half-built pending submission and re-clones from what's published, so a rerun is
+  clean; `-Edition <name>` retries just one.
+
 ## Gotchas
 
 - **Warnings are errors.** A change that compiles in isolation can still fail the solution build.
