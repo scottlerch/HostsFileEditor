@@ -54,6 +54,46 @@ public class HostsFileAdditionalTests
         hf.Entries.First().IpAddress.ShouldBe("127.0.0.9");
     }
 
+    // Guard for #99: disabling must not silently overwrite a DIFFERENT existing hosts.disabled.
+    [TestMethod]
+    public void DisableWouldOverwriteDifferentFile_NoDisabledFile_False()
+    {
+        var live = Path.Combine(_tempDir, "hosts");
+        var disabled = Path.Combine(_tempDir, "hosts.disabled");
+        File.WriteAllText(live, "a");
+        HostsFile.DisableWouldOverwriteDifferentFile(live, disabled).ShouldBeFalse();
+    }
+
+    [TestMethod]
+    public void DisableWouldOverwriteDifferentFile_IdenticalContent_False()
+    {
+        var live = Path.Combine(_tempDir, "hosts");
+        var disabled = Path.Combine(_tempDir, "hosts.disabled");
+        File.WriteAllText(live, "127.0.0.1 localhost\n10.0.0.1 a");
+        File.WriteAllText(disabled, "127.0.0.1 localhost\n10.0.0.1 a");
+        HostsFile.DisableWouldOverwriteDifferentFile(live, disabled).ShouldBeFalse();
+    }
+
+    [TestMethod]
+    public void DisableWouldOverwriteDifferentFile_DifferentContent_True()
+    {
+        var live = Path.Combine(_tempDir, "hosts");
+        var disabled = Path.Combine(_tempDir, "hosts.disabled");
+        File.WriteAllText(live, "127.0.0.1 localhost");                 // fresh, foreign file
+        File.WriteAllText(disabled, "10.0.0.1 curated\n10.0.0.2 more"); // the copy we must not lose
+        HostsFile.DisableWouldOverwriteDifferentFile(live, disabled).ShouldBeTrue();
+    }
+
+    [TestMethod]
+    public void DisableWouldOverwriteDifferentFile_SameLengthDifferentBytes_True()
+    {
+        var live = Path.Combine(_tempDir, "hosts");
+        var disabled = Path.Combine(_tempDir, "hosts.disabled");
+        File.WriteAllText(live, "127.0.0.1 aaaaa");
+        File.WriteAllText(disabled, "127.0.0.1 bbbbb"); // same length, different content
+        HostsFile.DisableWouldOverwriteDifferentFile(live, disabled).ShouldBeTrue();
+    }
+
     [TestMethod]
     public void Import_SameFile_NoChange()
     {

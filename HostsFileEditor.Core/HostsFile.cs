@@ -168,6 +168,20 @@ public class HostsFile : INotifyPropertyChanged
 
     public void DisableHostsFile()
     {
+        // Guard against silent data loss: disabling renames the live hosts file over
+        // hosts.disabled (overwrite). If a hosts.disabled already exists whose contents differ
+        // — e.g. some other software recreated the live hosts file after a previous disable, so
+        // both files now exist — that Move would destroy the user's saved disabled configuration
+        // (and, with the load-time backup already overwritten, its only copy). Refuse and let the
+        // user resolve it, rather than losing data in a prompt-free scriptable command.
+        if (DisableWouldOverwriteDifferentFile(DefaultHostFilePath, DefaultDisabledHostFilePath))
+        {
+            throw new HostsFileConflictException(
+                $"A different disabled hosts file already exists ('{DefaultDisabledHostFilePath}'). " +
+                "Disabling now would overwrite it and lose that saved configuration. Enable the hosts " +
+                "file first to restore the disabled copy, or remove that file, then try again.");
+        }
+
         PrivilegedFileOperations.Current.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);
         NativeMethods.FlushDns();
 
@@ -175,6 +189,61 @@ public class HostsFile : INotifyPropertyChanged
         // now-disabled file instead of recreating the enabled one. Runs only after a
         // successful Move (a declined UAC prompt throws before this and leaves state intact).
         _filePath = DefaultDisabledHostFilePath;
+    }
+
+    // Internal for tests. Would disabling (moving <paramref name="livePath"/> over
+    // <paramref name="disabledPath"/>) overwrite a DIFFERENT existing file, losing its contents?
+    // True only when both files exist and their contents differ — a missing disabled file or
+    // byte-identical contents is safe to overwrite. If the files exist but can't be read to
+    // compare, err on the side of caution and report a conflict rather than risk the overwrite.
+    internal static bool DisableWouldOverwriteDifferentFile(string livePath, string disabledPath)
+    {
+        if (!File.Exists(disabledPath) || !File.Exists(livePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            return !FilesHaveSameContent(livePath, disabledPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return true;
+        }
+    }
+
+    private static bool FilesHaveSameContent(string pathA, string pathB)
+    {
+        if (new FileInfo(pathA).Length != new FileInfo(pathB).Length)
+        {
+            return false;
+        }
+
+        using var streamA = File.OpenRead(pathA);
+        using var streamB = File.OpenRead(pathB);
+        Span<byte> bufferA = stackalloc byte[4096];
+        Span<byte> bufferB = stackalloc byte[4096];
+
+        while (true)
+        {
+            var readA = streamA.ReadAtLeast(bufferA, bufferA.Length, throwOnEndOfStream: false);
+            var readB = streamB.ReadAtLeast(bufferB, bufferB.Length, throwOnEndOfStream: false);
+            if (readA != readB)
+            {
+                return false;
+            }
+
+            if (readA == 0)
+            {
+                return true;
+            }
+
+            if (!bufferA[..readA].SequenceEqual(bufferB[..readB]))
+            {
+                return false;
+            }
+        }
     }
 
     public void EnableHostsFile()

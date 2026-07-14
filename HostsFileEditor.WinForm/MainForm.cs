@@ -601,6 +601,11 @@ internal sealed partial class MainForm : Form
         {
             // User declined the UAC prompt; the file was not renamed.
         }
+        catch (HostsFileConflictException ex)
+        {
+            // Disabling would overwrite a different existing hosts.disabled; refuse and explain.
+            MessageBox.Show(this, ex.Message, "Cannot Disable Hosts File", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
         finally
         {
             // Sync the toggles from the ACTUAL file state (not the intended one) so a declined
