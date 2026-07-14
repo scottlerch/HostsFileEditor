@@ -90,6 +90,14 @@ Two executables run the same commands:
 
 Run with no command and the app opens normally.
 
+> **Both editions installed?** The classic and modern Store apps each register the same `hfe` alias,
+> and Windows resolves it to whichever edition was **installed last** (you can switch which one owns it
+> under *Settings → Apps → Advanced app settings → App execution aliases*). They also keep **separate**
+> preset/archive stores (each Store package has its own isolated app data), so `hfe list` reflects the
+> edition the alias points at, which may differ from the other edition's window. If you script with
+> `hfe`, install just the edition you script against — or call that edition's `hfe.exe` by full path.
+> The **portable** build shares one data folder, so this only affects Store installs of both editions.
+
 ### Permissions
 
 Commands that change the hosts file need administrator rights, exactly like saving in the GUI: run
