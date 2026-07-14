@@ -1559,11 +1559,21 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
             // A Jump List preset clicked DURING this reload was deferred (IsLoaded was false); honor it
             // now that the reload has finished (issue #101). In the finally so it runs even when the
-            // mutate throws — otherwise the pending archive would be orphaned and a LATER, unrelated
-            // reload would import it as a stale request. ImportArchiveFromJumpListAsync self-guards
-            // _isClosed and its own errors, and its nested MutateCoreAndRefreshAsync runs sequentially
-            // (awaited), not re-entrantly.
-            await DrainPendingJumpListArchiveAsync();
+            // mutate threw — otherwise the pending archive would be orphaned and a LATER, unrelated
+            // reload would import it as a stale request. Wrapped in its own catch so that honoring the
+            // deferred request can never REPLACE the exception this finally may be unwinding (the import
+            // surfaces its own errors); its nested MutateCoreAndRefreshAsync runs sequentially, not
+            // re-entrantly.
+            try
+            {
+                await DrainPendingJumpListArchiveAsync();
+            }
+#pragma warning disable CA1031 // last-chance guard: must not mask the primary exception
+            catch (Exception drainEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"Deferred Jump List import failed: {drainEx.Message}");
+            }
+#pragma warning restore CA1031
         }
     }
 
