@@ -116,6 +116,26 @@ public class HostsFileAdditionalTests
         HostsFile.DisableWouldOverwriteDifferentFile(live, disabled).ShouldBeFalse();
     }
 
+    // The difference is in the LAST byte, past the first 4096-byte buffer — so a compare that only
+    // checked the first chunk (and then returned "equal") would wrongly report no conflict and let the
+    // large differing hosts.disabled be overwritten. This exercises the multi-buffer mismatch path.
+    [TestMethod]
+    public void DisableWouldOverwriteDifferentFile_DifferInLastByteAcrossBuffers_True()
+    {
+        var live = Path.Combine(_tempDir, "hosts");
+        var disabled = Path.Combine(_tempDir, "hosts.disabled");
+        var content = new byte[8193]; // two full buffers + 1 byte
+        for (var i = 0; i < content.Length; i++)
+        {
+            content[i] = (byte)(i % 251);
+        }
+
+        File.WriteAllBytes(live, content);
+        content[^1] ^= 0xFF; // flip only the final byte
+        File.WriteAllBytes(disabled, content);
+        HostsFile.DisableWouldOverwriteDifferentFile(live, disabled).ShouldBeTrue();
+    }
+
     [TestMethod]
     public void Import_SameFile_NoChange()
     {
