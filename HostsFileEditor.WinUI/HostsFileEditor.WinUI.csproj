@@ -61,6 +61,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.2.0" />
+    <!-- Pin the NativeAOT ILCompiler to match the installed .NET 10 runtime (10.0.10); see the same
+         note in HostsFileEditor.Elevate.csproj. The SDK 10.0.302 default (10.0.9) conflicts with the
+         newer 10.0.10 self-contained runtime pack. Remove once the SDK default catches up. -->
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.10" />
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.4.1" />
     <PackageReference Include="System.Resources.Extensions" Version="10.0.9" />
     <!-- Taskbar Jump List (issue #10) uses the WinRT Windows.UI.StartScreen.JumpList API — packaged-

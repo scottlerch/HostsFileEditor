@@ -18,4 +18,9 @@
   <ItemGroup>
     <ProjectReference Include="..\HostsFileEditor.Core\HostsFileEditor.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Pin the NativeAOT ILCompiler to match the installed .NET 10 runtime (10.0.10); see the
+         same note in HostsFileEditor.Elevate.csproj. Remove once the SDK default catches up. -->
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.10" />
+  </ItemGroup>
 </Project>

@@ -18,4 +18,12 @@
     <PublishAot>true</PublishAot>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Pin the NativeAOT ILCompiler to match the installed .NET 10 runtime (10.0.10). The .NET SDK
+         10.0.302 still defaults the AOT compiler to 10.0.9, which conflicts with the newer 10.0.10
+         self-contained runtime pack ("Overriding System.Private.CoreLib.dll with a newer version is
+         not supported"). Aligning the compiler up to the runtime fixes AOT publish. Bump alongside
+         the runtime; remove once the SDK default catches up. -->
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.10" />
+  </ItemGroup>
 </Project>
