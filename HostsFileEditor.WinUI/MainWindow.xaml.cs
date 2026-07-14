@@ -388,6 +388,16 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         HostsArchiveList.Instance.ListChanged += (s, e) => _ = TaskbarJumpList.RefreshAsync();
 
         // If a Jump List activation arrived before the load finished, honor it now.
+        await DrainPendingJumpListArchiveAsync();
+    }
+
+    // Honors a Jump List activation that arrived while a load OR reload was in flight (issue #101).
+    // RequestOpenArchive defers to _pendingJumpListArchive whenever IsLoaded is false — which covers
+    // both the initial load and a reload (Import/Merge/Refresh via MutateCoreAndRefreshAsync). Both
+    // completion paths call this so the deferred request isn't dropped; it was previously drained only
+    // by the initial load, so a preset clicked during a reload silently did nothing.
+    private async Task DrainPendingJumpListArchiveAsync()
+    {
         if (_pendingJumpListArchive is { } pending)
         {
             _pendingJumpListArchive = null;
@@ -395,8 +405,8 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    // Set by RequestOpenArchive when a Jump List activation arrives before the initial load completes;
-    // LoadEntriesAsync imports it once loaded.
+    // Set by RequestOpenArchive when a Jump List activation arrives before a load/reload completes;
+    // drained by DrainPendingJumpListArchiveAsync from both completion paths.
     private string? _pendingJumpListArchive;
 
     /// <summary>
@@ -1556,6 +1566,24 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             }
 
             _suspendSelectionTracking = false;
+
+            // A Jump List preset clicked DURING this reload was deferred (IsLoaded was false); honor it
+            // now that the reload has finished (issue #101). In the finally so it runs even when the
+            // mutate threw — otherwise the pending archive would be orphaned and a LATER, unrelated
+            // reload would import it as a stale request. Wrapped in its own catch so that honoring the
+            // deferred request can never REPLACE the exception this finally may be unwinding (the import
+            // surfaces its own errors); its nested MutateCoreAndRefreshAsync runs sequentially, not
+            // re-entrantly.
+            try
+            {
+                await DrainPendingJumpListArchiveAsync();
+            }
+#pragma warning disable CA1031 // last-chance guard: must not mask the primary exception
+            catch (Exception drainEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"Deferred Jump List import failed: {drainEx.Message}");
+            }
+#pragma warning restore CA1031
         }
     }
 
