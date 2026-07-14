@@ -195,9 +195,8 @@ internal sealed partial class MainForm : Form
         if (IsRunningPackaged())
         {
             message +=
-                "To change or disable the shortcut in the Store version, install the portable build " +
-                "(it keeps its settings in an editable file), or choose a different combination once " +
-                "the other application releases it.";
+                "The Store version has no in-app setting to change or disable the shortcut yet. To " +
+                "customize it, install the portable build, which keeps its settings in an editable file.";
         }
         else
         {
