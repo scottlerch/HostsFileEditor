@@ -81,4 +81,91 @@ public class HostsCliTests
         code.ShouldBe(HostsCli.ExitUsage);
         error.ToString().ShouldContain("Unknown");
     }
+
+    // #98: an extension-lenient stem that matches more than one archive must be reported as
+    // ambiguous, not silently resolved by file-system enumeration order.
+    [TestMethod]
+    public void ResolvePreset_AmbiguousStem_ReportsAmbiguityWithAllNames()
+    {
+        WithTempArchives(
+            dir =>
+            {
+                File.WriteAllText(Path.Combine(dir, "Foo.txt"), "a");
+                File.WriteAllText(Path.Combine(dir, "Foo.bak"), "b");
+            },
+            () =>
+            {
+                var result = HostsCli.ResolvePreset("Foo", out var archive, out var names);
+                result.ShouldBe(HostsCli.PresetResolution.Ambiguous);
+                archive.ShouldBeNull();
+                names.ShouldBe(["Foo.bak", "Foo.txt"]); // ordered by FileNameComparer, both listed
+            });
+    }
+
+    [TestMethod]
+    public void ResolvePreset_ExactNameBeatsStem()
+    {
+        WithTempArchives(
+            dir =>
+            {
+                File.WriteAllText(Path.Combine(dir, "Foo"), "a");     // exact
+                File.WriteAllText(Path.Combine(dir, "Foo.txt"), "b"); // stem match
+            },
+            () =>
+            {
+                HostsCli.ResolvePreset("Foo", out var archive, out _).ShouldBe(HostsCli.PresetResolution.Found);
+                archive!.FileName.ShouldBe("Foo");
+            });
+    }
+
+    [TestMethod]
+    public void ResolvePreset_SingleStem_ResolvesWithExtension()
+    {
+        WithTempArchives(
+            dir => File.WriteAllText(Path.Combine(dir, "Bar.txt"), "a"),
+            () =>
+            {
+                HostsCli.ResolvePreset(" Bar ", out var archive, out _).ShouldBe(HostsCli.PresetResolution.Found);
+                archive!.FileName.ShouldBe("Bar.txt");
+            });
+    }
+
+    [TestMethod]
+    public void ResolvePreset_NoMatch_NotFound()
+    {
+        WithTempArchives(
+            dir => File.WriteAllText(Path.Combine(dir, "Bar.txt"), "a"),
+            () => HostsCli.ResolvePreset("Nope", out _, out _).ShouldBe(HostsCli.PresetResolution.NotFound));
+    }
+
+    [TestMethod]
+    public void ResolvePreset_StemMatchIsCaseInsensitive()
+    {
+        WithTempArchives(
+            dir => File.WriteAllText(Path.Combine(dir, "Work.txt"), "a"),
+            () =>
+            {
+                HostsCli.ResolvePreset("work", out var archive, out _).ShouldBe(HostsCli.PresetResolution.Found);
+                archive!.FileName.ShouldBe("Work.txt");
+            });
+    }
+
+    private static void WithTempArchives(Action<string> populate, Action body)
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(dir);
+        HostsArchiveList.TestArchiveDirectoryOverride = dir;
+        try
+        {
+            populate(dir);
+            HostsArchiveList.Instance.Refresh();
+            body();
+        }
+        finally
+        {
+            HostsArchiveList.TestArchiveDirectoryOverride = null;
+            HostsArchiveList.Instance.Refresh();
+            Directory.Delete(dir, true);
+        }
+    }
 }
