@@ -22,6 +22,9 @@
   <Project Path="HostsFileEditor.Cli/HostsFileEditor.Cli.csproj" />
   <Project Path="HostsFileEditor.Core.Tests/HostsFileEditor.Core.Tests.csproj" />
   <Project Path="HostsFileEditor.Core/HostsFileEditor.Core.csproj" />
+  <Project Path="HostsFileEditor.WinForm.Tests/HostsFileEditor.WinForm.Tests.csproj">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="HostsFileEditor.Elevate/HostsFileEditor.Elevate.csproj" />
   <Project Path="HostsFileEditor.WinForm/HostsFileEditor.WinForm.csproj" />
   <Project Path="HostsFileEditor.WinUI/HostsFileEditor.WinUI.csproj">

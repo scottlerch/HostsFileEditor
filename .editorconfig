@@ -215,5 +215,5 @@ dotnet_diagnostic.CA1707.severity = none
 
 # Tests: Method_Scenario_Expected naming and public [TestClass] types are the
 # established convention.
-[HostsFileEditor.Core.Tests/*.cs]
+[HostsFileEditor.{Core,WinForm}.Tests/**.cs]
 dotnet_diagnostic.CA1707.severity = none
