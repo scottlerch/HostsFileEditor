@@ -38,6 +38,16 @@
         Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:SplashScreen Image="Assets\Square150x150Logo.png"/>
       </uap:VisualElements>
+      <Extensions>
+        <!-- Version-independent launch stub (%LOCALAPPDATA%\Microsoft\WindowsApps\HostsFileEditor.exe)
+             so the taskbar Jump List's persisted preset links survive a Store update instead of
+             pointing at the old version-stamped WindowsApps path (issue #106). -->
+        <uap5:Extension Category="windows.appExecutionAlias" Executable="HostsFileEditor.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:AppExecutionAlias>
+            <uap5:ExecutionAlias Alias="HostsFileEditor.exe"/>
+          </uap5:AppExecutionAlias>
+        </uap5:Extension>
+      </Extensions>
     </Application>
     <!-- Console launcher (issue #2): a second app entry whose appExecutionAlias puts `hfe` on PATH so
          scripts can run `hfe -s Preset` etc. The entry is VISIBLE in the Start menu app list: hiding it
