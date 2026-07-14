@@ -1725,6 +1725,13 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
         {
             // User declined the UAC prompt; the file was not renamed.
         }
+        catch (HostsFileConflictException ex)
+        {
+            // Disabling would overwrite a different existing hosts.disabled — an intentional refusal,
+            // not an error. Show it as a neutral message (matches the classic edition's dedicated
+            // handler) rather than the generic "Error Changing Hosts File State" dialog.
+            await ShowInfoDialogAsync("Cannot Disable Hosts File", ex.Message);
+        }
         catch (Exception ex)
         {
             await ShowErrorDialogAsync("Error Changing Hosts File State", $"An error occurred while enabling or disabling the hosts file:\n\n{ex.Message}");
