@@ -362,6 +362,13 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
         _hostnamesValid = entry._hostnamesValid;
         _ipAddressValid = entry._ipAddressValid;
         _errors = entry._errors is null ? null : new Dictionary<string, string>(entry._errors);
+
+        // Copy the ping-failure flag alongside the error dictionary it corresponds to (issue #96):
+        // _errors is copied above and may hold the "Ping failed" message on the IP, so _pingFailed
+        // must match it. Copying only the error left the clone with _pingFailed == false, so a later
+        // successful ping hit the "success && !_pingFailed" early-return and never cleared the stale
+        // error — it stuck until the IP was edited.
+        _pingFailed = entry._pingFailed;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -845,6 +852,15 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
 
         void Report()
         {
+            // The IP may have been edited while this ping was in flight; if so, this result is for
+            // the OLD address and must not touch the current one (issue #96). Without this, a stale
+            // timeout for a since-replaced address marks the NEW (possibly reachable) address as
+            // ping-failed, and it never re-pings until the next manual ping or reload.
+            if (!string.Equals(address, _ipAddress, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             if (status == IPStatus.Success)
             {
                 // Recovered: clear the ping-failure state. Only a ping failure could have set an IP

@@ -1,4 +1,5 @@
 using HostsFileEditor.Utilities;
+using System.Reflection;
 
 namespace HostsFileEditor.Core.Tests;
 
@@ -260,6 +261,21 @@ public class HostsEntryTests
         clone.Comment.ShouldBe(entry.Comment);
         clone.Valid.ShouldBe(entry.Valid);
         clone.Enabled.ShouldBe(entry.Enabled);
+    }
+
+    // #96: the copy ctor copies the error dictionary, so it must also copy _pingFailed — otherwise a
+    // duplicate of a ping-failed row shows the error with PingFailed == false, and a later successful
+    // ping can never clear it (the "success && !_pingFailed" early-return skips the recovery report).
+    [TestMethod]
+    public void CloneConstructor_CopiesPingFailedState()
+    {
+        var entry = new HostsEntry("127.0.0.1 localhost");
+        var pingFailed = typeof(HostsEntry).GetField("_pingFailed", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        pingFailed.SetValue(entry, true); // simulate a prior failed ping
+
+        var clone = new HostsEntry(entry);
+
+        clone.PingFailed.ShouldBeTrue();
     }
 
     [TestMethod]
