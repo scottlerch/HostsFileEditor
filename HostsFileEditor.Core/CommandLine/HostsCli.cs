@@ -191,7 +191,7 @@ public static class HostsCli
                 return ExitError;
 
             case PresetResolution.NotFound:
-                error.WriteLine($"Preset '{name}' not found. Run 'list' to see available presets.");
+                error.WriteLine($"Preset '{name.Trim()}' not found. Run 'list' to see available presets.");
                 return ExitError;
         }
 

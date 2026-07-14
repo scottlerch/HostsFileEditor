@@ -138,6 +138,18 @@ public class HostsCliTests
             () => HostsCli.ResolvePreset("Nope", out _, out _).ShouldBe(HostsCli.PresetResolution.NotFound));
     }
 
+    [TestMethod]
+    public void ResolvePreset_StemMatchIsCaseInsensitive()
+    {
+        WithTempArchives(
+            dir => File.WriteAllText(Path.Combine(dir, "Work.txt"), "a"),
+            () =>
+            {
+                HostsCli.ResolvePreset("work", out var archive, out _).ShouldBe(HostsCli.PresetResolution.Found);
+                archive!.FileName.ShouldBe("Work.txt");
+            });
+    }
+
     private static void WithTempArchives(Action<string> populate, Action body)
     {
         var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
