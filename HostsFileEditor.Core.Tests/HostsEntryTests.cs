@@ -81,6 +81,20 @@ public class HostsEntryTests
         entry.Valid.ShouldBeFalse();
     }
 
+    // Regression for #131: Resources.InvalidHostnames had no matching key in Core's Resources.resx,
+    // so it resolved to null and SetError(null) cleared the error — an invalid hostname surfaced a
+    // BLANK IDataErrorInfo message (rather than "Invalid host names") in both editions.
+    [TestMethod]
+    public void Invalid_Hostname_HasNonBlankErrorMessage()
+    {
+        var entry = new HostsEntry("127.0.0.1 goodhost");
+        entry.HostNames = "bad@host"; // invalid character
+
+        entry.Valid.ShouldBeFalse();
+        entry["HostNames"].ShouldNotBeNullOrEmpty();
+        entry["HostNames"].ShouldBe(HostsFileEditor.Properties.Resources.InvalidHostnames);
+    }
+
     [TestMethod]
     public void ToString_ReturnsExpected()
     {

@@ -68,6 +68,9 @@
   <data name="InvalidHostEntries" xml:space="preserve">
     <value>Invalid Host Entries</value>
   </data>
+  <data name="InvalidHostnames" xml:space="preserve">
+    <value>Invalid host names</value>
+  </data>
   <data name="LoseChangesDialogCaption" xml:space="preserve">
     <value>Hosts File Editor Question</value>
   </data>
