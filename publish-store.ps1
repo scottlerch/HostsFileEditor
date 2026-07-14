@@ -65,20 +65,18 @@ $storeDir = Join-Path $PSScriptRoot 'artifacts\store'
 # ---- Per-release "What's new" copy (edit each release) ----
 $notes = @{
     classic = @'
-Feature update (v1.5.0):
-- Command line for scripts: switch presets, enable/disable, import, and merge (hfe on PATH; run "hfe help").
-- Taskbar Jump List: right-click the app icon to open any saved preset directly.
-- File > Merge combines another hosts file into the current one, skipping duplicates (undoable).
-- Global shortcut (default Ctrl+Shift+H, configurable) hides/restores the window from the tray.
-- IP column now sorts numerically; text filter is now case-insensitive; auto-ping shows a progress indicator and flags failed entries.
+Quality and reliability update (v1.5.1):
+- The command line no longer risks losing a saved (disabled) hosts configuration on a repeated disable, and reports ambiguous preset names instead of guessing.
+- Your settings (window size, auto-ping, the global shortcut) now carry forward across updates instead of resetting.
+- The tray icon and Disable toggle stay in sync after a command-line change, and the taskbar Jump List keeps working after updates.
+- Smaller polish: merges no longer ping skipped duplicates, and clearer messages.
 '@
     modern = @'
-Feature update (v1.2.0):
-- Command line for scripts: switch presets, enable/disable, import, and merge (hfe on PATH; run "hfe help").
-- Taskbar Jump List: right-click the app icon to open any saved preset directly.
-- File > Merge combines another hosts file into the current one, skipping duplicates (undoable).
-- New Sort options next to the filter; the IP column sorts numerically.
-- Auto-ping shows a progress indicator and marks failed entries with an error badge.
+Quality and reliability update (v1.2.1):
+- Fixed a rare crash when a background merge/import overlapped a ping.
+- A taskbar Jump List preset clicked while the app is reloading now opens correctly.
+- The command line no longer risks losing a saved (disabled) hosts configuration on a repeated disable, and reports ambiguous preset names instead of guessing.
+- Pasting while a sort is active now appends predictably; ping status stays accurate after editing an address.
 '@
 }
 
