@@ -129,27 +129,92 @@ function Get-MsixVersion([string]$Path) {
     } catch { return '?' }
 }
 
+# The architectures every edition ships. A submission must upload EXACTLY this set: a missing one
+# would drop that architecture for existing users when the old packages are marked PendingDelete, and
+# an extra/stale msix would upload a wrong package.
+$script:ExpectedArchitectures = @('x64', 'arm64')
+
+# Returns the validated, arch-ordered package files for an edition, or throws with an actionable
+# message. Guards against the "commit ships a bad submission" failure modes (issue #125): a missing
+# architecture, a stale/extra msix, or a version mismatch between the architectures.
 function Get-EditionPackages([string]$Name) {
     $pkgs = @(Get-ChildItem (Join-Path $storeDir "HostsFileEditor-$Name-*.msix") -ErrorAction SilentlyContinue)
     if (-not $pkgs) { throw "No packages found: $storeDir\HostsFileEditor-$Name-*.msix (run .\build-all.ps1 -Sign first)." }
-    $pkgs
+
+    # Map each file to its architecture from the "HostsFileEditor-<name>-<arch>.msix" naming.
+    $byArch = @{}
+    foreach ($p in $pkgs) {
+        if ($p.BaseName -notmatch "^HostsFileEditor-$Name-(?<arch>.+)$") {
+            throw "Unexpected package name (not HostsFileEditor-$Name-<arch>.msix): $($p.Name)"
+        }
+        $arch = $Matches.arch
+        if ($byArch.ContainsKey($arch)) { throw "Two $Name packages for '$arch' in $storeDir. Clean stale msix and rebuild." }
+        $byArch[$arch] = $p
+    }
+
+    $missing = @($ExpectedArchitectures | Where-Object { -not $byArch.ContainsKey($_) })
+    $extra   = @($byArch.Keys | Where-Object { $_ -notin $ExpectedArchitectures })
+    if ($missing) { throw "$Name is missing package(s) for: $($missing -join ', '). Expected exactly $($ExpectedArchitectures -join ', ') - rebuild with .\build-all.ps1 -Sign so an architecture isn't dropped." }
+    if ($extra)   { throw "$Name has unexpected package(s) for: $($extra -join ', '). Remove stale msix from $storeDir." }
+
+    # All architectures must report the same Identity/Version (a mismatch means a stale msix leaked in).
+    $ordered  = @($ExpectedArchitectures | ForEach-Object { $byArch[$_] })
+    $versions = @($ordered | ForEach-Object { Get-MsixVersion $_.FullName } | Sort-Object -Unique)
+    if ($versions.Count -ne 1 -or $versions[0] -eq '?') {
+        throw "$Name packages have mismatched or unreadable versions ($($versions -join ', ')). Rebuild all architectures together."
+    }
+
+    $ordered
 }
 
-# The Store submission API (manage.devcenter.microsoft.com, behind Azure Front Door) intermittently
-# times out / returns 502-504. Retry those transient failures with linear backoff; let real errors
-# (400/401/409/...) surface immediately. Every call here is safe to retry: New-ApplicationSubmission
-# -Force re-clones cleanly, and Set-* / upload are idempotent (same body / same blob).
+# Is an error message a transient Store-API failure worth retrying? The submission API
+# (manage.devcenter.microsoft.com, behind Azure Front Door) intermittently throttles (429) or returns
+# 500/502-504 / gateway timeouts. Match HTTP status codes on word boundaries (so a byte count or an
+# unrelated code containing "502" doesn't false-trigger), plus the common textual signatures.
+function Test-Transient([string]$Message) {
+    return ($Message -match '\b(429|500|50[234])\b') -or
+           ($Message -match 'OriginTimeout|Gateway|Service Unavailable|Too Many Requests|throttl|timed? ?out|temporarily')
+}
+
+# Retry transient failures with linear backoff; let real errors (400/401/409/...) surface immediately.
+# NOTE: the caller is responsible for only wrapping IDEMPOTENT operations. New-ApplicationSubmission
+# -Force re-clones cleanly and Set-* / upload are safe to repeat, but the COMMIT is not — it goes
+# through Complete-SubmissionIdempotent instead (a re-commit of an already-committed submission errors).
 function Invoke-WithRetry {
     param([Parameter(Mandatory)][scriptblock]$Action, [string]$What = 'call', [int]$MaxAttempts = 5, [int]$BaseDelaySec = 6)
     for ($attempt = 1; ; $attempt++) {
         try { return & $Action }
         catch {
             $m = ($_.Exception.Message -split "`n")[0]
-            $transient = $m -match '50[234]|OriginTimeout|Gateway|Service unavailable|timed? ?out|temporarily'
-            if (-not $transient -or $attempt -ge $MaxAttempts) { throw }
+            if (-not (Test-Transient $m) -or $attempt -ge $MaxAttempts) { throw }
             $delay = $BaseDelaySec * $attempt
             Write-Host "    $What transient failure (attempt $attempt/$MaxAttempts): $m" -ForegroundColor DarkYellow
             Write-Host "    retrying in ${delay}s..." -ForegroundColor DarkYellow
+            Start-Sleep -Seconds $delay
+        }
+    }
+}
+
+# Commit a submission with a retry that is safe despite Complete-ApplicationSubmission being
+# non-idempotent: if a commit call fails but the submission has already left PendingCommit, the commit
+# actually landed (the error was a transient response to a successful call), so treat it as committed
+# rather than re-committing (which would hard-fail).
+function Complete-SubmissionIdempotent {
+    param([string]$ProductId, [string]$SubmissionId, [int]$MaxAttempts = 5, [int]$BaseDelaySec = 6)
+    for ($attempt = 1; ; $attempt++) {
+        try { Complete-ApplicationSubmission -AppId $ProductId -SubmissionId $SubmissionId -NoStatus | Out-Null; return }
+        catch {
+            $m = ($_.Exception.Message -split "`n")[0]
+            try {
+                $st = Get-ApplicationSubmissionStatus -AppId $ProductId -SubmissionId $SubmissionId -NoStatus
+                if ($st.status -and $st.status -ne 'PendingCommit') {
+                    Write-Host "    commit returned an error but the submission is '$($st.status)' - already committed, continuing." -ForegroundColor DarkYellow
+                    return
+                }
+            } catch { }
+            if (-not (Test-Transient $m) -or $attempt -ge $MaxAttempts) { throw }
+            $delay = $BaseDelaySec * $attempt
+            Write-Host "    commit transient failure (attempt $attempt/$MaxAttempts): $m; retrying in ${delay}s..." -ForegroundColor DarkYellow
             Start-Sleep -Seconds $delay
         }
     }
@@ -161,6 +226,15 @@ function Publish-Edition {
     $packages = Get-EditionPackages $Name
     Write-Host "==> $Name ($ProductId): $($packages.Count) package(s)" -ForegroundColor Cyan
     $packages | ForEach-Object { Write-Host "     $($_.Name)  [v$(Get-MsixVersion $_.FullName)]" -ForegroundColor DarkGray }
+
+    # Guardrail against a forgotten $notes edit shipping a wrong version in the customer-facing
+    # "What's new" (issue #127): warn if the notes text doesn't mention the package version. The msix
+    # version is 4-part (1.5.1.0); the notes use the 3-part marketing form (1.5.1), so compare on that.
+    $pkgVersion  = Get-MsixVersion $packages[0].FullName
+    $shortVer    = $pkgVersion -replace '\.0+$', ''
+    if ($shortVer -and $notes[$Name] -notmatch [regex]::Escape($shortVer)) {
+        Write-Host "  WARNING: the '$Name' What's-new text does not mention version $shortVer (packages are $pkgVersion). Did you forget to update the `$notes block?" -ForegroundColor Yellow
+    }
 
     # 1. Clone the current published submission into a fresh pending one. -Force first discards any
     #    half-built pending submission, so reruns re-clone cleanly from what's live.
@@ -195,17 +269,18 @@ function Publish-Edition {
     try {
         Compress-Archive -Path $packages.FullName -DestinationPath $zip -Force
         Write-Host "  uploading packages ($([math]::Round((Get-Item $zip).Length / 1MB, 1)) MB)..." -ForegroundColor DarkGray
-        Invoke-WithRetry -What 'upload packages' { Set-SubmissionPackage -PackagePath $zip -UploadUrl $uploadUrl -NoStatus }
+        Invoke-WithRetry -What 'upload packages' { Set-SubmissionPackage -PackagePath $zip -UploadUrl $uploadUrl -NoStatus } | Out-Null
     }
     finally { Remove-Item $zip -Force -ErrorAction SilentlyContinue }
 
     # 4. Commit + report status once (unless leaving a Draft for a manual portal review).
     if ($NoCommit) {
-        Write-Host "  draft ready (submission $($sub.id)); NOT committed - review in Partner Center." -ForegroundColor Yellow
+        Write-Host "  draft ready (submission $($sub.id)); NOT committed. Commit it in Partner Center to ship exactly" -ForegroundColor Yellow
+        Write-Host "  what you reviewed - rerunning this script re-clones from the published submission and discards this draft." -ForegroundColor Yellow
         return
     }
     Write-Host '  committing submission...' -ForegroundColor DarkGray
-    Invoke-WithRetry -What 'commit submission' { Complete-ApplicationSubmission -AppId $ProductId -SubmissionId $sub.id -NoStatus }
+    Complete-SubmissionIdempotent -ProductId $ProductId -SubmissionId $sub.id
     try {
         $st = Invoke-WithRetry -What 'get status' { Get-ApplicationSubmissionStatus -AppId $ProductId -SubmissionId $sub.id -NoStatus }
         Write-Host "  committed; certification status: $($st.status)" -ForegroundColor DarkGray
@@ -222,7 +297,13 @@ function Show-CurrentSubmission {
     if (-not $subId) { Write-Host '  (no submission found)' -ForegroundColor DarkGray; return }
     $kind = if ($app.pendingApplicationSubmission) { 'pending' } else { 'lastPublished' }
     Write-Host "  $kind submission $subId" -ForegroundColor DarkGray
-    Invoke-WithRetry -What 'get submission' { Get-ApplicationSubmission -AppId $ProductId -SubmissionId $subId -NoStatus } | ConvertTo-Json -Depth 20
+    $sub = Invoke-WithRetry -What 'get submission' { Get-ApplicationSubmission -AppId $ProductId -SubmissionId $subId -NoStatus }
+    # fileUploadUrl is an Azure blob SAS URL with a signature token - redact it so -Inspect output is
+    # safe to paste into a bug report or share while debugging (issue #127).
+    if ($sub.PSObject.Properties.Name -contains 'fileUploadUrl' -and $sub.fileUploadUrl) {
+        $sub.fileUploadUrl = '<redacted SAS URL>'
+    }
+    $sub | ConvertTo-Json -Depth 20
 }
 
 $targets = @()
@@ -245,6 +326,11 @@ $results = foreach ($t in $targets) {
     }
     catch {
         Write-Host "  FAILED ($($t.Name)): $($_.Exception.Message)" -ForegroundColor Red
+        if (-not $NoCommit) {
+            # A failure after the clone can leave a half-built pending submission (live packages marked
+            # PendingDelete, new packages not yet uploaded). Do NOT commit it manually; a rerun re-clones.
+            Write-Host "  A partially-built draft may exist for $($t.Name). Do NOT commit it in Partner Center - re-run this script to re-clone from the published submission." -ForegroundColor Red
+        }
         [pscustomobject]@{ Edition = $t.Name; ProductId = $t.ProductId; Result = "FAILED - $($_.Exception.Message)" }
     }
 }
