@@ -3,6 +3,7 @@ using HostsFileEditor.Extensions;
 using HostsFileEditor.Properties;
 using HostsFileEditor.Utilities;
 using System.Configuration;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace HostsFileEditor;
@@ -181,28 +182,62 @@ internal sealed partial class MainForm : Form
     /// </summary>
     private void ShowGlobalHotkeyFailedMessage()
     {
-        string configPath;
-        try
+        var message =
+            $"The global show/hide shortcut \"{_globalHotkeyFailedCombo}\" could not be registered — " +
+            "another application is probably already using it (or it is not a valid combination).\n\n" +
+            "The editor still works normally; only the global shortcut is unavailable — you can still " +
+            "show and hide the window from the tray icon.\n\n";
+
+        // Only the portable build can point the user at an editable user.config: under an MSIX (Store)
+        // install, %LocalAppData% writes are virtualized into the package's LocalCache, so the path
+        // ConfigurationManager reports is the UNVIRTUALIZED location where an edit has no effect
+        // (issue #108). Rather than send Store users to a dead path, give edition-appropriate guidance.
+        if (IsRunningPackaged())
         {
-            configPath = ConfigurationManager
-                .OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath;
+            message +=
+                "The Store version has no in-app setting to change or disable the shortcut yet. To " +
+                "customize it, install the portable build, which keeps its settings in an editable file.";
         }
-        catch (ConfigurationErrorsException)
+        else
         {
-            configPath = "the application's user.config file";
+            string configPath;
+            try
+            {
+                configPath = ConfigurationManager
+                    .OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal).FilePath;
+            }
+            catch (ConfigurationErrorsException)
+            {
+                configPath = "the application's user.config file";
+            }
+
+            message +=
+                "To change or disable it, close the app and edit the GlobalShowHideHotkey value in:\n\n" +
+                $"{configPath}\n\n" +
+                "Examples:  \"Control, Shift, H\"  or  \"Ctrl+Alt+F8\".  Leave it blank to disable the shortcut.";
         }
 
         MessageBox.Show(
             this,
-            $"The global show/hide shortcut \"{_globalHotkeyFailedCombo}\" could not be registered — " +
-            "another application is probably already using it (or it is not a valid combination).\n\n" +
-            "The editor still works normally; only the global shortcut is unavailable.\n\n" +
-            "To change or disable it, close the app and edit the GlobalShowHideHotkey value in:\n\n" +
-            $"{configPath}\n\n" +
-            "Examples:  \"Control, Shift, H\"  or  \"Ctrl+Alt+F8\".  Leave it blank to disable the shortcut.",
+            message,
             "Global Shortcut Unavailable",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
+    }
+
+    private const int AppModelErrorNoPackage = 15700;
+
+    [LibraryImport("kernel32.dll", EntryPoint = "GetCurrentPackageFullName")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int GetCurrentPackageFullName(ref int packageFullNameLength, IntPtr packageFullName);
+
+    // True when running from an installed MSIX/AppX package (has package identity); false for the
+    // portable build. Used to tailor the hotkey-failure guidance, whose user.config path is only
+    // meaningful for the unvirtualized portable build.
+    private static bool IsRunningPackaged()
+    {
+        var length = 0;
+        return GetCurrentPackageFullName(ref length, IntPtr.Zero) != AppModelErrorNoPackage;
     }
 
     /// <inheritdoc />
