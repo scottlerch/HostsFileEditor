@@ -1,0 +1,28 @@
+# Hosts File Editor - sample setup: toggle lines on/off, group with comments, sort and filter
+
+# --- Local development ---
+127.0.0.1       acme.local  api.acme.local      # whole stack on my machine
+127.0.0.1       blog.test                        # static-site preview
+::1             acme.local                        # IPv6 loopback
+
+# --- Switch an app between environments (only one active at a time) ---
+10.0.12.30      app.acme.com                      # ACTIVE: staging server
+#198.51.100.42  app.acme.com                      # production - flip on to switch back
+#203.0.113.10   app.acme.com                      # QA sandbox
+
+# --- Home lab / LAN devices ---
+192.168.1.2     nas                               # Synology
+192.168.1.3     pihole  dns
+192.168.1.10    printer
+192.168.1.20    proxmox  homelab
+
+# --- Tailscale (MagicDNS) ---
+100.100.13.37   laptop.tailnet.ts.net.            # trailing-dot names supported
+
+# --- Block ads and trackers ---
+0.0.0.0         ads.example.com  telemetry.example.com
+0.0.0.0         tracker.example.net
+
+# --- Focus mode: enable to block distractions during work ---
+#0.0.0.0        news.example.com                  # flip on to stay off the news
+#0.0.0.0        social.example.com  www.social.example.com
