@@ -1556,12 +1556,15 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
             }
 
             _suspendSelectionTracking = false;
-        }
 
-        // A Jump List preset clicked DURING this reload was deferred (IsLoaded was false); honor it
-        // now that the reload has finished (issue #101). After the try/finally so the nested import's
-        // own MutateCoreAndRefreshAsync runs sequentially rather than re-entrantly.
-        await DrainPendingJumpListArchiveAsync();
+            // A Jump List preset clicked DURING this reload was deferred (IsLoaded was false); honor it
+            // now that the reload has finished (issue #101). In the finally so it runs even when the
+            // mutate throws — otherwise the pending archive would be orphaned and a LATER, unrelated
+            // reload would import it as a stale request. ImportArchiveFromJumpListAsync self-guards
+            // _isClosed and its own errors, and its nested MutateCoreAndRefreshAsync runs sequentially
+            // (awaited), not re-entrantly.
+            await DrainPendingJumpListArchiveAsync();
+        }
     }
 
     private void RemoveFromCoreAndRefresh(List<HostsEntry> items) =>
