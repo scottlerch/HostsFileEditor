@@ -178,8 +178,8 @@ public class HostsFile : INotifyPropertyChanged
         {
             throw new HostsFileConflictException(
                 $"A different disabled hosts file already exists ('{DefaultDisabledHostFilePath}'). " +
-                "Disabling now would overwrite it and lose that saved configuration. Enable the hosts " +
-                "file first to restore the disabled copy, or remove that file, then try again.");
+                "Disabling now would overwrite it and lose that saved configuration. Move or delete " +
+                "that file first, then try again.");
         }
 
         PrivilegedFileOperations.Current.Move(DefaultHostFilePath, DefaultDisabledHostFilePath);

@@ -94,6 +94,28 @@ public class HostsFileAdditionalTests
         HostsFile.DisableWouldOverwriteDifferentFile(live, disabled).ShouldBeTrue();
     }
 
+    // Buffer-boundary coverage for the chunked FilesHaveSameContent compare (4096-byte reads):
+    // identical files at an exact multiple of the buffer, and two empty files, must both compare equal.
+    [TestMethod]
+    [DataRow(0)]      // both empty
+    [DataRow(4096)]   // exactly one buffer
+    [DataRow(8192)]   // exactly two buffers
+    [DataRow(8193)]   // two buffers + a short trailing read
+    public void DisableWouldOverwriteDifferentFile_IdenticalAtBufferBoundaries_False(int length)
+    {
+        var live = Path.Combine(_tempDir, "hosts");
+        var disabled = Path.Combine(_tempDir, "hosts.disabled");
+        var content = new byte[length];
+        for (var i = 0; i < length; i++)
+        {
+            content[i] = (byte)(i % 251); // deterministic, spans byte values
+        }
+
+        File.WriteAllBytes(live, content);
+        File.WriteAllBytes(disabled, content);
+        HostsFile.DisableWouldOverwriteDifferentFile(live, disabled).ShouldBeFalse();
+    }
+
     [TestMethod]
     public void Import_SameFile_NoChange()
     {
