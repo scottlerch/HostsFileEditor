@@ -425,10 +425,13 @@ public partial class HostsEntry : INotifyPropertyChanged, IDataErrorInfo
     /// Suspends marshalling ping results onto the UI thread for the lifetime of the returned scope
     /// (issue #103). A ping completion posts <see cref="OnPropertyChanged"/> onto the UI context,
     /// which drives the bound <c>BindingList</c>'s child-change indexing. While a bulk mutation runs
-    /// the entry list off the UI thread (the modern app's async Import/Merge/Refresh clears and
-    /// refills the list on a thread-pool thread), that indexing races the mutation and can crash the
-    /// UI. Callers wrap the background mutation in this scope; reports that would fire during it are
-    /// dropped (a ping result is transient and the list is rebuilt and re-evaluated afterwards).
+    /// the entry list off the UI thread (the modern app's async Import/Merge/Refresh mutates the list
+    /// on a thread-pool thread), that indexing races the mutation and can crash the UI. Callers wrap
+    /// the background mutation in this scope; reports that would fire during it are dropped. For
+    /// Import/Refresh the entries are replaced wholesale, so nothing is lost. Merge appends and keeps
+    /// existing entries, so a dropped RECOVERY report there could leave an entry showing a stale
+    /// "ping failed" until its next ping — acceptable versus a crash, since ping state is advisory and
+    /// self-heals on the next ping / reload / IP edit.
     /// </summary>
     public static IDisposable SuspendPingReporting()
     {
