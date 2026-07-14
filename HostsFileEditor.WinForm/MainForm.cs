@@ -918,8 +918,10 @@ internal sealed partial class MainForm : Form
         }
 
         // A Jump List activation forwarded by WndProc DURING the load was deferred (issue #102); open
-        // it now. (Left null by the fresh-launch path above, which opens directly.)
-        if (_pendingOpenArchive is { } deferredArchive)
+        // it now — unless a fresh-launch --open-archive already opened one above. Skipping it then
+        // avoids a double import plus a spurious "unsaved changes?" prompt (the first import marks the
+        // file modified); the fresh-launch preset takes precedence for this launch.
+        if (openArchivePath is null && _pendingOpenArchive is { } deferredArchive)
         {
             _pendingOpenArchive = null;
             RequestOpenArchive(deferredArchive);
