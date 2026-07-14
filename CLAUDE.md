@@ -7,7 +7,9 @@ Guidance for working in this repository.
 **Hosts File Editor** — a Windows desktop app for editing the system `hosts` file
 (`%WinDir%\System32\drivers\etc\hosts`). It supports cut/copy/paste/duplicate/enable/disable/move
 of entries, filtering and sorting, enabling/disabling the entire hosts file, archiving and restoring
-hosts-file configurations, and auto-pinging endpoints to check availability.
+hosts-file configurations (presets, also reachable from a taskbar Jump List), merging another hosts
+file with duplicate elimination, auto-pinging endpoints to check availability, and a headless
+command line (`apply`/`enable`/`disable`/`import`/`merge`/`list`) shared by both editions.
 
 The repository is **mid-migration from WinForms to WinUI 3**. Two UIs currently ship side by side on
 top of one shared core library:
@@ -30,6 +32,7 @@ asked otherwise.
 | `HostsFileEditor.WinUI` | WinUI 3 app | `net10.0-windows10.0.19041.0` | "Modern" UI. DI via `Microsoft.Extensions.DependencyInjection`, MSIX/AOT/trimmed publish, x64+arm64. |
 | `HostsFileEditor.WinForm` | WinForms app | `net10.0-windows` | "Classic" UI. Self-contained, ReadyToRun, win-x64. Uses `Equin.ApplicationFramework.BindingListView`. |
 | `HostsFileEditor.Elevate` | Helper exe (no window) | `net10.0-windows` | Tiny `asInvoker` exe launched with the `runas` verb to perform privileged hosts-file writes/moves on demand. Copied into an `Elevate\` subfolder beside each app (AOT-published for packages). |
+| `HostsFileEditor.Cli` | Console exe (`hfe.exe`) | `net10.0-windows` | Console-subsystem launcher for the shared CLI (`Core/CommandLine/HostsCli`) — `cmd`/PowerShell wait for it, unlike the GUI exes. One-line `Main`. AOT-published into each app's publish root (`PublishCliLauncher` targets); MSIX packages register an `hfe` app-execution alias. |
 
 Solution file is **`HostsFileEditor.slnx`** (the new XML solution format). The WinUI project is pinned
 to the `x64` platform in the solution.
@@ -95,16 +98,30 @@ safe to remove.
   `File` ops) and `ElevatedHelper…` (tries direct first, falls back to the `runas` helper on
   access-denied). `PrivilegedFileOperations.Current` is the process-wide gateway; apps call
   `UseElevationHelper()` at startup. `ElevationCancelledException` signals a declined UAC prompt.
-- **`HostsEntry`** (`HostsEntry.cs`) — one line of the hosts file. Regex-parsed into
-  ip/hostnames/comment/enabled/valid. Implements `INotifyPropertyChanged` and `IDataErrorInfo`.
-  Property setters push undo/redo actions onto `UndoManager` (only when the value actually changes).
-  `Ping()` runs on demand and disposes its `Ping` itself, so entries are not `IDisposable`.
-  `UnparsedText` lazily re-serializes when fields change.
+- **`HostsEntry`** (`HostsEntry.cs`) — one line of the hosts file. Span-parsed (regex kept as a
+  differential-test oracle) into ip/hostnames/comment/enabled/valid; entry-ness is gated on a
+  syntactically valid IP first token (`IsValidIpToken`). Implements `INotifyPropertyChanged` and
+  `IDataErrorInfo`. Property setters push undo/redo actions onto `UndoManager` (only when the value
+  actually changes). `Ping()` runs on demand and disposes its `Ping` itself, so entries are not
+  `IDisposable`; a static begin/end ping counter drives `PingActivityChanged` (the UIs' status-bar
+  indicator) and `PingFailed` flags per-entry failures. `UnparsedText` lazily re-serializes when
+  fields change. Also home to the canonical cross-edition helpers: `MatchesFilter` (the one filter
+  predicate) and `GetComparer`/`SortColumn` (the one display-sort comparer; IP sorts numerically via
+  a cached per-entry `IpSortKey`).
 - **`HostsEntryList`** (`HostsEntryList.cs`) — `BindingList<HostsEntry>` with move/insert/remove/
   enable batch operations, all undo-aware. `InsertItem`/`RemoveItem` overrides register undo actions.
-- **`HostsArchive` / `HostsArchiveList`** — named snapshots stored under
+  `MergeLines` appends another file's entries minus duplicates (canonical-IP + hostnames identity)
+  as a single undoable step; `PingAll` pings every entry on demand.
+- **`HostsArchive` / `HostsArchiveList`** — named snapshots ("presets") stored under
   `%LocalAppData%\HostsFileEditor\archive` (migrated once from the legacy `…\drivers\etc\archive`).
-  `HostsArchiveList.Instance` is a singleton `BindingList`.
+  `HostsArchiveList.Instance` is a singleton `BindingList`; `FindByName` resolves a preset name
+  case-insensitively (CLI, Jump List).
+- **`CommandLine/`** — `HostsCli` (verb parser + runner for the headless CLI; hand-rolled, no NuGet,
+  AOT-safe; exit codes 0/1/2) and `ConsoleAttach` (`AttachConsole` so the GUI-subsystem exes can print
+  to the launching console without breaking redirection). Both editions' `Main` route any non-GUI
+  argument here — classic excludes the Jump List's `--open-archive`, modern excludes the
+  `open-archive:` activation prefix. The modern app supplies its own `Program.Main` via
+  `DISABLE_XAML_GENERATED_MAIN` so the CLI runs without booting WinUI.
 - **`UndoManager`** (`Utilities/UndoManager.cs`) — singleton `UndoManager.Instance`. Linked-list of
   linked-lists of `Action`. Supports batching (`BatchActions`), suspension (`SuspendUndo/Redo/
   UndoRedo`), capped history (`MaximumHistorySize`), and raises `HistoryChanged`.
@@ -116,7 +133,17 @@ safe to remove.
 - **`Win32/Win32FileDialogs`** — hand-rolled `comdlg32` open/save dialogs (used by the WinUI app,
   which has no built-in file dialog matching the needs).
 - **`ProgramSingleInstance`** — mutex-based single-instance enforcement (WinForm). The WinUI app uses
-  `AppInstance.FindOrRegisterForKey` instead (`App.xaml.cs`).
+  `AppInstance.FindOrRegisterForKey` instead (`App.xaml.cs`). CLI invocations bypass single-instance
+  (they run headless in their own process and exit).
+
+### Per-edition extras (not in Core)
+
+- **`TaskbarJumpList`** (one per edition, deliberately separate): classic uses WindowsAPICodePack
+  (COM interop — cannot be used in the AOT'd modern app: `IL3052`); modern uses the WinRT
+  `Windows.UI.StartScreen.JumpList` API. Both list the archives as taskbar Jump List entries.
+- **`NativeHotkey` + `MainForm.RegisterGlobalHotkey`** (classic) — global show/hide hot key
+  (`RegisterHotKey`), combo configurable via the `GlobalShowHideHotkey` user setting (default
+  `Control, Shift, H`; blank disables; registration failure shows a one-time guidance popup).
 
 ### Test hooks (do not remove)
 
@@ -143,11 +170,15 @@ Tests are MSTest classes (`[TestClass]`/`[TestMethod]`) using **Shouldly** asser
 
 ## Packaging (Directory.Build.targets)
 
-`dotnet publish` runs a `SignAndPackage` target after publish: signs the exe, builds an MSIX with
-`makeappx`, signs the MSIX, optionally zips, and copies outputs to `artifacts\<flavor>\`. It resolves
-`signtool.exe`/`makeappx.exe` from the Windows SDK via several fallbacks (VS dev shell env vars, then
-registry `KitsRoot10`). Test signing cert is `HostsFileEditorTestCert.pfx` (password `test`) — for
-local/dev only.
+`dotnet publish` runs a `SignAndPackage` target after publish: signs the binaries (app exe, the
+`Elevate` helper, and `hfe.exe`), builds an MSIX with `makeappx`, optionally signs the MSIX
+(`SignPackage=true`, sideload only — needs the manifest Publisher to match the cert subject; see
+`docs/signing.md`), optionally zips, and copies outputs to `artifacts\<flavor>\`. Per-app
+`PublishElevateHelper`/`PublishCliLauncher` targets AOT-publish the helper exes into the publish
+output first, and strip targets delete unused runtime libraries (WPF natives from classic, WinApp SDK
+ML/Widgets libs from modern). Tool paths (`signtool.exe`/`makeappx.exe`) resolve from the Windows SDK
+via several fallbacks (VS dev shell env vars, then registry `KitsRoot10`). Test signing cert is
+`HostsFileEditorTestCert.pfx` (password `test`) — for local/dev only.
 
 ## Gotchas
 
