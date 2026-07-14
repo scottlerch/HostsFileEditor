@@ -48,10 +48,20 @@ public sealed class ElevationHelperSelectionTests
     [TestMethod]
     public void UseElevationHelper_NoHelperBesideApp_StaysInProcess()
     {
+        // No HostsFileEditor.Elevate.exe ships in the test bin. Defensively clear any stub a prior
+        // (interrupted) run of UseElevationHelper_HelperBesideApp_SelectsHelper may have left behind,
+        // so the default probe genuinely finds nothing regardless of test order.
+        foreach (var stray in HelperCandidatePaths())
+        {
+            if (File.Exists(stray))
+            {
+                File.Delete(stray);
+            }
+        }
+
         var inProcess = new InProcessPrivilegedFileOperations();
         PrivilegedFileOperations.Current = inProcess;
 
-        // No HostsFileEditor.Elevate.exe ships in the test bin, so the default probe finds nothing.
         PrivilegedFileOperations.UseElevationHelper();
 
         PrivilegedFileOperations.Current.ShouldBeSameAs(inProcess);
@@ -61,12 +71,9 @@ public sealed class ElevationHelperSelectionTests
     public void UseElevationHelper_HelperBesideApp_SelectsHelper()
     {
         // Drop a stand-in helper next to the test assembly so the default candidate probe finds it.
+        // The test bin never contains a real helper, so the stub is always removed afterwards.
         var candidate = Path.Combine(AppContext.BaseDirectory, PrivilegedFileOperations.HelperExecutableName);
-        var created = !File.Exists(candidate);
-        if (created)
-        {
-            File.WriteAllText(candidate, "stub");
-        }
+        File.WriteAllText(candidate, "stub");
 
         try
         {
@@ -76,10 +83,13 @@ public sealed class ElevationHelperSelectionTests
         }
         finally
         {
-            if (created)
-            {
-                File.Delete(candidate);
-            }
+            File.Delete(candidate);
         }
     }
+
+    private static IEnumerable<string> HelperCandidatePaths() =>
+    [
+        Path.Combine(AppContext.BaseDirectory, PrivilegedFileOperations.HelperSubdirectory, PrivilegedFileOperations.HelperExecutableName),
+        Path.Combine(AppContext.BaseDirectory, PrivilegedFileOperations.HelperExecutableName),
+    ];
 }

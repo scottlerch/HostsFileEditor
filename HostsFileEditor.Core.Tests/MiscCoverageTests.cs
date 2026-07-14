@@ -17,8 +17,21 @@ public sealed class MiscCoverageTests
     public void ConsoleAttach_AttachToParentConsole_DoesNotThrow()
     {
         // Under `dotnet test` stdout is redirected, so this takes the "already have a real stdout"
-        // early-return path. It must never throw regardless of console state.
-        Should.NotThrow(ConsoleAttach.AttachToParentConsole);
+        // early-return path. Guard against the rare runner where stdout is NOT a real handle: there
+        // the method attaches to the parent console and rebinds Console.Out/Error (a process-global,
+        // irreversible side effect). Snapshot and restore them so this test can never corrupt another
+        // test's output/logger capture. It must never throw regardless of console state.
+        var savedOut = Console.Out;
+        var savedError = Console.Error;
+        try
+        {
+            Should.NotThrow(ConsoleAttach.AttachToParentConsole);
+        }
+        finally
+        {
+            Console.SetOut(savedOut);
+            Console.SetError(savedError);
+        }
     }
 
     [TestMethod]

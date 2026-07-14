@@ -19,7 +19,13 @@ public sealed class HostsEntryGapTests
     [TestCleanup]
     public void Cleanup()
     {
+        // Stop new auto-pings, then wait for any fire-and-forget ping this test started to finish
+        // before yielding to the next test. HostsEntry.Ping() is fire-and-forget and mutates the
+        // process-global ping counter (BeginPing/EndPing) plus raises the static PingActivityChanged
+        // on a thread-pool continuation; leaving one in flight would flake the ping-activity tests
+        // here and the pre-existing PingActivity_RaisesOnZeroBoundaryOnly.
         HostsEntry.AutoPingIPAddress = false;
+        SpinUntil(() => !HostsEntry.IsPingInProgress, TimeSpan.FromSeconds(10));
         HostsEntry.UiSynchronizationContext = null;
     }
 

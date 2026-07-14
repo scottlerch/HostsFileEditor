@@ -11,6 +11,19 @@ public sealed class HostsEntryListGapTests
     [TestInitialize]
     public void Init() => UndoManager.Instance.ClearHistory();
 
+    [TestCleanup]
+    public void Cleanup()
+    {
+        // PingAll / MergeLines(auto-ping) start fire-and-forget pings that mutate the process-global
+        // ping counter on a thread-pool continuation. Drain them before yielding so they can't leak
+        // into (and flake) the ping-activity tests in other classes. Bounded so a stuck ping can't hang.
+        var deadline = Environment.TickCount64 + 10_000;
+        while (HostsEntry.IsPingInProgress && Environment.TickCount64 < deadline)
+        {
+            Thread.Sleep(50);
+        }
+    }
+
     [TestMethod]
     public void Error_ReportsInvalidEntries_WhenAnyEntryInvalid()
     {

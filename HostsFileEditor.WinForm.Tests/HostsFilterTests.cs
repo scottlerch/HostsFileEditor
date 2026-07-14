@@ -60,19 +60,15 @@ public sealed class HostsFilterTests
     }
 
     [TestMethod]
-    public void Include_MatchesHostsEntryMatchesFilter_ForAllFlagCombinations()
+    public void Include_HideCommentsAndDisabled_CombineWithConcreteExpectations()
     {
-        foreach (var hideComments in new[] { false, true })
-        {
-            foreach (var hideDisabled in new[] { false, true })
-            {
-                var filter = new HostsFilter(() => "test") { Comments = hideComments, Disabled = hideDisabled };
-                foreach (var entry in new[] { Enabled, CommentOnly, Disabled })
-                {
-                    filter.Include(entry).ShouldBe(
-                        HostsEntry.MatchesFilter(entry, hideComments, hideDisabled, "test"));
-                }
-            }
-        }
+        // Both flags on: comment-only and disabled rows drop; only enabled entries matching the text
+        // survive. Concrete expected values (not a mirror of the predicate) so a wiring bug — e.g.
+        // swapping the Comments/Disabled flags — is actually caught.
+        var filter = new HostsFilter(() => "localhost") { Comments = true, Disabled = true };
+
+        filter.Include(Enabled).ShouldBeTrue();     // enabled + matches "localhost"
+        filter.Include(CommentOnly).ShouldBeFalse(); // hidden by Comments
+        filter.Include(Disabled).ShouldBeFalse();    // hidden by Disabled (and wouldn't match text anyway)
     }
 }

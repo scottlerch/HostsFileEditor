@@ -24,8 +24,10 @@ jobs:
         include:
           - arch: x64
             os: windows-latest
+            rid: win-x64
           - arch: arm64
             os: windows-11-arm
+            rid: win-arm64
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -38,20 +40,25 @@ jobs:
         with:
           global-json-file: global.json
 
-      # Build the shared core, the headless CLI launcher, the elevation helper, and the classic
-      # (WinForms) edition. All are net10.0-windows and build headlessly on both architectures.
+      # Build the shared core, the headless CLI launcher, and the elevation helper. These are
+      # architecture-portable (a library / RID-agnostic builds), so no RID is needed here.
       # TreatWarningsAsErrors is on repo-wide, so this also fails on any new analyzer warning.
-      - name: Build core, CLI, helper and classic UI
+      - name: Build core, CLI and helper
         run: |
           dotnet build HostsFileEditor.Core/HostsFileEditor.Core.csproj       -c Release
           dotnet build HostsFileEditor.Cli/HostsFileEditor.Cli.csproj         -c Release
           dotnet build HostsFileEditor.Elevate/HostsFileEditor.Elevate.csproj -c Release
-          dotnet build HostsFileEditor.WinForm/HostsFileEditor.WinForm.csproj -c Release
+
+      # Build the classic (WinForms) edition for THIS architecture. Both app projects default their
+      # RuntimeIdentifier to win-x64, so the RID must be passed explicitly or the arm64 leg would
+      # silently build x64 and never validate arm64.
+      - name: Build classic UI (WinForms)
+        run: dotnet build HostsFileEditor.WinForm/HostsFileEditor.WinForm.csproj -c Release -p:RuntimeIdentifier=${{ matrix.rid }}
 
       # Build the modern (WinUI 3) edition for this architecture. A plain build (not publish) skips
       # the AOT/trim/MSIX steps, so it needs no C++ toolchain — just the Windows App SDK NuGet.
       - name: Build modern UI (WinUI)
-        run: dotnet build HostsFileEditor.WinUI/HostsFileEditor.WinUI.csproj -c Release -p:Platform=${{ matrix.arch }}
+        run: dotnet build HostsFileEditor.WinUI/HostsFileEditor.WinUI.csproj -c Release -p:Platform=${{ matrix.arch }} -p:RuntimeIdentifier=${{ matrix.rid }}
 
       # Runs the full Core/CLI test suite with OpenCover coverage (configured in coverage.runsettings).
       - name: Test Core/CLI with coverage
