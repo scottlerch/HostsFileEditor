@@ -14,8 +14,7 @@ one-click toggle for the whole file.
 It runs as a standard user and elevates on demand (a single UAC prompt) only when you actually
 save changes to the hosts file, so day-to-day viewing, archiving, and backups need no admin rights.
 
-![Main screen modern](images/modern-new.png)
-</br>
+![Main screen modern](images/modern-new.png)<br/>
 *main modern editor (light)*
 
 ## Features
@@ -30,12 +29,10 @@ save changes to the hosts file, so day-to-day viewing, archiving, and backups ne
  * Global shortcut key (default `Ctrl+Shift+H`) to hide/restore the classic edition from the tray
  * Modern variant supports light and dark themes
 
-![Main screen classic](images/classic.png)
-</br>
+![Main screen classic](images/classic.png)<br/>
 *main classic editor with optional archive visible on right*
 
-![Tray](images/classic_tray.png)
-</br>
+![Tray](images/classic_tray.png)<br/>
 *tray icon with context menu*
 
 ### Usage Notes
