@@ -40,8 +40,10 @@
         <uap:SplashScreen Image="Assets\Square150x150Logo.png"/>
       </uap:VisualElements>
     </Application>
-    <!-- Console launcher (issue #2): a hidden app entry whose appExecutionAlias puts `hfe` on PATH so
-         scripts can run `hfe -s Preset` etc. AppListEntry="none" keeps it off the Start menu. hfe.exe
+    <!-- Console launcher (issue #2): a second app entry whose appExecutionAlias puts `hfe` on PATH so
+         scripts can run `hfe -s Preset` etc. The entry is VISIBLE in the Start menu app list: hiding it
+         (AppListEntry="none") requires the account-level "HeadlessAppBypass" waiver, without which
+         Store package validation rejects the submission (hit on the 1.5.0/1.2.0 release). hfe.exe
          is console-subsystem, so cmd/PowerShell wait for it. -->
     <Application Id="Cli"
                  Executable="hfe.exe"
@@ -49,7 +51,6 @@
       <uap:VisualElements
         DisplayName="Hosts File Editor CLI"
         Description="Hosts File Editor command line"
-        AppListEntry="none"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png"/>
