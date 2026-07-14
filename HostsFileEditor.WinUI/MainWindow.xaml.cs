@@ -1525,6 +1525,11 @@ public sealed partial class MainWindow : Window, INotifyPropertyChanged
 
         _suspendSelectionTracking = true;
         _suspendCoreListSync = true;
+        // The mutate runs the Core list operation off the UI thread (Task.Run). Suspend ping-result
+        // marshalling for the duration so an in-flight ping completion can't post a PropertyChanged
+        // onto the UI thread that indexes the BindingList the background thread is clearing/refilling
+        // — a cross-thread race that can crash the UI (issue #103). Held through the finally's rebind.
+        using var pingReportingSuspension = HostsEntry.SuspendPingReporting();
         try
         {
             await Task.Run(mutate);

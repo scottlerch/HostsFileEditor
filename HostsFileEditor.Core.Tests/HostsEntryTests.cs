@@ -1,4 +1,5 @@
 using HostsFileEditor.Utilities;
+using System.Reflection;
 
 namespace HostsFileEditor.Core.Tests;
 
@@ -248,6 +249,43 @@ public class HostsEntryTests
         {
             HostsEntry.PingActivityChanged -= Handler;
         }
+    }
+
+    // #103: SuspendPingReporting must nest (ref-counted) and fully restore on dispose, so an
+    // exception or overlapping bulk mutation can't leave ping reporting permanently suppressed.
+    [TestMethod]
+    public void SuspendPingReporting_NestsAndRestores()
+    {
+        var field = typeof(HostsEntry).GetField("_pingReportingSuspended", BindingFlags.NonPublic | BindingFlags.Static)!;
+        int Count() => (int)field.GetValue(null)!;
+
+        var start = Count();
+        using (HostsEntry.SuspendPingReporting())
+        {
+            Count().ShouldBe(start + 1);
+            using (HostsEntry.SuspendPingReporting())
+            {
+                Count().ShouldBe(start + 2);
+            }
+
+            Count().ShouldBe(start + 1);
+        }
+
+        Count().ShouldBe(start);
+    }
+
+    [TestMethod]
+    public void SuspendPingReporting_DisposeIsIdempotent()
+    {
+        var field = typeof(HostsEntry).GetField("_pingReportingSuspended", BindingFlags.NonPublic | BindingFlags.Static)!;
+        int Count() => (int)field.GetValue(null)!;
+
+        var start = Count();
+        var scope = HostsEntry.SuspendPingReporting();
+        Count().ShouldBe(start + 1);
+        scope.Dispose();
+        scope.Dispose(); // a double dispose must not decrement twice
+        Count().ShouldBe(start);
     }
 
     [TestMethod]
