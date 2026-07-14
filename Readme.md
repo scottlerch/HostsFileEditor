@@ -119,12 +119,14 @@ Installs and updates automatically, with no separate download:
  * [Hosts File Editor (modern)](https://apps.microsoft.com/detail/9NBQWCDXGF9R) &mdash; the new WinUI edition
  * [Hosts File Editor (classic)](https://apps.microsoft.com/detail/9NF73PSPK332) &mdash; the classic WinForms edition
 
-### Portable &mdash; v1.5.0
+### Portable &mdash; v1.5.1
 
 The **classic edition** rebuilt on .NET 10: fully self-contained (no runtime to install), runs as a standard user, and elevates on demand (a single UAC prompt) only when you save changes to the hosts file. Binaries are signed. Download directly from [GitHub Releases](https://github.com/scottlerch/HostsFileEditor/releases):
 
- * [Download v1.5.0 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.5.0/HostsFileEditor-1.5.0-x64.zip)
- * [Download v1.5.0 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.5.0/HostsFileEditor-1.5.0-arm64.zip)
+ * [Download v1.5.1 portable &mdash; x64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.5.1/HostsFileEditor-1.5.1-x64.zip)
+ * [Download v1.5.1 portable &mdash; ARM64](https://github.com/scottlerch/HostsFileEditor/releases/download/v1.5.1/HostsFileEditor-1.5.1-arm64.zip)
+
+_What's new in v1.5.1 (classic) / v1.2.1 (modern):_ a **quality &amp; robustness patch** following the v1.5.0 / v1.2.0 feature release. The command line no longer risks **losing a saved (disabled) hosts configuration** on a repeated `disable`, and reports **ambiguous preset names** instead of guessing. The classic edition now **carries your settings forward across updates** (window size, auto-ping, the global shortcut) instead of resetting them, keeps the tray icon and toggle in sync after a command-line change, and its taskbar Jump List survives Store updates. The modern edition fixes a rare **crash** when a background merge/import overlapped a ping, and a Jump List preset clicked during a reload now opens. Plus smaller polish: paste-while-sorted appends predictably, merges don't ping discarded duplicates, and clearer messages. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.5.1).
 
 _What's new in v1.5.0 (classic) / v1.2.0 (modern):_ a **feature release**. A full **[command line](#command-line)** in both editions plus a new `hfe.exe` console launcher &mdash; switch presets, enable/disable, import, and merge from scripts (Store installs put `hfe` on `PATH`). A taskbar **Jump List**: right-click the app icon to open any preset directly. **File &rarr; Merge** combines another hosts file into the current one, skipping duplicates (undoable). The modern edition gains **Sort options** next to the filter, and the **IP column now sorts numerically** in both editions (`8.8.8.8` before `10.0.0.2` before `10.0.0.10`, IPv6 after IPv4). **Auto-ping** shows a status-bar progress indicator while pings are in flight, flags per-entry failures (modern gets an error badge with tooltip), and pings immediately when enabled. The classic edition adds a **global shortcut** (default `Ctrl+Shift+H`, configurable) to hide/restore from the tray, its text **filter is now case-insensitive** to match modern, the parser validates IPs strictly at parse time, and the portable zip dropped ~9 MB of unused libraries. See the [full release notes](https://github.com/scottlerch/HostsFileEditor/releases/tag/v1.5.0).
 
