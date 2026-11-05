@@ -24,6 +24,6 @@
          self-contained runtime pack ("Overriding System.Private.CoreLib.dll with a newer version is
          not supported"). Aligning the compiler up to the runtime fixes AOT publish. Bump alongside
          the runtime; remove once the SDK default catches up. -->
-    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.10" />
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="10.0.14" />
   </ItemGroup>
 </Project>
